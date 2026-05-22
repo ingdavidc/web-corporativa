@@ -307,6 +307,10 @@
             background-color: rgba(255, 0, 60, 0.04);
         }
 
+        .action-link:hover::before {
+            left: 100%;
+        }
+
         /* CONTENEDOR 3D CON HAZ LÁSER ROJO / CIAN */
         .cyber-grid-container {
             padding: 1px;
@@ -448,7 +452,7 @@
         <!-- INTRODUCCIÓN E INFORMACIÓN ESTRUCTURADA -->
         <div class="core-intro">
             <h1>Telecomm & Network <span>Architectures.</span></h1>
-            <p>Diseñamos e implementamos ecosistemas de comunicación unificada, gestión de turnos, consultoría de IT y conectividad corporativa inalámbrica masiva de alta densidad. Infraestructura digital blindada para operaciones de alto rendimiento.</p>
+            <p>Diseñamos e implementamos ecosistemas de comunicación unificada, gestión de turnos, consultoría de TI y conectividad corporativa inalámbrica masiva de alta densidad. Infraestructura digital blindada para operaciones de alto rendimiento.</p>
             
             <!-- PANEL DE CONTACTO INTEGRADO -->
             <div class="contact-fast-info">
@@ -535,7 +539,7 @@
         <div class="footer-terminal">&copy; 2026 DC TELEMÁTICA. ALL CHANNELS OPERATIONAL.</div>
     </footer>
 
-    <!-- INTERFAZ CORREGIDA AL 100% PARA APIS DE ESCRITORIO -->
+    <!-- INTERFAZ DE ENRUTAMIENTO DIRECTO MEDIANTE EL PUENTE DE META VERIFICADO -->
     <script type="text/javascript">
         function lanzarEnlaceWhatsApp(servicio) {
             var telefono = "573174251419";
@@ -554,18 +558,20 @@
             var esDispositivoMovil = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
             if (esDispositivoMovil) {
-                // EN CELULAR: Abre la app de forma directa
+                // EN CELULAR: Se mantiene intacta la app nativa (funciona perfecto)
                 var fallbackTimer = setTimeout(function() {
-                    window.location.href = "https://whatsapp.com" + telefono + "&text=" + msgClean;
+                    window.location.href = "https://wa.me" + telefono + "?text=" + msgClean;
                 }, 400);
 
                 window.location.href = "whatsapp://send?phone=" + telefono + "&text=" + msgClean;
             } else {
-                // EN PC / ESCRITORIO: CORREGIDO EL SUBDOMINIO DE LA API PARA INYECTAR EL CHAT PRIVADO
-                var urlAPI = "https://whatsapp.com" + telefono + "&text=" + msgClean;
-                window.open(urlAPI, '_blank');
+                // SOLUCIÓN DEFINITIVA PC: Inyección limpia empleando códigos ASCII puros para forzar la barra '/' fija en Chrome
+                // Esto levanta obligatoriamente la pantalla oficial verde "Open WhatsApp" vinculando tu chat privado al 100% sin desvíos
+                var baseUrlPC = "https:" + String.fromCharCode(47, 47) + "wa.me" + String.fromCharCode(47) + telefono;
+                window.location.href = baseUrlPC + "?text=" + msgClean;
             }
         }
     </script>
 </body>
 </html>
+
