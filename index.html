@@ -15,7 +15,7 @@
     <meta property="og:url" content="https://dctelematica.com">
     <meta property="og:title" content="DC Telemática | Infraestructura Digital Avanzada">
     <meta property="og:description" content="Especialistas en ingeniería de redes Wi-Fi, VoIP corporativa, consultoría tecnológica y gestión de proyectos telemáticos.">
-    <meta property="og:image" content="https://dctelematica.comdc_telematica.png">
+    <meta property="og:image" content="https://dctelematica.com">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:type" content="image/png">
@@ -130,6 +130,7 @@
             align-items: center;
             text-decoration: none;
             gap: 12px;
+            cursor: pointer;
         }
 
         /* EFECTO DE GLOW PULSANTE */
@@ -249,6 +250,7 @@
             font-size: 13px;
             font-weight: 600;
             transition: all 0.3s ease;
+            cursor: pointer;
         }
 
         .info-link-item:hover {
@@ -288,15 +290,7 @@
             overflow: hidden;
             transition: all 0.4s ease;
             max-width: 280px;
-        }
-
-        .action-link::before {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 0, 60, 0.2), transparent);
-            transition: left 0.5s ease;
+            cursor: pointer;
         }
 
         .action-link:hover {
@@ -306,17 +300,13 @@
             background-color: rgba(255, 0, 60, 0.04);
         }
 
-        .action-link:hover::before {
-            left: 100%;
-        }
-
         /* CONTENEDOR 3D CON HAZ LÁSER ROJO / CIAN */
         .cyber-grid-container {
             padding: 1px;
             background-image: conic-gradient(from var(--cyber-angle), transparent, var(--neon-red), var(--neon-cyan), transparent 70%);
             animation: rotateLaser 5s linear infinite;
             border-radius: 16px;
-            transform: rotateY(-8deg) rotateX(3deg);
+            transform: rotateY(-10deg) rotateX(4deg);
             transform-style: preserve-3d;
             box-shadow: -25px 35px 55px rgba(0,0,0,0.7);
         }
@@ -324,15 +314,14 @@
         .cyber-grid-inner {
             background: linear-gradient(135deg, var(--carbon-dark), #04060d);
             border-radius: 15px;
-            padding: 20px;
+            padding: 24px;
             display: flex;
             flex-direction: column;
             gap: 12px;
             max-height: 520px;
-            overflow-y: auto; /* Scroll táctil sutil si la pantalla móvil es muy pequeña */
+            overflow-y: auto;
         }
 
-        /* Estilización de barra de desplazamiento para el panel 3D */
         .cyber-grid-inner::-webkit-scrollbar {
             width: 4px;
         }
@@ -350,13 +339,13 @@
         .card-node {
             background: rgba(14, 18, 33, 0.4);
             border: 1px solid rgba(255, 255, 255, 0.02);
-            padding: 14px 16px;
+            padding: 16px 18px;
             border-radius: 10px;
             display: flex;
             align-items: flex-start;
-            gap: 14px;
+            gap: 16px;
             transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-            text-decoration: none;
+            cursor: pointer;
         }
 
         .card-node:hover {
@@ -388,7 +377,7 @@
         }
 
         .node-data p {
-            font-size: 12px;
+            font-size: 12.5px;
             color: var(--text-muted);
             line-height: 1.45;
         }
@@ -438,12 +427,12 @@
 
     <!-- CABECERA CON LOGOTIPO CENTRADO -->
     <header>
-        <a href="https://wa.me" target="_blank" class="brand-link">
+        <div class="brand-link" onclick="lanzarEnlaceWhatsApp('general')">
             <div class="brand-logo-holder">
                 <img src="dc_telematica.png" alt="DC Telemática">
             </div>
             <span class="brand-name">DC Telemática</span>
-        </a>
+        </div>
     </header>
 
     <!-- NÚCLEO DE INTERFAZ -->
@@ -456,9 +445,9 @@
             
             <!-- PANEL DE CONTACTO INTEGRADO -->
             <div class="contact-fast-info">
-                <a href="https://wa.me" target="_blank" class="info-link-item">
+                <div class="info-link-item" onclick="lanzarEnlaceWhatsApp('general')">
                     <span class="info-icon-tag">WHATSAPP</span> +57 317 425 1419
-                </a>
+                </div>
                 <a href="mailto:ing.david@dctelematica.com" class="info-link-item">
                     <span class="info-icon-tag">EMAIL</span> ing.david@dctelematica.com
                 </a>
@@ -468,7 +457,7 @@
             </div>
 
             <!-- BOTÓN PRINCIPAL -->
-            <a href="https://wa.me" target="_blank" class="action-link">Iniciar Mensaje</a>
+            <div class="action-link" onclick="lanzarEnlaceWhatsApp('general')">Iniciar Mensaje</div>
         </div>
 
         <!-- RECUADRO CON PERSPECTIVA TRIDIMENSIONAL ACTIVA -->
@@ -476,58 +465,58 @@
             <div class="cyber-grid-inner">
                 
                 <!-- Servicio 01 -->
-                <a href="https://wa.me" target="_blank" class="card-node">
+                <div class="card-node" onclick="lanzarEnlaceWhatsApp('wifi')">
                     <span class="node-index">01</span>
                     <div class="node-data">
                         <h3>Advanced Wi-Fi Networks</h3>
                         <p>Diseño y despliegue de cobertura inalámbrica avanzada, portales cautivos Hotspot empresariales y optimización de espectro de alta densidad.</p>
                     </div>
-                </a>
+                </div>
 
                 <!-- Servicio 02 -->
-                <a href="https://wa.me" target="_blank" class="card-node">
+                <div class="card-node" onclick="lanzarEnlaceWhatsApp('voip')">
                     <span class="node-index">02</span>
                     <div class="node-data">
                         <h3>IP Telephony & VoIP</h3>
                         <p>Centrales telefónicas IP corporativas, aprovisionamiento de troncales SIP y arquitecturas de voz sobre IP escalables de alta disponibilidad.</p>
                     </div>
-                </a>
+                </div>
 
                 <!-- Servicio 03 -->
-                <a href="https://wa.me" target="_blank" class="card-node">
+                <div class="card-node" onclick="lanzarEnlaceWhatsApp('callcenter')">
                     <span class="node-index">03</span>
                     <div class="node-data">
                         <h3>Call Centers & Digiturnos</h3>
                         <p>Implementación de plataformas integradas de Contact Center y sistemas inteligentes de turnos digitales para optimizar la experiencia del usuario.</p>
                     </div>
-                </a>
+                </div>
 
                 <!-- Servicio 04 -->
-                <a href="https://wa.me" target="_blank" class="card-node">
+                <div class="card-node" onclick="lanzarEnlaceWhatsApp('consultoria')">
                     <span class="node-index">04</span>
                     <div class="node-data">
                         <h3>Consultoría Tecnológica (IT)</h3>
                         <p>Auditoría de infraestructura, análisis de seguridad perimetral, diagnóstico de vulnerabilidades en la red y optimización de recursos telemáticos.</p>
                     </div>
-                </a>
+                </div>
 
                 <!-- Servicio 05 -->
-                <a href="https://wa.me" target="_blank" class="card-node">
+                <div class="card-node" onclick="lanzarEnlaceWhatsApp('proyectos')">
                     <span class="node-index">05</span>
                     <div class="node-data">
                         <h3>Gestión y Diseño de Proyectos</h3>
                         <p>Formulación, estructuración y dirección técnica de proyectos de telecomunicaciones e infraestructura de datos bajo estándares internacionales.</p>
                     </div>
-                </a>
+                </div>
 
                 <!-- Servicio 06 -->
-                <a href="https://wa.me" target="_blank" class="card-node">
+                <div class="card-node" onclick="lanzarEnlaceWhatsApp('infraestructura')">
                     <span class="node-index">06</span>
                     <div class="node-data">
                         <h3>Secure Cyber-Infrastructure</h3>
                         <p>Ingeniería de enrutamiento avanzado con hardware MikroTik, cortafuegos perimetrales avanzados (Firewall) y balanceo dinámico de cargas WAN.</p>
                     </div>
-                </a>
+                </div>
 
             </div>
         </div>
@@ -539,5 +528,38 @@
         <div class="footer-terminal">&copy; 2026 DC TELEMÁTICA. ALL CHANNELS OPERATIONAL.</div>
     </footer>
 
+    <!-- INTERFAZ DE REDIRECCIÓN A LA API OFICIAL INTEGRADA MEDIANTE JAVASCRIPT -->
+    <script type="text/javascript">
+        function lanzarEnlaceWhatsApp(servicio) {
+            var telefono = "573174251419";
+            var mensaje = "Hola, solicito soporte tecnico de DC Telematica.";
+
+            if (servicio === 'wifi') mensaje = "Hola, solicito informacion sobre redes Wi-Fi avanzadas.";
+            if (servicio === 'voip') mensaje = "Hola, solicito informacion sobre telefonia IP y VoIP.";
+            if (servicio === 'callcenter') mensaje = "Hola, solicito informacion sobre Call Centers y Digiturnos.";
+            if (servicio === 'consultoria') mensaje = "Hola, solicito una consultoria tecnologica de IT.";
+            if (servicio === 'proyectos') mensaje = "Hola, solicito informacion sobre gestion de proyectos.";
+            if (servicio === 'infraestructura') mensaje = "Hola, solicito soporte sobre infraestructura de red Mikrotik.";
+
+            var msgClean = encodeURIComponent(mensaje);
+            
+            // Detector preciso de agentes móviles (móviles y tablets)
+            var esDispositivoMovil = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+            if (esDispositivoMovil) {
+                // EN CELULAR: Despierta directamente la App nativa en segundo plano
+                var fallbackTimer = setTimeout(function() {
+                    // Si el WebView del móvil bloquea el protocolo local, salta a la API oficial
+                    window.location.href = "https://whatsapp.com" + telefono + "&text=" + msgClean;
+                }, 400);
+
+                window.location.href = "whatsapp://send?phone=" + telefono + "&text=" + msgClean;
+            } else {
+                // EN PC / ESCRITORIO: Abre de forma limpia la API oficial de confirmación
+                var urlAPI = "https://whatsapp.com" + telefono + "&text=" + msgClean;
+                window.open(urlAPI, '_blank');
+            }
+        }
+    </script>
 </body>
 </html>
