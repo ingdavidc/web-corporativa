@@ -10,12 +10,14 @@
     <meta name="keywords" content="DC Telematica, redes, telecomunicaciones, wifi, telefonía ip, mikrotik, consultoria, proyectos, saravena, arauca">
     <meta name="author" content="DC Telemática">
 
-    <!-- PROTOCOLO OPEN GRAPH (CORREGIDO: RUTA ABSOLUTA COMPLETA HACIA LA IMAGEN PNG) -->
+    <!-- PROTOCOLO OPEN GRAPH (OPTIMIZADO CON PROTOCOLO DIRECTO PARA EVITAR ERROR 206 DE META) -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://dctelematica.com">
     <meta property="og:title" content="DC Telemática | Infraestructura Digital Avanzada">
     <meta property="og:description" content="Especialistas en ingeniería de redes Wi-Fi, VoIP corporativa, consultoría tecnológica y gestión de proyectos telemáticos.">
-    <meta property="og:image" content="https://dctelematica.comdc_telematica.png">
+    <!-- Se cambia temporalmente a http para forzar la descarga completa sin bloqueos parciales -->
+    <meta property="og:image" content="http://dctelematica.com">
+    <meta property="og:image:secure_url" content="https://dctelematica.comdc_telematica.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:type" content="image/png">
@@ -299,11 +301,24 @@
             cursor: pointer;
         }
 
+        .action-link::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 0, 60, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
         .action-link:hover {
             border-color: var(--neon-red);
             box-shadow: 0 0 30px rgba(255, 0, 60, 0.35);
             color: #ffffff;
             background-color: rgba(255, 0, 60, 0.04);
+        }
+
+        .action-link:hover::before {
+            left: 100%;
         }
 
         /* CONTENEDOR 3D CON HAZ LÁSER ROJO / CIAN */
