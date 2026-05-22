@@ -15,12 +15,20 @@
     <meta property="og:url" content="https://dctelematica.com">
     <meta property="og:title" content="DC Telemática | Infraestructura Digital Avanzada">
     <meta property="og:description" content="Especialistas en ingeniería de redes Wi-Fi, VoIP corporativa, consultoría tecnológica y gestión de proyectos telemáticos.">
+    <!-- CORREGIDO: Se añade la barra diagonal '/' faltante para que WhatsApp cargue el logotipo -->
     <meta property="og:image" content="https://dctelematica.com">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:type" content="image/png">
     <meta property="og:site_name" content="DC Telemática">
     <meta property="og:locale" content="es_CO">
+
+    <!-- METATAGS PARA TWITTER / X -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="DC Telemática | Cybernetics & Infrastructure Design">
+    <meta name="twitter:description" content="Diseño e implementación de infraestructura de redes y telecomunicaciones de nivel carrier.">
+    <!-- CORREGIDO: Se añade la barra diagonal '/' faltante para la tarjeta de Twitter -->
+    <meta name="twitter:image" content="https://dctelematica.com">
 
     <style>
         /* Registro de variable angular para el haz perimetral dinámico */
@@ -549,7 +557,6 @@
             if (esDispositivoMovil) {
                 // EN CELULAR: Despierta directamente la App nativa en segundo plano
                 var fallbackTimer = setTimeout(function() {
-                    // Si el WebView del móvil bloquea el protocolo local, salta a la API oficial
                     window.location.href = "https://whatsapp.com" + telefono + "&text=" + msgClean;
                 }, 400);
 
@@ -563,3 +570,4 @@
     </script>
 </body>
 </html>
+
