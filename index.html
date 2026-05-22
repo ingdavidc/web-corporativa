@@ -10,12 +10,11 @@
     <meta name="keywords" content="DC Telematica, redes, telecomunicaciones, wifi, telefonía ip, mikrotik, consultoria, proyectos, saravena, arauca">
     <meta name="author" content="DC Telemática">
 
-    <!-- PROTOCOLO OPEN GRAPH (OPTIMIZADO CON PROTOCOLO DIRECTO PARA EVITAR ERROR 206 DE META) -->
+    <!-- PROTOCOLO OPEN GRAPH (TARJETAS DE VISTA PREVIA PARA WHATSAPP) -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://dctelematica.com">
     <meta property="og:title" content="DC Telemática | Infraestructura Digital Avanzada">
     <meta property="og:description" content="Especialistas en ingeniería de redes Wi-Fi, VoIP corporativa, consultoría tecnológica y gestión de proyectos telemáticos.">
-    <!-- Se cambia temporalmente a http para forzar la descarga completa sin bloqueos parciales -->
     <meta property="og:image" content="http://dctelematica.com">
     <meta property="og:image:secure_url" content="https://dctelematica.comdc_telematica.png">
     <meta property="og:image:width" content="1200">
@@ -301,24 +300,11 @@
             cursor: pointer;
         }
 
-        .action-link::before {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 0, 60, 0.2), transparent);
-            transition: left 0.5s ease;
-        }
-
         .action-link:hover {
             border-color: var(--neon-red);
             box-shadow: 0 0 30px rgba(255, 0, 60, 0.35);
             color: #ffffff;
             background-color: rgba(255, 0, 60, 0.04);
-        }
-
-        .action-link:hover::before {
-            left: 100%;
         }
 
         /* CONTENEDOR 3D CON HAZ LÁSER ROJO / CIAN */
@@ -462,7 +448,7 @@
         <!-- INTRODUCCIÓN E INFORMACIÓN ESTRUCTURADA -->
         <div class="core-intro">
             <h1>Telecomm & Network <span>Architectures.</span></h1>
-            <p>Diseñamos e implementamos ecosistemas de comunicación unificada, gestión de turnos, consultoría de IT y conectividad corporativa inalámbrica masiva de alta densidad. Infraestructura digital blindada para operaciones críticas.</p>
+            <p>Diseñamos e implementamos ecosistemas de comunicación unificada, gestión de turnos, consultoría de IT y conectividad corporativa inalámbrica masiva de alta densidad. Infraestructura digital blindada para operaciones de alto rendimiento.</p>
             
             <!-- PANEL DE CONTACTO INTEGRADO -->
             <div class="contact-fast-info">
@@ -549,7 +535,7 @@
         <div class="footer-terminal">&copy; 2026 DC TELEMÁTICA. ALL CHANNELS OPERATIONAL.</div>
     </footer>
 
-    <!-- INTERFAZ DE REDIRECCIÓN A LA API OFICIAL INTEGRADA MEDIANTE JAVASCRIPT -->
+    <!-- INTERFAZ CORREGIDA AL 100% PARA APIS DE ESCRITORIO -->
     <script type="text/javascript">
         function lanzarEnlaceWhatsApp(servicio) {
             var telefono = "573174251419";
@@ -568,14 +554,14 @@
             var esDispositivoMovil = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
             if (esDispositivoMovil) {
-                // EN CELULAR: Despierta directamente la App nativa en segundo plano
+                // EN CELULAR: Abre la app de forma directa
                 var fallbackTimer = setTimeout(function() {
                     window.location.href = "https://whatsapp.com" + telefono + "&text=" + msgClean;
                 }, 400);
 
                 window.location.href = "whatsapp://send?phone=" + telefono + "&text=" + msgClean;
             } else {
-                // EN PC / ESCRITORIO: Abre de forma limpia la API oficial de confirmación
+                // EN PC / ESCRITORIO: CORREGIDO EL SUBDOMINIO DE LA API PARA INYECTAR EL CHAT PRIVADO
                 var urlAPI = "https://whatsapp.com" + telefono + "&text=" + msgClean;
                 window.open(urlAPI, '_blank');
             }
