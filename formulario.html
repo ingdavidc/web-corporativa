@@ -843,14 +843,23 @@
     
     formulario.submit = async function() {
         try {
-            // Recopilamos los datos justo antes de que el formulario se envíe
-            const data = Object.fromEntries(new FormData(formulario).entries());
-            data.timestamp = new Date(); // Añadimos la fecha de guardado
+            const formData = new FormData(formulario);
+            const data = {};
             
-            // Guardamos en Firebase Firestore
+            // EXTRACCIÓN SEGURA: Filtramos los datos para enviar solo texto a Firestore
+            // Las imágenes (Files) se ignoran para evitar el colapso de la base de datos
+            for (let [key, value] of formData.entries()) {
+                if (!(value instanceof File)) {
+                    data[key] = value;
+                }
+            }
+            
+            data.timestamp = new Date(); // Añadimos la fecha de guardado del sistema
+            
+            // Guardamos el texto y los checks en Firebase Firestore
             await addDoc(collection(db, "inspecciones"), data);
             
-            // Ejecutamos el submit original para que continúe tu flujo (recargar página)
+            // Ejecutamos el submit original para que continúe tu flujo (recargar la página o terminar)
             submitOriginal.call(formulario);
         } catch (error) {
             console.error("Error al guardar en Firebase:", error);
