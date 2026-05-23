@@ -830,37 +830,44 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // 1. Protección de ruta (Redirige al login si no hay sesión activa)
+    // 1. Protección de ruta
     onAuthStateChanged(auth, (user) => { 
         if (!user) {
             window.location.href = "index.html"; 
         }
     });
 
-    // 2. Interceptar la función submit() nativa que usa tu modal
+    // 2. Interceptar el envío del formulario (al hacer clic en los botones del modal)
     const formulario = document.getElementById('formularioAuditoria');
-    const submitOriginal = formulario.submit;
     
     formulario.submit = async function() {
         try {
+            // A. Extraer los datos ignorando las imágenes para que Firestore no falle
             const formData = new FormData(formulario);
             const data = {};
-            
-            // EXTRACCIÓN SEGURA: Filtramos los datos para enviar solo texto a Firestore
-            // Las imágenes (Files) se ignoran para evitar el colapso de la base de datos
             for (let [key, value] of formData.entries()) {
                 if (!(value instanceof File)) {
                     data[key] = value;
                 }
             }
+            data.timestamp = new Date(); 
             
-            data.timestamp = new Date(); // Añadimos la fecha de guardado del sistema
-            
-            // Guardamos el texto y los checks en Firebase Firestore
+            // B. Guardar texto y checkboxes en la base de datos
             await addDoc(collection(db, "inspecciones"), data);
             
-            // Ejecutamos el submit original para que continúe tu flujo (recargar la página o terminar)
-            submitOriginal.call(formulario);
+            // C. LEER LA DECISIÓN DEL MODAL Y REDIRIGIR
+            const accion = document.getElementById('accion_post_guardado').value;
+            
+            if (accion === 'terminar_jornada') {
+                // Si eligió terminar, vamos a la página de status
+                window.location.href = "status.html"; 
+            } else {
+                // Si eligió siguiente punto ('continuar_punto'), recargamos la página. 
+                // Esto limpia el formulario para uno nuevo, y tu script original 
+                // actualizará el número de registro automáticamente en +1.
+                window.location.reload(); 
+            }
+            
         } catch (error) {
             console.error("Error al guardar en Firebase:", error);
             alert("Hubo un error al guardar en la base de datos. Verifica la consola.");
