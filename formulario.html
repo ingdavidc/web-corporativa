@@ -835,24 +835,13 @@
         if (!user) window.location.href = "index.html"; 
     });
 
-    // 2. CLONACIÓN DE BOTONES: Desconectamos la orden original que causaba el fallo
-    const oldBtnContinuar = document.getElementById('btnContinuarPunto');
-    const newBtnContinuar = oldBtnContinuar.cloneNode(true);
-    oldBtnContinuar.parentNode.replaceChild(newBtnContinuar, oldBtnContinuar);
-
-    const oldBtnTerminar = document.getElementById('btnTerminarJornada');
-    const newBtnTerminar = oldBtnTerminar.cloneNode(true);
-    oldBtnTerminar.parentNode.replaceChild(newBtnTerminar, oldBtnTerminar);
-
     const formulario = document.getElementById('formularioAuditoria');
-    const modal = document.getElementById('modalDecision');
 
-    // 3. Función unificada (Guarda en BD -> Sube Contador -> Redirige)
-    async function guardarYRedirigir(accion) {
-        modal.style.display = 'none'; // Ocultar modal para evitar doble clic
-
+    // 2. REEMPLAZO DEL SUBMIT FÍSICO
+    // Cuando tu script original llama a "formulario.submit()", entraremos aquí en lugar de colapsar la página web.
+    formulario.submit = async function() {
         try {
-            // A. Extraemos datos (ignorando las fotos para evitar el bloqueo)
+            // A. Extraemos los datos filtrando los archivos de fotos para no bloquear la base de datos
             const formData = new FormData(formulario);
             const data = {};
             for (let [key, value] of formData.entries()) {
@@ -861,31 +850,25 @@
                 }
             }
             data.timestamp = new Date();
-            data.accion_elegida = accion;
 
-            // B. Guardamos en Firebase
+            // B. Guardamos en Firebase Firestore
             await addDoc(collection(db, "inspecciones"), data);
 
-            // C. Mantenemos tu lógica original del contador intacta
-            let contadorActual = parseInt(localStorage.getItem('dc_telematica_contador')) || 1;
-            localStorage.setItem('dc_telematica_contador', contadorActual + 1);
+            // C. LECTURA DE ACCIÓN Y REDIRECCIONAMIENTO LIMPIO
+            // Tu script original ya se encargó de subir el número del contador en este punto
+            const accion = document.getElementById('accion_post_guardado').value;
 
-            // D. Redirección infalible
             if (accion === 'terminar_jornada') {
                 window.location.href = "status.html";
             } else {
-                window.location.reload();
+                // window.location.pathname recarga la página limpiamente eliminando el "#" que causaba el error
+                window.location.href = window.location.pathname; 
             }
 
         } catch (error) {
-            console.error("Error Firebase:", error);
-            alert("Hubo un error al guardar en la base de datos.");
+            console.error("Error al guardar en Firebase:", error);
+            alert("Error de conexión al guardar. Verifica tu internet.");
         }
-    }
-
-    // 4. Conectamos los nuevos botones a la función maestra
-    newBtnContinuar.addEventListener('click', () => guardarYRedirigir('continuar_punto'));
-    newBtnTerminar.addEventListener('click', () => guardarYRedirigir('terminar_jornada'));
+    };
 </script>
-
 ```
