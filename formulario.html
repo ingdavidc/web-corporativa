@@ -830,49 +830,47 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // 1. Protección de ruta
+    // 1. Protección de ruta (Redirige al index si no hay técnico logueado)
     onAuthStateChanged(auth, (user) => { 
         if (!user) {
             window.location.href = "index.html"; 
         }
     });
 
-    // 2. Interceptar de forma global y segura el submit() que envía tu función original
-    HTMLFormElement.prototype.submit = async function() {
-        // Solo afectamos a tu formulario de auditoría
-        if (this.id === 'formularioAuditoria') {
-            try {
-                // Extraer datos ignorando imágenes para que la BD no colapse
-                const formData = new FormData(this);
-                const data = {};
-                for (let [key, value] of formData.entries()) {
-                    if (!(value instanceof File)) {
-                        data[key] = value;
-                    }
+    // 2. Interceptar la función submit() que ejecuta tu modal al elegir una opción
+    const formulario = document.getElementById('formularioAuditoria');
+    
+    formulario.submit = async function() {
+        try {
+            // A. Extraemos los datos filtrando las imágenes para evitar el colapso de Firestore
+            const formData = new FormData(formulario);
+            const data = {};
+            for (let [key, value] of formData.entries()) {
+                if (!(value instanceof File)) {
+                    data[key] = value;
                 }
-                data.timestamp = new Date(); 
-                
-                // Guardar en la base de datos
-                await addDoc(collection(db, "inspecciones"), data);
-                
-                // LEER LA ACCIÓN DEL MODAL Y REDIRIGIR
-                const accion = document.getElementById('accion_post_guardado').value;
-                
-                if (accion === 'terminar_jornada') {
-                    window.location.href = "status.html"; 
-                } else {
-                    // Para "continuar_punto", recargamos la página limpia 
-                    // (tu código original ya se encargó de subir el contador de Registro +1)
-                    window.location.reload(); 
-                }
-                
-            } catch (error) {
-                console.error("Error al guardar en Firebase:", error);
-                alert("Hubo un error al guardar en la base de datos. Verifica la consola.");
             }
-        } else {
-            // Si hay otro formulario, que funcione normal
-            Object.getPrototypeOf(this).submit.call(this);
+            data.timestamp = new Date(); 
+            
+            // B. Guardamos los datos de texto y checks en la base de datos
+            await addDoc(collection(db, "inspecciones"), data);
+            
+            // C. LECTURA DE ACCIÓN Y REDIRECCIONAMIENTO
+            const accion = document.getElementById('accion_post_guardado').value;
+            
+            if (accion === 'terminar_jornada') {
+                // Sale del formulario y va al panel de estado
+                window.location.href = "status.html"; 
+            } else if (accion === 'continuar_punto') {
+                // Recarga la página limpia (tu código original ya se encarga de subir el Registro +1)
+                window.location.reload(); 
+            }
+            // (Nota: La opción "Cancelar y revisar" es manejada por tu código original 
+            // ocultando el modal, por lo que nunca ejecuta este bloque y se queda en el formulario)
+            
+        } catch (error) {
+            console.error("Error al guardar en Firebase:", error);
+            alert("Hubo un error al guardar en la base de datos. Verifica la consola.");
         }
     };
 </script>
