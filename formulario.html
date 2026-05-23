@@ -3,72 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auditoría - DC Telemática</title>
+    <title>Auditoría DC Telemática</title>
     <style>
-        body { font-family: sans-serif; background-color: #f4f7f9; color: #333; padding: 20px; }
-        .container { max-width: 650px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .header-logo { text-align: center; margin-bottom: 20px; }
-        .header-logo img { width: 150px; }
-        h1, h2 { color: #1a237e; border-bottom: 2px solid #e0e0e0; padding-bottom: 5px; font-size: 1.2em; margin-top: 25px; }
-        input[type="text"], input[type="number"] { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        .checkbox-group { border: 1px solid #eee; padding: 15px; border-radius: 5px; margin: 10px 0; }
-        .photo-box { border: 2px dashed #ccc; padding: 20px; text-align: center; margin: 10px 0; cursor: pointer; color: #777; }
-        button { width: 100%; padding: 15px; background: #283593; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        body { font-family: sans-serif; background: #f4f7f9; padding: 20px; line-height: 1.6; }
+        .container { max-width: 600px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1, h2 { color: #1a237e; border-bottom: 1px solid #ddd; padding-bottom: 5px; font-size: 1.2em; margin-top: 20px; }
+        label { display: block; margin-top: 10px; font-weight: bold; font-size: 0.9em; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .box { border: 1px solid #eee; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        button { width: 100%; padding: 15px; background: #283593; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; margin-top: 20px; cursor: pointer; }
     </style>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        
-        const firebaseConfig = {
+        const app = initializeApp({
             apiKey: "AIzaSyAuJtE7VKOm1wG5BEd_pde8_9aDaq33j8E",
             authDomain: "dc-telematica-auditoria.firebaseapp.com",
-            projectId: "dc-telematica-auditoria",
-            storageBucket: "dc-telematica-auditoria.firebasestorage.app",
-            messagingSenderId: "1052355352106",
-            appId: "1:1052355352106:web:8d9a81c06959bda325d553"
-        };
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        onAuthStateChanged(auth, (user) => {
-            if (!user) window.location.href = "index.html";
+            projectId: "dc-telematica-auditoria"
         });
+        onAuthStateChanged(getAuth(app), (user) => { if (!user) window.location.href = "index.html"; });
     </script>
 </head>
 <body>
-
 <div class="container">
-    <div class="header-logo"><img src="dc_telematica.png" alt="DC Telemática"></div>
     <div style="text-align:center; font-weight:bold; color:#1a237e;">CONSULTORÍA HOSPITAL SAN VICENTE DE ARAUCA E.S.E.</div>
-    
     <form id="formularioAuditoria">
-        <h2>1. Identificación del Punto</h2>
-        <label>ID del Punto de Red:</label>
-        <input type="text" placeholder="Ej. Nodo A, P-01...">
-        <label>Ubicación Física:</label>
-        <input type="text" placeholder="Ej. Piso 2, Oficina Contabilidad...">
-
-        <h2>2. Estado Físico y Estructural</h2>
-        <div class="checkbox-group">
-            <label><input type="checkbox"> Buen estado general</label><br>
-            <label><input type="checkbox"> Faceplate roto o suelto</label><br>
-            <label><input type="checkbox"> Pines oxidados o doblados</label>
+        <h2>1. Identificación</h2>
+        <label>ID del Punto de Red:</label> <input type="text">
+        <label>Ubicación Física:</label> <input type="text">
+        
+        <h2>2. Estado Físico</h2>
+        <div class="box">
+            <label><input type="checkbox"> Buen estado general</label>
+            <label><input type="checkbox"> Faceplate roto</label>
+            <label><input type="checkbox"> Pines oxidados</label>
         </div>
 
-        <h2>3. Trazabilidad a Cuarto de Equipos</h2>
-        <input type="number" placeholder="Cantidad de Switches">
-        <input type="text" placeholder="Nombre/IP Switch Acceso">
-        <input type="text" placeholder="Marca">
-        <input type="text" placeholder="Referencia">
+        <h2>3. Trazabilidad Switch</h2>
+        <label>Nombre/IP Switch:</label> <input type="text">
+        <label>Marca:</label> <input type="text">
+        
+        <h2>4. Conectividad y Capa Lógica</h2>
+        <div class="box">
+            <label><input type="checkbox"> Enlace estable</label>
+            <label><input type="checkbox"> Enlace intermitente</label>
+        </div>
 
         <h2>5. Registro Fotográfico</h2>
-        <div class="photo-box">📷 Tomar Foto</div>
-        <div class="photo-box">📷 Tomar Foto</div>
+        <div class="box" style="text-align:center;">📷 Tomar Foto 1</div>
+        <div class="box" style="text-align:center;">📷 Tomar Foto 2</div>
 
         <button type="button">Guardar Inspección</button>
     </form>
 </div>
-
 </body>
 </html>
