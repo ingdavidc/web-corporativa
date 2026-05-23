@@ -3,13 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auditoría de Puntos de Red - DC Telemática</title>
+    <title>Auditoría - DC Telemática</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f7f9; color: #333; padding: 20px; }
+        .container { max-width: 650px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header-logo { text-align: center; margin-bottom: 20px; }
+        .header-logo img { width: 150px; }
+        h1, h2 { color: #1a237e; border-bottom: 2px solid #e0e0e0; padding-bottom: 5px; font-size: 1.2em; margin-top: 25px; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .checkbox-group { border: 1px solid #eee; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .photo-box { border: 2px dashed #ccc; padding: 20px; text-align: center; margin: 10px 0; cursor: pointer; color: #777; }
+        button { width: 100%; padding: 15px; background: #283593; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+    </style>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
-
+        
         const firebaseConfig = {
             apiKey: "AIzaSyAuJtE7VKOm1wG5BEd_pde8_9aDaq33j8E",
             authDomain: "dc-telematica-auditoria.firebaseapp.com",
@@ -20,145 +30,45 @@
         };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
 
-        // Protección de seguridad
         onAuthStateChanged(auth, (user) => {
             if (!user) window.location.href = "index.html";
         });
-
-        // Hacer las funciones de guardado globales para el botón
-        window.guardarEnNube = async (accion) => {
-            const formulario = document.getElementById('formularioAuditoria');
-            const btn = document.getElementById('btn_guardar_principal');
-            btn.disabled = true;
-            btn.innerText = "Guardando...";
-
-            try {
-                const formData = new FormData(formulario);
-                const dataBase = Object.fromEntries(formData.entries());
-                const puntoId = dataBase.punto_id || `PUNTO_${Date.now()}`;
-
-                let urlsFotos = [];
-                for (let i = 1; i <= 3; i++) {
-                    const archivo = document.getElementById(`foto_${i}`).files[0];
-                    if (archivo) {
-                        const storageRef = ref(storage, `inspecciones/${puntoId}_foto${i}_${Date.now()}.jpg`);
-                        await uploadBytes(storageRef, archivo);
-                        urlsFotos.push(await getDownloadURL(storageRef));
-                    }
-                }
-
-                const doc = {
-                    registro: dataBase.registro_num,
-                    fecha: dataBase.fecha_hora,
-                    timestamp: serverTimestamp(),
-                    punto_id: dataBase.punto_id,
-                    ubicacion: dataBase.ubicacion,
-                    estado_fisico: Array.from(document.querySelectorAll('input[name="fisico"]:checked')).map(e=>e.value),
-                    canalizacion: {
-                        tipo: Array.from(document.querySelectorAll('input[name="tipo_canalizacion"]:checked')).map(e=>e.value),
-                        otro: dataBase.otro_canalizacion_texto || "",
-                        estado: Array.from(document.querySelectorAll('input[name="est_canalizacion"]:checked')).map(e=>e.value)
-                    },
-                    switches_ruta: [],
-                    fotos: urlsFotos
-                };
-
-                let numSw = parseInt(dataBase.num_switches) || 1;
-                for (let i = 1; i <= numSw; i++) {
-                    doc.switches_ruta.push({
-                        nivel: i,
-                        marca: dataBase[`switch_marca_${i}`] || "",
-                        referencia: dataBase[`switch_ref_${i}`] || "",
-                        cable: document.querySelector(`input[name="switch_cable_${i}"]:checked`)?.value || ""
-                    });
-                }
-
-                await addDoc(collection(db, "inspecciones_arauca"), doc);
-                
-                localStorage.setItem('dc_telematica_contador', parseInt(dataBase.registro_num) + 1);
-                
-                if (accion === 'continuar') window.location.reload();
-                else document.body.innerHTML = "<h1>Jornada Finalizada. Datos guardados correctamente.</h1>";
-
-            } catch (err) {
-                console.error(err);
-                alert("Error al guardar en la nube.");
-                btn.disabled = false;
-            }
-        };
     </script>
-    <style>
-        :root { --brand-blue: #333F7A; --brand-red: #E53336; --bg-color: #f4f6f9; }
-        body { font-family: sans-serif; background: var(--bg-color); padding: 20px; }
-        .container { max-width: 600px; margin: auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .consultoria-header { text-align: center; color: var(--brand-blue); font-weight: bold; margin-bottom: 20px; text-transform: uppercase; }
-        .form-group { margin-bottom: 15px; }
-        .checkbox-container { background: #f9f9f9; padding: 10px; border-radius: 5px; }
-        .photo-square { height: 150px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .hidden-input { display: none; }
-        button { width: 100%; padding: 15px; background: var(--brand-blue); color: #fff; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
-        .modal-content { background: white; padding: 20px; border-radius: 10px; text-align: center; }
-    </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="consultoria-header">Consultoría Hospital San Vicente de Arauca E.S.E.</div>
-    <form id="formularioAuditoria" onsubmit="event.preventDefault(); document.getElementById('modalDecision').style.display='flex';">
-        <div class="meta-box" style="display:flex; gap:10px;">
-            <input type="text" id="registro_num" name="registro_num" readonly style="width:30%">
-            <input type="text" id="fecha_hora" name="fecha_hora" readonly style="width:70%">
+    <div class="header-logo"><img src="dc_telematica.png" alt="DC Telemática"></div>
+    <div style="text-align:center; font-weight:bold; color:#1a237e;">CONSULTORÍA HOSPITAL SAN VICENTE DE ARAUCA E.S.E.</div>
+    
+    <form id="formularioAuditoria">
+        <h2>1. Identificación del Punto</h2>
+        <label>ID del Punto de Red:</label>
+        <input type="text" placeholder="Ej. Nodo A, P-01...">
+        <label>Ubicación Física:</label>
+        <input type="text" placeholder="Ej. Piso 2, Oficina Contabilidad...">
+
+        <h2>2. Estado Físico y Estructural</h2>
+        <div class="checkbox-group">
+            <label><input type="checkbox"> Buen estado general</label><br>
+            <label><input type="checkbox"> Faceplate roto o suelto</label><br>
+            <label><input type="checkbox"> Pines oxidados o doblados</label>
         </div>
 
-        <h2>1. Identificación</h2>
-        <input type="text" name="punto_id" placeholder="ID Punto" required>
-        <input type="text" name="ubicacion" placeholder="Ubicación">
-
-        <h2>2. Estado Físico</h2>
-        <div class="checkbox-container">
-            <input type="checkbox" name="fisico" value="buen_estado"> <label style="display:inline">Buen estado</label><br>
-            <input type="checkbox" name="fisico" value="roto"> <label style="display:inline">Faceplate roto</label>
-        </div>
-
-        <h2>3. Trazabilidad Switch</h2>
-        <input type="number" id="num_switches" name="num_switches" min="1" value="1">
-        <div id="dynamic-switches-container"></div>
+        <h2>3. Trazabilidad a Cuarto de Equipos</h2>
+        <input type="number" placeholder="Cantidad de Switches">
+        <input type="text" placeholder="Nombre/IP Switch Acceso">
+        <input type="text" placeholder="Marca">
+        <input type="text" placeholder="Referencia">
 
         <h2>5. Registro Fotográfico</h2>
-        <div class="photo-grid">
-            <label for="foto_1" class="photo-square" id="preview_1"><span>📷 Foto 1</span></label>
-            <input type="file" id="foto_1" name="foto_1" accept="image/*" capture="environment" class="hidden-input">
-        </div>
+        <div class="photo-box">📷 Tomar Foto</div>
+        <div class="photo-box">📷 Tomar Foto</div>
 
-        <button type="submit" id="btn_guardar_principal">Guardar Inspección</button>
+        <button type="button">Guardar Inspección</button>
     </form>
 </div>
 
-<div class="modal-overlay" id="modalDecision">
-    <div class="modal-content">
-        <h3>¿Continuar?</h3>
-        <button onclick="guardarEnNube('continuar')">Siguiente Punto</button>
-        <button onclick="guardarEnNube('terminar')" style="background:var(--brand-red)">Terminar Jornada</button>
-    </div>
-</div>
-
-<script>
-    // Inicializar fecha y registro
-    document.getElementById('fecha_hora').value = new Date().toLocaleString();
-    document.getElementById('registro_num').value = localStorage.getItem('dc_telematica_contador') || 1;
-
-    // Generar campos dinámicos de switch
-    document.getElementById('num_switches').addEventListener('input', function() {
-        let container = document.getElementById('dynamic-switches-container');
-        container.innerHTML = '';
-        for(let i=1; i<=this.value; i++) {
-            container.innerHTML += `<div><input type="text" name="switch_marca_${i}" placeholder="Marca Switch ${i}"></div>`;
-        }
-    });
-</script>
 </body>
 </html>
