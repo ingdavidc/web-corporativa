@@ -19,7 +19,8 @@
             projectId: "dc-telematica-auditoria",
             storageBucket: "dc-telematica-auditoria.firebasestorage.app",
             messagingSenderId: "1052355352106",
-            appId: "1:1052355352106:web:8d9a81c06959bda325d553"
+            appId: "1:1052355352106:web:8d9a81c06959bda325d553",
+            measurementId: "G-XBXH4DEMBD"
         };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -62,12 +63,13 @@
             try {
                 // Validación con Firebase
                 await signInWithEmailAndPassword(auth, email, pass);
+                console.log("Autenticación exitosa. Redirigiendo a:", window.rolSeleccionado);
                 
                 // Redirección condicionada al rol seleccionado
                 if (window.rolSeleccionado === 'tecnico') {
-                    window.location.href = "formulario.html";
+                    window.location.assign("formulario.html");
                 } else {
-                    window.location.href = "panel.html";
+                    window.location.assign("panel.html");
                 }
             } catch(e) {
                 alert("Acceso denegado: Credenciales incorrectas.");
