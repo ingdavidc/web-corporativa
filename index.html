@@ -43,7 +43,10 @@
             document.getElementById('btnRoleIngeniero').classList.toggle('active', rol === 'ingeniero');
         };
 
-        window.ejecutarLogin = async () => {
+        window.ejecutarLogin = async (event) => {
+            // CORRECCIÓN: Prevenimos la recarga automática si el usuario presiona "Enter"
+            if(event) event.preventDefault();
+
             const email = document.getElementById('loginEmail').value;
             const pass = document.getElementById('loginPass').value;
             const btnSubmit = document.getElementById('btnSubmitLogin');
@@ -231,7 +234,7 @@
         <div class="footer-terminal">&copy; 2026 DC TELEMÁTICA. ALL CHANNELS OPERATIONAL.</div>
     </footer>
 
-    <!-- MODAL DE ACCESO CORPORATIVO -->
+    <!-- MODAL DE ACCESO CORPORATIVO CON FORMULARIO SEGURO -->
     <div class="login-modal-overlay" id="loginModal">
         <div class="login-modal-content">
             <h3>Acceso Corporativo</h3>
@@ -241,10 +244,12 @@
                 <button type="button" class="role-btn" id="btnRoleIngeniero" onclick="seleccionarRol('ingeniero')">Ingeniero</button>
             </div>
             
-            <input type="email" id="loginEmail" class="login-input" placeholder="Correo electrónico">
-            <input type="password" id="loginPass" class="login-input" placeholder="Contraseña">
-            
-            <button class="login-submit" id="btnSubmitLogin" onclick="ejecutarLogin()">Ingresar</button>
+            <form id="corporativoLoginForm" onsubmit="ejecutarLogin(event)">
+                <input type="email" id="loginEmail" class="login-input" placeholder="Correo electrónico" required>
+                <input type="password" id="loginPass" class="login-input" placeholder="Contraseña" required>
+                
+                <button type="submit" class="login-submit" id="btnSubmitLogin">Ingresar</button>
+            </form>
             <div class="login-cancel" onclick="cerrarLogin()">Cancelar</div>
         </div>
     </div>
