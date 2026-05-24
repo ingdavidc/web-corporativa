@@ -339,7 +339,8 @@
 
 <div class="container">
     <div class="logo-container">
-        <img src="logo.png" alt="DC Telemática">
+        <!-- Puedes cambiar la URL por tu logo oficial -->
+        <img src="dc_telematica.png" alt="DC Telemática">
     </div>
 
     <div class="consultoria-header">
@@ -518,7 +519,7 @@
             </div>
 
             <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <input type="text" id="patch_marca" name="patch_marca" placeholder="Marca (Ej. Panduit, Nexxt, Genérico...)">
+                <input type="text" id="patch_marca" name="patch_marca" placeholder="Marca (Ej. Panduit, Nexxt...)">
                 <input type="text" id="patch_longitud" name="patch_longitud" placeholder="Longitud (Ej. 1m, 2m...)">
             </div>
         </div>
@@ -531,7 +532,8 @@
         </div>
 
         <div id="dynamic-switches-container">
-            </div>
+            <!-- Switches generados por JS -->
+        </div>
 
         <div class="form-group" style="margin-top: 20px;">
             <label for="switch_port">Puerto del Switch de Acceso / Patch Panel:</label>
@@ -619,6 +621,7 @@
     </form>
 </div>
 
+<!-- Modal de Confirmación -->
 <div class="modal-overlay" id="modalDecision">
     <div class="modal-content">
         <h3>Inspección Completada</h3>
@@ -638,164 +641,133 @@
     </div>
 </div>
 
-<script>
-    // --- Lógica de la Fecha y el Contador ---
-    document.addEventListener('DOMContentLoaded', function() {
-        const campoFecha = document.getElementById('fecha_hora');
-        const ahora = new Date();
-        const opcionesFecha = { 
-            year: 'numeric', month: '2-digit', day: '2-digit', 
-            hour: '2-digit', minute: '2-digit', second: '2-digit', 
-            hour12: true 
-        };
-        campoFecha.value = ahora.toLocaleString('es-CO', opcionesFecha);
+<!-- ÚNICO SCRIPT: Todo integrado como módulo para compartir el alcance de Firebase -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-        const campoRegistro = document.getElementById('registro_num');
-        let contadorActual = localStorage.getItem('dc_telematica_contador');
-        
-        if (!contadorActual) {
-            contadorActual = 1;
-        } else {
-            contadorActual = parseInt(contadorActual);
-        }
-        campoRegistro.value = contadorActual;
-    });
+    const firebaseConfig = {
+        apiKey: "AIzaSyAuJtE7VKOm1wG5BEd_pde8_9aDaq33j8E",
+        authDomain: "dc-telematica-auditoria.firebaseapp.com",
+        projectId: "dc-telematica-auditoria",
+        storageBucket: "dc-telematica-auditoria.firebasestorage.app",
+        messagingSenderId: "1052355352106",
+        appId: "1:1052355352106:web:8d9a81c06959bda325d553"
+    };
 
-    // --- NUEVO: Lógica del Modal al Guardar ---
-    document.addEventListener('DOMContentLoaded', function() {
-        const formulario = document.getElementById('formularioAuditoria');
-        const modal = document.getElementById('modalDecision');
-        const btnContinuarPunto = document.getElementById('btnContinuarPunto');
-        const btnTerminarJornada = document.getElementById('btnTerminarJornada');
-        const btnCancelarModal = document.getElementById('btnCancelarModal');
-        const inputAccion = document.getElementById('accion_post_guardado');
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-        // Interceptamos el envío del formulario
-        formulario.addEventListener('submit', function(e) {
-            e.preventDefault(); // Detenemos el envío automático
-            modal.style.display = 'flex'; // Mostramos el modal
-        });
-
-        // Ocultar modal si le da a cancelar
-        btnCancelarModal.addEventListener('click', function() {
-            modal.style.display = 'none';
-        });
-
-        // Función para procesar el guardado definitivo
-        function procesarGuardado(accion) {
-            inputAccion.value = accion; // Le decimos al sistema qué eligió (continuar o terminar)
-            modal.style.display = 'none';
-            
-            // Incrementamos el contador para la próxima vez
-            let contadorActual = parseInt(localStorage.getItem('dc_telematica_contador')) || 1;
-            localStorage.setItem('dc_telematica_contador', contadorActual + 1);
-            
-            // Forzamos el envío físico del formulario
-            formulario.submit();
-        }
-
-        // Acciones de los botones del modal
-        btnContinuarPunto.addEventListener('click', function() {
-            procesarGuardado('continuar_punto');
-        });
-
-        btnTerminarJornada.addEventListener('click', function() {
-            procesarGuardado('terminar_jornada');
-        });
-    });
-
-    // --- Lógica de la Sección 2 (Mostrar/Ocultar "Otros" en Canalización) ---
-    document.addEventListener('DOMContentLoaded', function() {
-        const checkOtros = document.getElementById('tipo_otros');
-        const inputOtrosTexto = document.getElementById('otro_canalizacion_texto');
-
-        checkOtros.addEventListener('change', function() {
-            if (this.checked) {
-                inputOtrosTexto.style.display = 'block';
-                inputOtrosTexto.focus(); 
+    // 1. Protección de ruta robusta contra entornos de previsualización (iframes, local, about:srcdoc)
+    onAuthStateChanged(auth, (user) => { 
+        if (!user) {
+            // Previene el error de "not a valid URL" si se ejecuta fuera de un servidor o dominio válido
+            if (window.location.hostname || window.location.protocol.startsWith('http')) {
+                window.location.href = "index.html"; 
             } else {
-                inputOtrosTexto.style.display = 'none';
-                inputOtrosTexto.value = ''; 
-            }
-        });
-    });
-
-    // --- Lógica de la Sección 3 (Switches Dinámicos) ---
-    document.addEventListener('DOMContentLoaded', function() {
-        const inputNumSwitches = document.getElementById('num_switches');
-        const container = document.getElementById('dynamic-switches-container');
-
-        function renderSwitchFields() {
-            let num = parseInt(inputNumSwitches.value);
-            if (isNaN(num) || num < 1) {
-                num = 1;
-            }
-
-            container.innerHTML = '';
-
-            for (let i = 1; i <= num; i++) {
-                const isAccessSwitch = (i === 1);
-                const titleText = isAccessSwitch ? 'Switch 1 (Acceso / Borde)' : `Switch ${i} (Intermedio / Core)`;
-                
-                const switchBlock = document.createElement('div');
-                switchBlock.className = 'switch-card';
-                
-                let htmlContent = `<span class="switch-card-title">${titleText}</span>`;
-                
-                if (isAccessSwitch) {
-                    htmlContent += `
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label>Nombre o IP del Switch de Acceso:</label>
-                        <input type="text" name="switch_nombre_${i}" placeholder="Ej. SW-Piso2 o 192.168.10.5">
-                    </div>`;
-                }
-                
-                htmlContent += `
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label>Marca:</label>
-                    <input type="text" name="switch_marca_${i}" placeholder="Ej. Cisco, Aruba, Omada...">
-                </div>
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label>Referencia / Modelo:</label>
-                    <input type="text" name="switch_ref_${i}" placeholder="Ej. Catalyst 2960-X, SG350...">
-                </div>`;
-
-                htmlContent += `
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label>Tipo de Cable / Medio de Enlace:</label>
-                    <div class="checkbox-container" style="background-color: #ffffff; margin-bottom: 0;">
-                        <div class="checkbox-group">
-                            <input type="radio" id="cable_fo_${i}" name="switch_cable_${i}" value="FO">
-                            <label for="cable_fo_${i}">Fibra Óptica (FO)</label>
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="radio" id="cable_6_${i}" name="switch_cable_${i}" value="6">
-                            <label for="cable_6_${i}">Categoría 6</label>
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="radio" id="cable_6a_${i}" name="switch_cable_${i}" value="6A">
-                            <label for="cable_6a_${i}">Categoría 6A</label>
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="radio" id="cable_5e_${i}" name="switch_cable_${i}" value="5E">
-                            <label for="cable_5e_${i}">Categoría 5e</label>
-                        </div>
-                    </div>
-                </div>`;
-                
-                switchBlock.innerHTML = htmlContent;
-                container.appendChild(switchBlock);
+                console.warn("Usuario no autenticado. Redirección bloqueada por entorno de vista previa local.");
             }
         }
-
-        inputNumSwitches.addEventListener('input', renderSwitchFields);
-        renderSwitchFields();
     });
 
-    // --- Lógica de la Sección 5 (Previsualización de Fotos) ---
-    const photoInputs = ['foto_1', 'foto_2', 'foto_3'];
+    // ==========================================
+    // LÓGICA DE INTERFAZ Y FORMULARIO
+    // ==========================================
     
-    photoInputs.forEach((id, index) => {
+    // Configuración de Fecha y Contador
+    const campoFecha = document.getElementById('fecha_hora');
+    const ahora = new Date();
+    const opcionesFecha = { 
+        year: 'numeric', month: '2-digit', day: '2-digit', 
+        hour: '2-digit', minute: '2-digit', second: '2-digit', 
+        hour12: true 
+    };
+    campoFecha.value = ahora.toLocaleString('es-CO', opcionesFecha);
+
+    const campoRegistro = document.getElementById('registro_num');
+    let contadorActual = localStorage.getItem('dc_telematica_contador');
+    contadorActual = !contadorActual ? 1 : parseInt(contadorActual);
+    campoRegistro.value = contadorActual;
+
+    // Lógica Mostrar/Ocultar "Otros" en Canalización
+    const checkOtros = document.getElementById('tipo_otros');
+    const inputOtrosTexto = document.getElementById('otro_canalizacion_texto');
+    checkOtros.addEventListener('change', function() {
+        if (this.checked) {
+            inputOtrosTexto.style.display = 'block';
+            inputOtrosTexto.focus(); 
+        } else {
+            inputOtrosTexto.style.display = 'none';
+            inputOtrosTexto.value = ''; 
+        }
+    });
+
+    // Lógica Switches Dinámicos
+    const inputNumSwitches = document.getElementById('num_switches');
+    const containerSwitches = document.getElementById('dynamic-switches-container');
+
+    function renderSwitchFields() {
+        let num = parseInt(inputNumSwitches.value);
+        if (isNaN(num) || num < 1) num = 1;
+        containerSwitches.innerHTML = '';
+
+        for (let i = 1; i <= num; i++) {
+            const isAccessSwitch = (i === 1);
+            const titleText = isAccessSwitch ? 'Switch 1 (Acceso / Borde)' : `Switch ${i} (Intermedio / Core)`;
+            const switchBlock = document.createElement('div');
+            switchBlock.className = 'switch-card';
+            
+            let htmlContent = `<span class="switch-card-title">${titleText}</span>`;
+            if (isAccessSwitch) {
+                htmlContent += `
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Nombre o IP del Switch de Acceso:</label>
+                    <input type="text" name="switch_nombre_${i}" placeholder="Ej. SW-Piso2 o 192.168.10.5">
+                </div>`;
+            }
+            
+            htmlContent += `
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label>Marca:</label>
+                <input type="text" name="switch_marca_${i}" placeholder="Ej. Cisco, Aruba, Omada...">
+            </div>
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label>Referencia / Modelo:</label>
+                <input type="text" name="switch_ref_${i}" placeholder="Ej. Catalyst 2960-X, SG350...">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>Tipo de Cable / Medio de Enlace:</label>
+                <div class="checkbox-container" style="background-color: #ffffff; margin-bottom: 0;">
+                    <div class="checkbox-group">
+                        <input type="radio" id="cable_fo_${i}" name="switch_cable_${i}" value="FO">
+                        <label for="cable_fo_${i}">Fibra Óptica (FO)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="radio" id="cable_6_${i}" name="switch_cable_${i}" value="6">
+                        <label for="cable_6_${i}">Categoría 6</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="radio" id="cable_6a_${i}" name="switch_cable_${i}" value="6A">
+                        <label for="cable_6a_${i}">Categoría 6A</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="radio" id="cable_5e_${i}" name="switch_cable_${i}" value="5E">
+                        <label for="cable_5e_${i}">Categoría 5e</label>
+                    </div>
+                </div>
+            </div>`;
+            
+            switchBlock.innerHTML = htmlContent;
+            containerSwitches.appendChild(switchBlock);
+        }
+    }
+    inputNumSwitches.addEventListener('input', renderSwitchFields);
+    renderSwitchFields();
+
+    // Previsualización de Fotos
+    ['foto_1', 'foto_2', 'foto_3'].forEach((id, index) => {
         const input = document.getElementById(id);
         const preview = document.getElementById('preview_' + (index + 1));
         const span = preview.querySelector('span');
@@ -813,62 +785,82 @@
             }
         });
     });
-</script>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    // ==========================================
+    // LÓGICA DEL MODAL Y FIREBASE
+    // ==========================================
+    const formulario = document.getElementById('formularioAuditoria');
+    const modal = document.getElementById('modalDecision');
+    const btnPrincipal = document.getElementById('btn_guardar_principal');
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyAuJtE7VKOm1wG5BEd_pde8_9aDaq33j8E",
-        authDomain: "dc-telematica-auditoria.firebaseapp.com",
-        projectId: "dc-telematica-auditoria"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    // 1. Protección de ruta
-    onAuthStateChanged(auth, (user) => { 
-        if (!user) window.location.href = "index.html"; 
+    // Al darle submit (validará los inputs nativos HTML) mostramos el modal
+    formulario.addEventListener('submit', function(e) {
+        e.preventDefault(); 
+        modal.style.display = 'flex'; 
     });
 
-    const formulario = document.getElementById('formularioAuditoria');
+    document.getElementById('btnCancelarModal').addEventListener('click', () => modal.style.display = 'none');
 
-    // 2. REEMPLAZO DEL SUBMIT FÍSICO
-    // Cuando tu script original llama a "formulario.submit()", entraremos aquí en lugar de colapsar la página web.
-    formulario.submit = async function() {
+    // Función segura para guardar en Firebase
+    async function guardarAuditoria(accion) {
+        document.getElementById('accion_post_guardado').value = accion;
+        modal.style.display = 'none';
+        
+        const textoOriginal = btnPrincipal.innerText;
+        btnPrincipal.innerText = "Guardando Datos...";
+        btnPrincipal.disabled = true;
+
         try {
-            // A. Extraemos los datos filtrando los archivos de fotos para no bloquear la base de datos
             const formData = new FormData(formulario);
             const data = {};
+            
             for (let [key, value] of formData.entries()) {
+                // Filtramos los archivos
                 if (!(value instanceof File)) {
-                    data[key] = value;
+                    if (data[key]) {
+                        if (!Array.isArray(data[key])) {
+                            data[key] = [data[key]];
+                        }
+                        data[key].push(value);
+                    } else {
+                        data[key] = value;
+                    }
                 }
             }
             data.timestamp = new Date();
 
-            // B. Guardamos en Firebase Firestore
+            // Guardamos el documento principal
             await addDoc(collection(db, "inspecciones"), data);
 
-            // C. LECTURA DE ACCIÓN Y REDIRECCIONAMIENTO LIMPIO
-            // Tu script original ya se encargó de subir el número del contador en este punto
-            const accion = document.getElementById('accion_post_guardado').value;
+            // Subimos el contador
+            localStorage.setItem('dc_telematica_contador', contadorActual + 1);
 
+            // Redireccionamiento limpio y corregido
             if (accion === 'terminar_jornada') {
-                window.location.href = "status.html";
+                if (window.location.hostname || window.location.protocol.startsWith('http')) {
+                    window.location.href = "index.html"; 
+                } else {
+                    alert("Inspección guardada. Jornada terminada (Simulado para vista previa).");
+                    window.location.reload(); 
+                }
             } else {
-                // window.location.pathname recarga la página limpiamente eliminando el "#" que causaba el error
-                window.location.href = window.location.pathname; 
+                // CORRECCIÓN PRINCIPAL: Se utiliza location.reload() en lugar de location.pathname
+                // Esto previene completamente el error de URL inválida en iframes y sandboxes.
+                window.location.reload(); 
             }
 
         } catch (error) {
             console.error("Error al guardar en Firebase:", error);
-            alert("Error de conexión al guardar. Verifica tu internet.");
+            alert("Error al guardar. Verifica tu conexión a internet.");
+            btnPrincipal.innerText = textoOriginal;
+            btnPrincipal.disabled = false;
         }
-    };
+    }
+
+    // Eventos de los botones de decisión del Modal
+    document.getElementById('btnContinuarPunto').addEventListener('click', () => guardarAuditoria('continuar_punto'));
+    document.getElementById('btnTerminarJornada').addEventListener('click', () => guardarAuditoria('terminar_jornada'));
+
 </script>
-```
+</body>
+</html>
