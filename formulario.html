@@ -43,27 +43,52 @@
         .logo-container img {
             max-width: 220px;
             height: auto;
-            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
         }
 
-        /* --- Animación Elegante para el Logo --- */
-        @keyframes elegantGlow {
-            0% { 
-                filter: drop-shadow(0 0 5px rgba(51, 63, 122, 0.1)); 
-                transform: scale(1); 
-            }
-            50% { 
-                filter: drop-shadow(0 0 25px rgba(51, 63, 122, 0.8)) drop-shadow(0 0 10px rgba(229, 51, 54, 0.4)); 
-                transform: scale(1.05); 
-            }
-            100% { 
-                filter: drop-shadow(0 0 5px rgba(51, 63, 122, 0.1)); 
-                transform: scale(1); 
-            }
+        /* --- Animación Elegante: Luz Giratoria por el Contorno --- */
+        .logo-frame {
+            position: relative;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            padding: 6px; /* Ancho del contorno de luz */
+            border-radius: 12px;
+            overflow: hidden;
+            z-index: 1;
         }
 
-        .logo-animating {
-            animation: elegantGlow 1.5s ease-in-out infinite;
+        .logo-frame::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(transparent, transparent, transparent, var(--brand-red), var(--brand-blue));
+            animation: rotateLight 1.5s linear infinite;
+            z-index: -2;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .logo-frame.active::before {
+            opacity: 1;
+        }
+
+        .logo-frame::after {
+            content: '';
+            position: absolute;
+            inset: 3px; /* Espacio para que la luz se asome */
+            background: #ffffff; /* Oculta el centro del gradiente */
+            border-radius: 9px;
+            z-index: -1;
+        }
+
+        @keyframes rotateLight {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* Estilo del encabezado para el hospital */
@@ -286,7 +311,7 @@
             transform: none;
         }
 
-        /* --- Estilos para la Ventana Modal de Confirmación --- */
+        /* --- Estilos para las Ventanas Modales --- */
         .modal-overlay {
             display: none; /* Oculto por defecto */
             position: fixed;
@@ -305,6 +330,12 @@
             width: 90%;
             max-width: 400px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .modal-content h3 {
@@ -318,6 +349,7 @@
             color: #555;
             margin-bottom: 25px;
             font-size: 1rem;
+            line-height: 1.5;
         }
 
         .modal-buttons {
@@ -369,8 +401,10 @@
 
 <div class="container">
     <div class="logo-container">
-        <!-- Logo principal con id para la animación -->
-        <img src="dc_telematica.png" alt="DC Telemática" id="main_logo">
+        <!-- Wrapper animado del logotipo -->
+        <div class="logo-frame" id="logo_wrapper">
+            <img src="dc_telematica.png" alt="DC Telemática" id="main_logo">
+        </div>
     </div>
 
     <div class="consultoria-header">
@@ -651,7 +685,7 @@
     </form>
 </div>
 
-<!-- Modal de Confirmación -->
+<!-- Modal 1: Decisión Inicial -->
 <div class="modal-overlay" id="modalDecision">
     <div class="modal-content">
         <h3>Inspección Completada</h3>
@@ -666,6 +700,20 @@
             </button>
             <button type="button" class="btn-cancel" id="btnCancelarModal">
                 Cancelar y revisar formulario
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: Despedida (¡Excelente Trabajo!) -->
+<div class="modal-overlay" id="modalDespedida">
+    <div class="modal-content">
+        <h3 style="color: var(--brand-blue); font-size: 1.5rem; margin-bottom: 10px;">¡Excelente Trabajo!</h3>
+        <p style="font-size: 1.05rem; color: #4a5568;">La inspección ha sido guardada con éxito.<br><br><strong>Gracias por tu esfuerzo y dedicación el día de hoy.</strong></p>
+        
+        <div class="modal-buttons" style="margin-top: 25px;">
+            <button type="button" class="btn-continue" id="btnCerrarSesion">
+                Cerrar Sesión / Volver
             </button>
         </div>
     </div>
@@ -815,35 +863,45 @@
     });
 
     // ==========================================
-    // LÓGICA DEL MODAL Y FIREBASE ANIMADO
+    // LÓGICA DE MODALES Y FIREBASE ANIMADO
     // ==========================================
     const formulario = document.getElementById('formularioAuditoria');
-    const modal = document.getElementById('modalDecision');
+    const modalDecision = document.getElementById('modalDecision');
+    const modalDespedida = document.getElementById('modalDespedida');
     const btnPrincipal = document.getElementById('btn_guardar_principal');
-    const logoImg = document.getElementById('main_logo');
+    const logoWrapper = document.getElementById('logo_wrapper');
 
-    // Mostrar modal
+    // Mostrar modal 1 (Decisión)
     formulario.addEventListener('submit', function(e) {
         e.preventDefault(); 
-        modal.style.display = 'flex'; 
+        modalDecision.style.display = 'flex'; 
     });
 
-    document.getElementById('btnCancelarModal').addEventListener('click', () => modal.style.display = 'none');
+    document.getElementById('btnCancelarModal').addEventListener('click', () => modalDecision.style.display = 'none');
+
+    // Acción del Modal 2 (Despedida) - Cerrar sesión / volver al index
+    document.getElementById('btnCerrarSesion').addEventListener('click', () => {
+        if (window.location.hostname || window.location.protocol.startsWith('http')) {
+            window.location.href = "index.html"; 
+        } else {
+            window.location.reload(); 
+        }
+    });
 
     // Función asíncrona fluida para guardar en Firebase
     async function guardarAuditoria(accion) {
         document.getElementById('accion_post_guardado').value = accion;
         
-        // 1. Cerramos el modal inmediatamente
-        modal.style.display = 'none';
+        // 1. Cerramos el modal inicial inmediatamente
+        modalDecision.style.display = 'none';
         
         // 2. Bloqueamos el botón y cambiamos el texto
         const textoOriginal = btnPrincipal.innerText;
         btnPrincipal.innerText = "Guardando Datos...";
         btnPrincipal.disabled = true;
 
-        // 3. Activamos la animación de resalte del logo
-        logoImg.classList.add('logo-animating');
+        // 3. Activamos la animación de la luz giratoria
+        logoWrapper.classList.add('active');
 
         try {
             const formData = new FormData(formulario);
@@ -870,61 +928,70 @@
             contadorActual++;
             localStorage.setItem('dc_telematica_contador', contadorActual);
 
-            // Damos un tiempo de respiro elegante para que el usuario vea la animación
+            // Damos un tiempo elegante para que el usuario vea la animación
             setTimeout(() => {
                 if (accion === 'terminar_jornada') {
-                    if (window.location.hostname || window.location.protocol.startsWith('http')) {
-                        window.location.href = "index.html"; 
-                    } else {
-                        btnPrincipal.innerText = "¡Jornada Terminada!";
-                        logoImg.classList.remove('logo-animating');
-                    }
+                    // Animación se apaga, botón cambia a Terminado
+                    logoWrapper.classList.remove('active');
+                    btnPrincipal.innerText = "¡Jornada Terminada!";
+                    
+                    // Mostrar el Modal de Agradecimiento
+                    modalDespedida.style.display = 'flex';
                 } else {
-                    // Si eligió siguiente punto: Limpiamos SIN recargar la página (Cero errores de URL)
+                    // Siguiente punto (Mantenemos la vista actual y limpiamos)
                     btnPrincipal.innerText = "¡Guardado Exitoso!";
                     
-                    // Esperamos 1.5 segundos para mostrar el éxito y luego limpiamos todo
+                    // Esperamos brevemente para mostrar éxito y luego limpiamos el formulario de forma segura
                     setTimeout(() => {
-                        formulario.reset();
-                        
-                        // Restauramos contador visual y fecha
-                        campoRegistro.value = contadorActual;
-                        campoFecha.value = new Date().toLocaleString('es-CO', opcionesFecha);
-                        
-                        // Reseteamos UI dinámica
-                        inputNumSwitches.value = 1;
-                        renderSwitchFields();
-                        document.getElementById('otro_canalizacion_texto').style.display = 'none';
+                        try {
+                            formulario.reset();
+                            
+                            // Restauramos el contador nuevo y la fecha
+                            campoRegistro.value = contadorActual;
+                            campoFecha.value = new Date().toLocaleString('es-CO', opcionesFecha);
+                            
+                            // Reseteamos UI dinámica (Canalización "Otros" y Switches)
+                            inputNumSwitches.value = 1;
+                            renderSwitchFields();
+                            const checkOtrosText = document.getElementById('otro_canalizacion_texto');
+                            if (checkOtrosText) checkOtrosText.style.display = 'none';
 
-                        ['preview_1', 'preview_2', 'preview_3'].forEach(id => {
-                            const prev = document.getElementById(id);
-                            prev.style.backgroundImage = 'none';
-                            prev.style.borderStyle = 'dashed';
-                            prev.querySelector('span').innerHTML = '📷 Tomar Foto';
-                        });
-
-                        // Desactivamos animaciones y restauramos el botón principal
-                        logoImg.classList.remove('logo-animating');
-                        btnPrincipal.innerText = textoOriginal;
-                        btnPrincipal.disabled = false;
-                        
-                        // Llevamos la pantalla hacia arriba elegantemente
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-
+                            // Limpiamos las previsualizaciones de fotos
+                            ['preview_1', 'preview_2', 'preview_3'].forEach(id => {
+                                const prev = document.getElementById(id);
+                                if (prev) {
+                                    prev.style.backgroundImage = 'none';
+                                    prev.style.borderStyle = 'dashed';
+                                    const span = prev.querySelector('span');
+                                    if (span) span.innerHTML = '📷 Tomar Foto';
+                                }
+                            });
+                        } catch (e) {
+                            console.error("Error al limpiar el formulario:", e);
+                        } finally {
+                            // Este bloque "finally" garantiza que el sistema siempre se desbloquee, 
+                            // solucionando el problema de que el botón quedara atascado.
+                            logoWrapper.classList.remove('active');
+                            btnPrincipal.innerText = textoOriginal;
+                            btnPrincipal.disabled = false;
+                            
+                            // Llevamos la pantalla hacia arriba elegantemente
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
                     }, 1500); 
                 }
-            }, 800); // 800ms de animación extra obligatoria para una sensación premium
+            }, 800); 
 
         } catch (error) {
             console.error("Error al guardar en Firebase:", error);
             alert("Error al guardar. Verifica tu conexión a internet.");
-            logoImg.classList.remove('logo-animating');
+            logoWrapper.classList.remove('active');
             btnPrincipal.innerText = textoOriginal;
             btnPrincipal.disabled = false;
         }
     }
 
-    // Eventos de los botones de decisión del Modal
+    // Eventos de los botones de decisión del Modal 1
     document.getElementById('btnContinuarPunto').addEventListener('click', () => guardarAuditoria('continuar_punto'));
     document.getElementById('btnTerminarJornada').addEventListener('click', () => guardarAuditoria('terminar_jornada'));
 
