@@ -19,85 +19,230 @@
             --border-color: #dce1e6;
         }
 
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+        }
 
-        /* Login */
-        #login-view { display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #e2e8f0; }
-        .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
-        .login-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; }
-        .login-box button { width: 100%; padding: 12px; background-color: var(--brand-blue); color: white; border: none; border-radius: 6px; cursor: pointer; }
+        /* --- VISTA DE LOGIN --- */
+        #login-view {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #e2e8f0;
+        }
 
-        /* Dashboard */
-        #dashboard-view { display: none; padding: 20px; max-width: 1200px; margin: 0 auto; }
-        header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 20px 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; }
-        .btn-logout { background-color: #f1f5f9; color: var(--brand-red); border: 1px solid #cbd5e1; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
-        
-        .table-container { background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 15px; border-bottom: 1px solid var(--border-color); text-align: left; }
-        th { background-color: #f8fafc; color: var(--brand-blue); }
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
 
-        .btn-action { background: none; border: none; cursor: pointer; font-size: 1.2rem; margin: 0 5px; }
-        
-        /* Modal */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; }
-        .modal-content { background-color: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; }
-        .form-control { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; }
-        .btn-save { background-color: var(--brand-blue); color: white; padding: 10px; border: none; border-radius: 6px; width: 100%; cursor: pointer; }
+        .login-box h2 {
+            color: var(--brand-blue);
+            margin-bottom: 20px;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        .login-box button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--brand-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .login-box button:hover { background-color: #273163; }
+
+        /* --- VISTA DEL DASHBOARD --- */
+        #dashboard-view {
+            display: none;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+
+        .header-title h1 {
+            margin: 0;
+            color: var(--brand-blue);
+            font-size: 1.5rem;
+        }
+
+        .header-title p {
+            margin: 5px 0 0 0;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .btn-logout {
+            background-color: #f1f5f9;
+            color: var(--brand-red);
+            border: 1px solid #cbd5e1;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-logout:hover { background-color: #e2e8f0; }
+
+        .actions-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn-export {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: opacity 0.3s;
+        }
+
+        .btn-export:hover { opacity: 0.9; }
+        .btn-excel { background-color: #10b981; }
+        .btn-pdf { background-color: var(--brand-red); }
+
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: var(--brand-blue);
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        tr:hover { background-color: #f1f5f9; }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .status-ok { background-color: #d1fae5; color: #065f46; }
+        .status-warn { background-color: #fef3c7; color: #92400e; }
+        .status-err { background-color: #fee2e2; color: #991b1b; }
+
     </style>
 </head>
 <body>
 
+    <!-- VISTA DE LOGIN -->
     <div id="login-view">
         <div class="login-box">
             <h2>Acceso Administrativo</h2>
             <form id="loginForm">
-                <input type="email" id="adminEmail" placeholder="Correo" required>
+                <input type="email" id="adminEmail" placeholder="Correo electrónico" required>
                 <input type="password" id="adminPass" placeholder="Contraseña" required>
-                <button type="submit">Ingresar</button>
+                <button type="submit">Ingresar al Panel</button>
             </form>
         </div>
     </div>
 
+    <!-- VISTA DEL DASHBOARD -->
     <div id="dashboard-view">
         <header>
-            <div><h1>Panel de Auditoría</h1></div>
+            <div class="header-title">
+                <h1>Panel de Auditoría de Red</h1>
+                <p>DC Telemática - Hospital San Vicente de Arauca E.S.E.</p>
+            </div>
             <button class="btn-logout" id="btnLogout">Cerrar Sesión</button>
         </header>
+
+        <div class="actions-bar">
+            <button class="btn-export btn-excel" id="btnExportExcel">
+                📊 Exportar a Excel
+            </button>
+            <button class="btn-export btn-pdf" id="btnExportPDF">
+                📄 Exportar a PDF
+            </button>
+        </div>
 
         <div class="table-container">
             <table id="dataTable">
                 <thead>
                     <tr>
                         <th>N° Reg</th>
+                        <th>Fecha y Hora</th>
                         <th>ID Punto</th>
                         <th>Ubicación</th>
-                        <th>Acciones</th>
+                        <th>Enlace</th>
+                        <th>DHCP</th>
+                        <th>Puerto Switch</th>
+                        <th>Estado Cat.</th>
                     </tr>
                 </thead>
-                <tbody id="tableBody"></tbody>
+                <tbody id="tableBody">
+                    <tr><td colspan="8" style="text-align: center;">Cargando datos...</td></tr>
+                </tbody>
             </table>
         </div>
     </div>
 
-    <div class="modal-overlay" id="editModal">
-        <div class="modal-content">
-            <h3>Editar Registro</h3>
-            <form id="editForm">
-                <input type="hidden" id="editRecordId">
-                <input type="text" id="editPunto" class="form-control" placeholder="ID Punto" required>
-                <input type="text" id="editUbicacion" class="form-control" placeholder="Ubicación" required>
-                <button type="submit" class="btn-save">Guardar</button>
-                <button type="button" style="margin-top:10px; width:100%;" onclick="document.getElementById('editModal').style.display='none'">Cancelar</button>
-            </form>
-        </div>
-    </div>
-
+    <!-- SCRIPT y FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        import { getFirestore, collection, getDocs, doc, deleteDoc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+        // Configuración de Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyAuJtE7VKOm1wG5BEd_pde8_9aDaq33j8E",
             authDomain: "dc-telematica-auditoria.firebaseapp.com",
@@ -112,76 +257,172 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let globalData = [];
+        // Referencias a la UI
+        const loginView = document.getElementById('login-view');
+        const dashboardView = document.getElementById('dashboard-view');
+        const loginForm = document.getElementById('loginForm');
+        const tableBody = document.getElementById('tableBody');
+        
+        let globalData = []; // Guardará los datos para exportación
 
+        // Control de Sesión
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                document.getElementById('login-view').style.display = 'none';
-                document.getElementById('dashboard-view').style.display = 'block';
+                loginView.style.display = 'none';
+                dashboardView.style.display = 'block';
                 cargarDatos();
             } else {
-                document.getElementById('login-view').style.display = 'flex';
-                document.getElementById('dashboard-view').style.display = 'none';
+                loginView.style.display = 'flex';
+                dashboardView.style.display = 'none';
             }
         });
 
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        // Evento Login
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('adminEmail').value;
             const pass = document.getElementById('adminPass').value;
-            try { await signInWithEmailAndPassword(auth, email, pass); } 
-            catch { alert("Credenciales incorrectas."); }
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+            } catch (error) {
+                alert("Error al iniciar sesión: Credenciales incorrectas.");
+            }
         });
 
-        document.getElementById('btnLogout').addEventListener('click', () => signOut(auth).then(() => window.location.assign("index.html")));
+        // Evento Logout
+        document.getElementById('btnLogout').addEventListener('click', () => {
+            signOut(auth);
+        });
 
+        // Cargar Datos de Firestore
         async function cargarDatos() {
-            const q = query(collection(db, "inspecciones"), orderBy("timestamp", "desc"));
-            const querySnapshot = await getDocs(q);
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
-            globalData = [];
-            
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                globalData.push({ id: doc.id, ...data });
-                tbody.innerHTML += `<tr>
-                    <td>${data.registro_num || '-'}</td>
-                    <td>${data.punto_id || '-'}</td>
-                    <td>${data.ubicacion || '-'}</td>
-                    <td>
-                        <button class="btn-action" onclick="abrirEdicion('${doc.id}')">✏️</button>
-                        <button class="btn-action" onclick="eliminarRegistro('${doc.id}')">🗑️</button>
-                    </td>
-                </tr>`;
-            });
+            try {
+                // Traemos los datos ordenados por fecha de captura descendentemente
+                const q = query(collection(db, "inspecciones"), orderBy("timestamp", "desc"));
+                const querySnapshot = await getDocs(q);
+                
+                tableBody.innerHTML = '';
+                globalData = [];
+
+                if (querySnapshot.empty) {
+                    tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No hay registros aún.</td></tr>';
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    globalData.push(data); // Guardamos para exportar
+
+                    // Helpers para formato
+                    const enlace = data.enlace || 'N/A';
+                    let enlaceBadge = '';
+                    if(enlace === 'estable') enlaceBadge = '<span class="status-badge status-ok">Estable</span>';
+                    else if(enlace === 'intermitente') enlaceBadge = '<span class="status-badge status-warn">Intermitente</span>';
+                    else enlaceBadge = '<span class="status-badge status-err">Sin Conexión</span>';
+
+                    const dhcp = data.dhcp === 'exitoso' ? '<span class="status-badge status-ok">Exitoso</span>' : '<span class="status-badge status-err">Falla</span>';
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${data.registro_num || '-'}</strong></td>
+                        <td>${data.fecha_hora || '-'}</td>
+                        <td>${data.punto_id || '-'}</td>
+                        <td>${data.ubicacion || '-'}</td>
+                        <td>${enlaceBadge}</td>
+                        <td>${data.dhcp ? dhcp : '-'}</td>
+                        <td>${data.switch_port || '-'}</td>
+                        <td>${data.patch_cat || 'N/A'}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+
+            } catch (error) {
+                console.error("Error al cargar datos:", error);
+                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: red;">Error al cargar datos. Verifica los permisos de Firebase.</td></tr>';
+            }
         }
 
-        window.abrirEdicion = (id) => {
-            const reg = globalData.find(r => r.id === id);
-            document.getElementById('editRecordId').value = id;
-            document.getElementById('editPunto').value = reg.punto_id;
-            document.getElementById('editUbicacion').value = reg.ubicacion;
-            document.getElementById('editModal').style.display = 'flex';
-        };
-
-        window.eliminarRegistro = async (id) => {
-            if (confirm("¿Eliminar este registro?")) {
-                await deleteDoc(doc(db, "inspecciones", id));
-                cargarDatos();
+        // ==========================================
+        // EXPORTAR A EXCEL (Usando SheetJS)
+        // ==========================================
+        document.getElementById('btnExportExcel').addEventListener('click', () => {
+            if (globalData.length === 0) {
+                alert("No hay datos para exportar.");
+                return;
             }
-        };
 
-        document.getElementById('editForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('editRecordId').value;
-            await updateDoc(doc(db, "inspecciones", id), {
-                punto_id: document.getElementById('editPunto').value,
-                ubicacion: document.getElementById('editUbicacion').value
+            // Mapeamos los datos para aplanar los Arrays en strings separados por comas
+            const excelData = globalData.map(item => {
+                let flattened = {};
+                for (let key in item) {
+                    if (Array.isArray(item[key])) {
+                        flattened[key] = item[key].join(', ');
+                    } else if (key !== 'timestamp') { // Omitimos el objeto de fecha interno de Firebase
+                        flattened[key] = item[key];
+                    }
+                }
+                return flattened;
             });
-            document.getElementById('editModal').style.display = 'none';
-            cargarDatos();
+
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Auditorías");
+            
+            XLSX.writeFile(workbook, "Reporte_Auditorias_Red.xlsx");
         });
+
+        // ==========================================
+        // EXPORTAR A PDF (Usando jsPDF + AutoTable)
+        // ==========================================
+        document.getElementById('btnExportPDF').addEventListener('click', () => {
+            if (globalData.length === 0) {
+                alert("No hay datos para exportar.");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('landscape'); // Horizontal para que quepan más columnas
+
+            // Título
+            doc.setFontSize(16);
+            doc.text("Reporte de Auditoría de Puntos de Red", 14, 15);
+            doc.setFontSize(10);
+            doc.text("DC Telemática - Hospital San Vicente de Arauca", 14, 22);
+
+            // Preparar las columnas y filas para AutoTable
+            const columns = [
+                { header: 'Registro', dataKey: 'reg' },
+                { header: 'Fecha', dataKey: 'fecha' },
+                { header: 'ID Punto', dataKey: 'punto' },
+                { header: 'Ubicación', dataKey: 'ubicacion' },
+                { header: 'Enlace', dataKey: 'enlace' },
+                { header: 'Switch Port', dataKey: 'puerto' },
+                { header: 'Categoría', dataKey: 'cat' }
+            ];
+
+            const rows = globalData.map(item => ({
+                reg: item.registro_num || '-',
+                fecha: item.fecha_hora || '-',
+                punto: item.punto_id || '-',
+                ubicacion: item.ubicacion || '-',
+                enlace: item.enlace || '-',
+                puerto: item.switch_port || '-',
+                cat: item.patch_cat || '-'
+            }));
+
+            // Generar tabla PDF
+            doc.autoTable({
+                columns: columns,
+                body: rows,
+                startY: 30,
+                theme: 'striped',
+                headStyles: { fillColor: [51, 63, 122] }, // Color --brand-blue
+                styles: { fontSize: 9 }
+            });
+
+            doc.save("Reporte_Resumido_Auditorias.pdf");
+        });
+
     </script>
 </body>
 </html>
