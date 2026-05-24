@@ -21,15 +21,61 @@
             margin: 0;
             padding: 20px;
             line-height: 1.5;
+            display: flex;
+            justify-content: center;
         }
 
+        /* --- Animación de Luz Giratoria en toda la Ventana --- */
+        .container-frame {
+            position: relative;
+            width: 100%;
+            max-width: 660px;
+            padding: 4px; /* Grosor de la luz giratoria */
+            border-radius: 16px;
+            overflow: hidden;
+            z-index: 1;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+        }
+
+        .container-frame::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(transparent, transparent, transparent, var(--brand-red), var(--brand-blue));
+            animation: rotateLight 3s linear infinite;
+            z-index: -2;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .container-frame.active::before {
+            opacity: 1;
+        }
+
+        .container-frame::after {
+            content: '';
+            position: absolute;
+            inset: 4px; /* Debe coincidir con el padding */
+            background: #ffffff; /* Oculta el centro para dejar solo el borde */
+            border-radius: 12px;
+            z-index: -1;
+        }
+
+        @keyframes rotateLight {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Contenedor interno del formulario */
         .container {
-            max-width: 650px;
-            margin: 0 auto;
-            background: #ffffff;
+            background: transparent;
             padding: 40px 30px;
             border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            position: relative;
+            z-index: 2;
         }
 
         .logo-container {
@@ -43,55 +89,8 @@
         .logo-container img {
             max-width: 220px;
             height: auto;
-            position: relative;
-            z-index: 2;
         }
 
-        /* --- Animación Elegante: Luz Giratoria por el Contorno --- */
-        .logo-frame {
-            position: relative;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            padding: 6px; /* Ancho del contorno de luz */
-            border-radius: 12px;
-            overflow: hidden;
-            z-index: 1;
-        }
-
-        .logo-frame::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: conic-gradient(transparent, transparent, transparent, var(--brand-red), var(--brand-blue));
-            animation: rotateLight 1.5s linear infinite;
-            z-index: -2;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .logo-frame.active::before {
-            opacity: 1;
-        }
-
-        .logo-frame::after {
-            content: '';
-            position: absolute;
-            inset: 3px; /* Espacio para que la luz se asome */
-            background: #ffffff; /* Oculta el centro del gradiente */
-            border-radius: 9px;
-            z-index: -1;
-        }
-
-        @keyframes rotateLight {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Estilo del encabezado para el hospital */
         .consultoria-header {
             text-align: center;
             color: var(--brand-blue);
@@ -106,7 +105,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* Estilo para la caja de metadatos */
         .meta-box {
             display: flex;
             gap: 15px;
@@ -117,9 +115,7 @@
             border: 1px solid var(--border-color);
         }
 
-        .meta-box .form-group {
-            margin-bottom: 0;
-        }
+        .meta-box .form-group { margin-bottom: 0; }
 
         .meta-box input[readonly] {
             background-color: #e2e8f0;
@@ -147,17 +143,11 @@
 
         h2::after {
             content: '';
-            position: absolute;
-            left: 0;
-            bottom: -2px;
-            width: 40px;
-            height: 2px;
+            position: absolute; left: 0; bottom: -2px; width: 40px; height: 2px;
             background-color: var(--brand-red);
         }
 
-        .form-group {
-            margin-bottom: 20px;
-        }
+        .form-group { margin-bottom: 20px; }
 
         label {
             display: block;
@@ -167,170 +157,89 @@
             color: #4a5568;
         }
 
-        input[type="text"],
-        input[type="number"] {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 1rem;
+        input[type="text"], input[type="number"] {
+            width: 100%; padding: 12px 15px; border: 1px solid var(--border-color);
+            border-radius: 6px; box-sizing: border-box; font-size: 1rem;
             transition: border-color 0.3s, box-shadow 0.3s;
         }
 
-        input[type="text"]:focus,
-        input[type="number"]:focus {
-            outline: none;
-            border-color: var(--brand-blue);
+        input[type="text"]:focus, input[type="number"]:focus {
+            outline: none; border-color: var(--brand-blue);
             box-shadow: 0 0 0 3px rgba(51, 63, 122, 0.1);
         }
 
         .checkbox-container {
-            background-color: #fcfcfc;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 12px;
-            margin-bottom: 15px;
+            background-color: #fcfcfc; border: 1px solid var(--border-color);
+            border-radius: 6px; padding: 12px; margin-bottom: 15px;
         }
 
         .checkbox-group {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
+            display: flex; align-items: center; margin-bottom: 10px;
         }
 
-        .checkbox-group:last-child {
-            margin-bottom: 0;
-        }
+        .checkbox-group:last-child { margin-bottom: 0; }
 
-        .checkbox-group input[type="checkbox"],
-        .checkbox-group input[type="radio"] {
-            margin-right: 12px;
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
+        .checkbox-group input[type="checkbox"], .checkbox-group input[type="radio"] {
+            margin-right: 12px; width: 20px; height: 20px; cursor: pointer;
             accent-color: var(--brand-blue);
         }
 
-        .checkbox-group label {
-            margin-bottom: 0;
-            font-weight: normal;
-            cursor: pointer;
-        }
+        .checkbox-group label { margin-bottom: 0; font-weight: normal; cursor: pointer; }
 
         .switch-card {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            border-left: 4px solid var(--brand-blue);
+            background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px;
+            border-radius: 6px; margin-bottom: 15px; border-left: 4px solid var(--brand-blue);
         }
         
         .switch-card-title {
-            font-weight: bold;
-            color: var(--brand-blue);
-            margin-bottom: 10px;
-            display: block;
-            font-size: 0.95rem;
+            font-weight: bold; color: var(--brand-blue); margin-bottom: 10px;
+            display: block; font-size: 0.95rem;
         }
 
-        .photo-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-            margin-bottom: 15px;
-        }
+        .photo-grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 15px; }
 
-        .photo-item label {
-            margin-bottom: 10px;
-        }
+        .photo-item label { margin-bottom: 10px; }
 
         .photo-square {
-            width: 100%;
-            height: 180px;
-            background-color: #f8fafc;
-            border: 2px dashed #cbd5e1;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            overflow: hidden;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            transition: all 0.3s ease;
+            width: 100%; height: 180px; background-color: #f8fafc;
+            border: 2px dashed #cbd5e1; border-radius: 8px; display: flex;
+            align-items: center; justify-content: center; cursor: pointer;
+            overflow: hidden; background-size: cover; background-position: center;
+            background-repeat: no-repeat; transition: all 0.3s ease;
         }
 
-        .photo-square:hover {
-            border-color: var(--brand-blue);
-            background-color: #f1f5f9;
-        }
+        .photo-square:hover { border-color: var(--brand-blue); background-color: #f1f5f9; }
 
         .photo-square span {
-            background-color: rgba(255, 255, 255, 0.9);
-            color: var(--brand-blue);
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            pointer-events: none; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background-color: rgba(255, 255, 255, 0.9); color: var(--brand-blue);
+            padding: 8px 15px; border-radius: 20px; font-weight: 600;
+            font-size: 0.9rem; pointer-events: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        .hidden-input {
-            display: none;
-        }
+        .hidden-input { display: none; }
 
         button {
-            width: 100%;
-            padding: 16px;
-            background-color: var(--brand-blue);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 30px;
+            width: 100%; padding: 16px; background-color: var(--brand-blue);
+            color: white; border: none; border-radius: 6px; font-size: 1.1rem;
+            font-weight: 600; cursor: pointer; margin-top: 30px;
             transition: background-color 0.3s, transform 0.1s;
         }
 
-        button:hover:not(:disabled) {
-            background-color: #273163;
-        }
+        button:hover:not(:disabled) { background-color: #273163; }
+        button:active:not(:disabled) { transform: translateY(2px); }
+        button:disabled { background-color: #7b85a3; cursor: not-allowed; transform: none; }
 
-        button:active:not(:disabled) {
-            transform: translateY(2px);
-        }
-
-        button:disabled {
-            background-color: #7b85a3;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* --- Estilos para las Ventanas Modales --- */
+        /* --- Modales --- */
         .modal-overlay {
-            display: none; /* Oculto por defecto */
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); z-index: 1000;
+            align-items: center; justify-content: center;
         }
 
         .modal-content {
-            background-color: white;
-            padding: 30px 20px;
-            border-radius: 12px;
-            text-align: center;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            animation: fadeIn 0.3s ease-out;
+            background-color: white; padding: 30px 20px; border-radius: 12px;
+            text-align: center; width: 90%; max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: fadeIn 0.3s ease-out;
         }
 
         @keyframes fadeIn {
@@ -338,351 +247,325 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .modal-content h3 {
-            color: var(--brand-blue);
-            margin-top: 0;
-            font-size: 1.3rem;
-            margin-bottom: 15px;
-        }
-
-        .modal-content p {
-            color: #555;
-            margin-bottom: 25px;
-            font-size: 1rem;
-            line-height: 1.5;
-        }
-
-        .modal-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .modal-buttons button {
-            margin-top: 0;
-            padding: 14px;
-        }
-
-        .btn-continue {
-            background-color: var(--brand-blue);
-        }
-
-        .btn-finish {
-            background-color: #f8fafc;
-            color: var(--brand-red);
-            border: 2px solid var(--brand-red);
-        }
-
-        .btn-finish:hover {
-            background-color: #fdf2f2;
-        }
-
-        .btn-cancel {
-            background-color: transparent;
-            color: #888;
-            padding: 10px !important;
-            font-size: 0.95rem;
-            text-decoration: underline;
-        }
-        .btn-cancel:hover { background-color: transparent; color: #555;}
+        .modal-content h3 { color: var(--brand-blue); margin-top: 0; font-size: 1.3rem; margin-bottom: 15px; }
+        .modal-content p { color: #555; margin-bottom: 25px; font-size: 1rem; line-height: 1.5; }
+        .modal-buttons { display: flex; flex-direction: column; gap: 12px; }
+        .modal-buttons button { margin-top: 0; padding: 14px; }
+        .btn-continue { background-color: var(--brand-blue); }
+        .btn-finish { background-color: #f8fafc; color: var(--brand-red); border: 2px solid var(--brand-red); }
+        .btn-finish:hover { background-color: #fdf2f2; }
+        .btn-cancel { background-color: transparent; color: #888; padding: 10px !important; font-size: 0.95rem; text-decoration: underline; }
+        .btn-cancel:hover { background-color: transparent; color: #555; }
 
         @media (max-width: 480px) {
-            .container {
-                padding: 25px 15px;
-            }
-            .meta-box {
-                flex-direction: column;
-                gap: 10px;
-            }
+            .container { padding: 25px 15px; }
+            .meta-box { flex-direction: column; gap: 10px; }
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="logo-container">
-        <!-- Wrapper animado del logotipo -->
-        <div class="logo-frame" id="logo_wrapper">
-            <img src="dc_telematica.png" alt="DC Telemática" id="main_logo">
-        </div>
-    </div>
-
-    <div class="consultoria-header">
-        Consultoría Hospital San Vicente de Arauca E.S.E.
-    </div>
-    
-    <form action="#" method="POST" enctype="multipart/form-data" id="formularioAuditoria">
-        
-        <input type="hidden" id="accion_post_guardado" name="accion_post_guardado" value="">
-
-        <div class="meta-box">
-            <div class="form-group" style="flex: 1;">
-                <label for="registro_num">Registro N°:</label>
-                <input type="text" id="registro_num" name="registro_num" readonly>
-            </div>
-            <div class="form-group" style="flex: 2;">
-                <label for="fecha_hora">Fecha y Hora de Captura:</label>
-                <input type="text" id="fecha_hora" name="fecha_hora" readonly>
-            </div>
+<!-- Marco animado de toda la ventana -->
+<div class="container-frame" id="main_window_frame">
+    <div class="container">
+        <div class="logo-container">
+            <img src="dc_telematica.png" alt="DC Telemática">
         </div>
 
-        <h2>1. Identificación del Punto</h2>
-        <div class="form-group">
-            <label for="punto_id">ID del Punto de Red:</label>
-            <input type="text" id="punto_id" name="punto_id" placeholder="Ej. Nodo A, P-01...">
-        </div>
-        <div class="form-group">
-            <label for="ubicacion">Ubicación Física:</label>
-            <input type="text" id="ubicacion" name="ubicacion" placeholder="Ej. Piso 2, Oficina Contabilidad...">
-        </div>
-
-        <h2>2. Estado Físico y Estructural</h2>
-        <div class="form-group">
-            <label>Faceplate y Jack RJ45:</label>
-            <div class="checkbox-container">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="f_bueno" name="fisico" value="buen_estado">
-                    <label for="f_bueno">Buen estado general</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="f_roto" name="fisico" value="roto">
-                    <label for="f_roto">Faceplate roto o suelto</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="f_pines" name="fisico" value="pines_dañados">
-                    <label for="f_pines">Pines del Jack oxidados o doblados</label>
-                </div>
-            </div>
+        <div class="consultoria-header">
+            Consultoría Hospital San Vicente de Arauca E.S.E.
         </div>
         
-        <div class="form-group">
-            <label>Cableado y Etiquetado:</label>
-            <div class="checkbox-container">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="c_etiqueta" name="cable" value="etiquetado">
-                    <label for="c_etiqueta">Correctamente etiquetado</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="c_sin_etiqueta" name="cable" value="sin_etiqueta">
-                    <label for="c_sin_etiqueta">Sin identificar / Sin etiqueta</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="c_expuesto" name="cable" value="expuesto">
-                    <label for="c_expuesto">Cable tensionado o expuesto</label>
-                </div>
-            </div>
-        </div>
-        <div class="form-group">
-            <label>Continuidad del Cableado Horizontal (Jack a Switch/Panel):</label>
-            <div class="checkbox-container">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="cont_ok" name="continuidad" value="ok">
-                    <label for="cont_ok">Continuidad OK (8 hilos en orden)</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="cont_abierto" name="continuidad" value="abierto">
-                    <label for="cont_abierto">Pares abiertos / Hilos rotos</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="cont_cruzado" name="continuidad" value="cruzado">
-                    <label for="cont_cruzado">Pares cruzados / Mal ponchado</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="cont_corto" name="continuidad" value="corto">
-                    <label for="cont_corto">Cortocircuito</label>
-                </div>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>Tipo de Canalización:</label>
-            <div class="checkbox-container">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="tipo_canaleta" name="tipo_canalizacion" value="canaleta">
-                    <label for="tipo_canaleta">Canaleta Plástica</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="tipo_emt" name="tipo_canalizacion" value="emt">
-                    <label for="tipo_emt">Tubería Metálica (EMT)</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="tipo_pvc" name="tipo_canalizacion" value="pvc">
-                    <label for="tipo_pvc">Tubería PVC</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="tipo_bandeja" name="tipo_canalizacion" value="bandeja">
-                    <label for="tipo_bandeja">Bandeja Portacable</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="tipo_otros" name="tipo_canalizacion" value="otros">
-                    <label for="tipo_otros">Otros</label>
-                </div>
-                <input type="text" id="otro_canalizacion_texto" name="otro_canalizacion_texto" placeholder="Especifique qué tipo de canalización..." style="display: none; margin-top: 10px;">
-            </div>
-
-            <label style="margin-top: 15px;">Estado de la Canalización:</label>
-            <div class="checkbox-container">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="can_ok" name="est_canalizacion" value="buen_estado">
-                    <label for="can_ok">Buen estado (Firme y cerrada)</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="can_suelta" name="est_canalizacion" value="suelta">
-                    <label for="can_suelta">Suelta, desprendida o mal fijada</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="can_saturada" name="est_canalizacion" value="saturada">
-                    <label for="can_saturada">Sobresaturada (Excede capacidad)</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="can_rota" name="est_canalizacion" value="rota_sin_tapa">
-                    <label for="can_rota">Rota o sin tapas/accesorios</label>
-                </div>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>Patch Cord (Toma de Usuario a PC/Dispositivo):</label>
+        <form action="#" method="POST" enctype="multipart/form-data" id="formularioAuditoria">
             
-            <div class="checkbox-container">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="patch_ok" name="patch_estado" value="buen_estado">
-                    <label for="patch_ok">Buen estado general</label>
+            <input type="hidden" id="accion_post_guardado" name="accion_post_guardado" value="">
+
+            <div class="meta-box">
+                <div class="form-group" style="flex: 1;">
+                    <label for="registro_num">Registro N°:</label>
+                    <input type="text" id="registro_num" name="registro_num" readonly>
                 </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="patch_roto" name="patch_estado" value="roto">
-                    <label for="patch_roto">Conectores sin pestaña (Rotos) o flojos</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="patch_deteriorado" name="patch_estado" value="deteriorado">
-                    <label for="patch_deteriorado">Cable deteriorado, doblado o expuesto</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="patch_ausente" name="patch_estado" value="ausente">
-                    <label for="patch_ausente">No hay Patch Cord conectado</label>
+                <div class="form-group" style="flex: 2;">
+                    <label for="fecha_hora">Fecha y Hora de Captura:</label>
+                    <input type="text" id="fecha_hora" name="fecha_hora" readonly>
                 </div>
             </div>
 
-            <div class="checkbox-container" style="margin-top: 10px;">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="patch_cat5e" name="patch_cat" value="cat5e">
-                    <label for="patch_cat5e">Categoría 5e</label>
+            <h2>1. Identificación del Punto</h2>
+            <div class="form-group">
+                <label for="punto_id">ID del Punto de Red:</label>
+                <input type="text" id="punto_id" name="punto_id" placeholder="Ej. Nodo A, P-01..." required>
+            </div>
+            <div class="form-group">
+                <label for="ubicacion">Ubicación Física:</label>
+                <input type="text" id="ubicacion" name="ubicacion" placeholder="Ej. Piso 2, Oficina Contabilidad..." required>
+            </div>
+
+            <h2>2. Estado Físico y Estructural</h2>
+            
+            <div class="form-group">
+                <label>Faceplate y Jack RJ45 (Respuestas Múltiples):</label>
+                <div class="checkbox-container">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="f_bueno" name="fisico" value="buen_estado">
+                        <label for="f_bueno">Buen estado general</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="f_roto" name="fisico" value="roto">
+                        <label for="f_roto">Faceplate roto o suelto</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="f_pines" name="fisico" value="pines_dañados">
+                        <label for="f_pines">Pines del Jack oxidados o doblados</label>
+                    </div>
                 </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="patch_cat6" name="patch_cat" value="cat6">
-                    <label for="patch_cat6">Categoría 6 / 6A</label>
-                </div>
-                <div class="checkbox-group" style="margin-top: 8px; border-top: 1px dashed var(--border-color); padding-top: 8px;">
-                    <input type="checkbox" id="patch_fabrica" name="patch_tipo" value="fabrica">
-                    <label for="patch_fabrica">Original de fábrica (Inyectado)</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="patch_armado" name="patch_tipo" value="armado">
-                    <label for="patch_armado">Armado en sitio (Hechizo)</label>
+            </div>
+            
+            <div class="form-group">
+                <label>Cableado y Etiquetado (Respuestas Múltiples):</label>
+                <div class="checkbox-container">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="c_etiqueta" name="cable" value="etiquetado">
+                        <label for="c_etiqueta">Correctamente etiquetado</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="c_sin_etiqueta" name="cable" value="sin_etiqueta">
+                        <label for="c_sin_etiqueta">Sin identificar / Sin etiqueta</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="c_expuesto" name="cable" value="expuesto">
+                        <label for="c_expuesto">Cable tensionado o expuesto</label>
+                    </div>
                 </div>
             </div>
 
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <input type="text" id="patch_marca" name="patch_marca" placeholder="Marca (Ej. Panduit, Nexxt...)">
-                <input type="text" id="patch_longitud" name="patch_longitud" placeholder="Longitud (Ej. 1m, 2m...)">
-            </div>
-        </div>
-
-        <h2>3. Trazabilidad a Cuarto de Equipos (Switch)</h2>
-        
-        <div class="form-group">
-            <label for="num_switches">Cantidad Total de Switches en la ruta (Mínimo 1):</label>
-            <input type="number" id="num_switches" name="num_switches" min="1" value="1">
-        </div>
-
-        <div id="dynamic-switches-container">
-            <!-- Switches generados por JS -->
-        </div>
-
-        <div class="form-group" style="margin-top: 20px;">
-            <label for="switch_port">Puerto del Switch de Acceso / Patch Panel:</label>
-            <input type="text" id="switch_port" name="switch_port" placeholder="Ej. Gi1/0/24 o Panel A-12">
-        </div>
-        <div class="form-group">
-            <label>Estado en el Equipo Activo:</label>
-            <div class="checkbox-container">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="sw_up" name="switch_estado" value="up">
-                    <label for="sw_up">Puerto Activo (Up)</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="sw_down" name="switch_estado" value="down">
-                    <label for="sw_down">Puerto Apagado (Shutdown)</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="sw_poe" name="switch_estado" value="poe">
-                    <label for="sw_poe">PoE Habilitado</label>
+            <div class="form-group">
+                <label>Continuidad del Cableado Horizontal (Respuestas Múltiples):</label>
+                <div class="checkbox-container">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="cont_ok" name="continuidad" value="ok">
+                        <label for="cont_ok">Continuidad OK (8 hilos en orden)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="cont_abierto" name="continuidad" value="abierto">
+                        <label for="cont_abierto">Pares abiertos / Hilos rotos</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="cont_cruzado" name="continuidad" value="cruzado">
+                        <label for="cont_cruzado">Pares cruzados / Mal ponchado</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="cont_corto" name="continuidad" value="corto">
+                        <label for="cont_corto">Cortocircuito</label>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <h2>4. Conectividad y Capa Lógica</h2>
-        <div class="form-group">
-            <label>Estado del Enlace en el Punto:</label>
-            <div class="checkbox-container">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="e_estable" name="enlace" value="estable">
-                    <label for="e_estable">Enlace estable</label>
+            <div class="form-group">
+                <label>Tipo de Canalización (Respuestas Múltiples):</label>
+                <div class="checkbox-container">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="tipo_canaleta" name="tipo_canalizacion" value="canaleta">
+                        <label for="tipo_canaleta">Canaleta Plástica</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="tipo_emt" name="tipo_canalizacion" value="emt">
+                        <label for="tipo_emt">Tubería Metálica (EMT)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="tipo_pvc" name="tipo_canalizacion" value="pvc">
+                        <label for="tipo_pvc">Tubería PVC</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="tipo_bandeja" name="tipo_canalizacion" value="bandeja">
+                        <label for="tipo_bandeja">Bandeja Portacable</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="tipo_otros" name="tipo_canalizacion" value="otros">
+                        <label for="tipo_otros">Otros</label>
+                    </div>
+                    <input type="text" id="otro_canalizacion_texto" name="otro_canalizacion_texto" placeholder="Especifique qué tipo de canalización..." style="display: none; margin-top: 10px;">
                 </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="e_intermitente" name="enlace" value="intermitente">
-                    <label for="e_intermitente">Enlace intermitente (Inestabilidad)</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="e_down" name="enlace" value="sin_conexion">
-                    <label for="e_down">Sin conexión física (Down)</label>
+
+                <label style="margin-top: 15px;">Estado de la Canalización (Respuestas Múltiples):</label>
+                <div class="checkbox-container">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="can_ok" name="est_canalizacion" value="buen_estado">
+                        <label for="can_ok">Buen estado (Firme y cerrada)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="can_suelta" name="est_canalizacion" value="suelta">
+                        <label for="can_suelta">Suelta, desprendida o mal fijada</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="can_saturada" name="est_canalizacion" value="saturada">
+                        <label for="can_saturada">Sobresaturada (Excede capacidad)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="can_rota" name="est_canalizacion" value="rota_sin_tapa">
+                        <label for="can_rota">Rota o sin tapas/accesorios</label>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="form-group">
-            <label>Prueba DHCP / IP:</label>
-            <div class="checkbox-container">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="ip_ok" name="dhcp" value="exitoso">
-                    <label for="ip_ok">Asignación IP correcta</label>
+            <div class="form-group">
+                <label>Patch Cord (Estado - Respuestas Múltiples):</label>
+                <div class="checkbox-container">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="patch_ok" name="patch_estado" value="buen_estado">
+                        <label for="patch_ok">Buen estado general</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="patch_roto" name="patch_estado" value="roto">
+                        <label for="patch_roto">Conectores sin pestaña (Rotos) o flojos</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="patch_deteriorado" name="patch_estado" value="deteriorado">
+                        <label for="patch_deteriorado">Cable deteriorado, doblado o expuesto</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="patch_ausente" name="patch_estado" value="ausente">
+                        <label for="patch_ausente">No hay Patch Cord conectado</label>
+                    </div>
                 </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="ip_fail" name="dhcp" value="falla">
-                    <label for="ip_fail">Falla de DHCP / Conflicto de IP</label>
+
+                <label style="margin-top: 15px;">Categoría del Patch Cord (Respuesta Única):</label>
+                <div class="checkbox-container" style="margin-top: 5px;">
+                    <div class="checkbox-group">
+                        <!-- Convertido a Radio -->
+                        <input type="radio" id="patch_cat5e" name="patch_cat" value="cat5e">
+                        <label for="patch_cat5e">Categoría 5e</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="radio" id="patch_cat6" name="patch_cat" value="cat6">
+                        <label for="patch_cat6">Categoría 6 / 6A</label>
+                    </div>
+                </div>
+
+                <label style="margin-top: 15px;">Tipo de Patch Cord (Respuesta Única):</label>
+                <div class="checkbox-container" style="margin-top: 5px;">
+                    <div class="checkbox-group">
+                        <!-- Convertido a Radio -->
+                        <input type="radio" id="patch_fabrica" name="patch_tipo" value="fabrica">
+                        <label for="patch_fabrica">Original de fábrica (Inyectado)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="radio" id="patch_armado" name="patch_tipo" value="armado">
+                        <label for="patch_armado">Armado en sitio (Hechizo)</label>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <input type="text" id="patch_marca" name="patch_marca" placeholder="Marca (Ej. Panduit, Nexxt...)">
+                    <input type="text" id="patch_longitud" name="patch_longitud" placeholder="Longitud (Ej. 1m, 2m...)">
                 </div>
             </div>
-        </div>
 
-        <h2>5. Registro Fotográfico</h2>
-        <div class="photo-grid">
-            <div class="photo-item">
-                <label>1. Foto panorámica (Ubicación del punto):</label>
-                <label for="foto_1" class="photo-square" id="preview_1">
-                    <span>📷 Tomar Foto</span>
-                </label>
-                <input type="file" id="foto_1" name="foto_1" accept="image/*" capture="environment" class="hidden-input">
+            <h2>3. Trazabilidad a Cuarto de Equipos (Switch)</h2>
+            
+            <div class="form-group">
+                <label for="num_switches">Cantidad Total de Switches en la ruta (Mínimo 1):</label>
+                <input type="number" id="num_switches" name="num_switches" min="1" value="1">
             </div>
 
-            <div class="photo-item">
-                <label>2. Foto de detalle (Estado del Faceplate/Jack):</label>
-                <label for="foto_2" class="photo-square" id="preview_2">
-                    <span>📷 Tomar Foto</span>
-                </label>
-                <input type="file" id="foto_2" name="foto_2" accept="image/*" capture="environment" class="hidden-input">
+            <div id="dynamic-switches-container">
+                <!-- Switches generados por JS -->
             </div>
 
-            <div class="photo-item">
-                <label>3. Evidencia adicional (Opcional - Daños o Test):</label>
-                <label for="foto_3" class="photo-square" id="preview_3">
-                    <span>📷 Tomar Foto</span>
-                </label>
-                <input type="file" id="foto_3" name="foto_3" accept="image/*" capture="environment" class="hidden-input">
+            <div class="form-group" style="margin-top: 20px;">
+                <label for="switch_port">Puerto del Switch de Acceso / Patch Panel:</label>
+                <input type="text" id="switch_port" name="switch_port" placeholder="Ej. Gi1/0/24 o Panel A-12">
             </div>
-        </div>
 
-        <button type="submit" id="btn_guardar_principal">Guardar Inspección</button>
-    </form>
+            <div class="form-group">
+                <label>Estado en el Equipo Activo (Respuesta Única):</label>
+                <div class="checkbox-container">
+                    <div class="checkbox-group">
+                        <!-- Convertido a Radio -->
+                        <input type="radio" id="sw_up" name="switch_estado" value="up">
+                        <label for="sw_up">Puerto Activo (Up)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="radio" id="sw_down" name="switch_estado" value="down">
+                        <label for="sw_down">Puerto Apagado (Shutdown)</label>
+                    </div>
+                </div>
+                
+                <label style="margin-top: 10px;">Opciones de Energía:</label>
+                <div class="checkbox-container" style="margin-top: 5px;">
+                    <div class="checkbox-group">
+                        <!-- Se mantiene Checkbox porque PoE es independiente del estado Up/Down -->
+                        <input type="checkbox" id="sw_poe" name="switch_energia" value="poe">
+                        <label for="sw_poe">PoE Habilitado</label>
+                    </div>
+                </div>
+            </div>
+
+            <h2>4. Conectividad y Capa Lógica</h2>
+            <div class="form-group">
+                <label>Estado del Enlace en el Punto (Respuesta Única):</label>
+                <div class="checkbox-container">
+                    <!-- Convertido a Radio -->
+                    <div class="checkbox-group">
+                        <input type="radio" id="e_estable" name="enlace" value="estable">
+                        <label for="e_estable">Enlace estable</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="radio" id="e_intermitente" name="enlace" value="intermitente">
+                        <label for="e_intermitente">Enlace intermitente (Inestabilidad)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="radio" id="e_down" name="enlace" value="sin_conexion">
+                        <label for="e_down">Sin conexión física (Down)</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Prueba DHCP / IP (Respuesta Única):</label>
+                <div class="checkbox-container">
+                    <!-- Convertido a Radio -->
+                    <div class="checkbox-group">
+                        <input type="radio" id="ip_ok" name="dhcp" value="exitoso">
+                        <label for="ip_ok">Asignación IP correcta</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="radio" id="ip_fail" name="dhcp" value="falla">
+                        <label for="ip_fail">Falla de DHCP / Conflicto de IP</label>
+                    </div>
+                </div>
+            </div>
+
+            <h2>5. Registro Fotográfico</h2>
+            <div class="photo-grid">
+                <div class="photo-item">
+                    <label>1. Foto panorámica (Ubicación del punto):</label>
+                    <label for="foto_1" class="photo-square" id="preview_1">
+                        <span>📷 Tomar Foto</span>
+                    </label>
+                    <input type="file" id="foto_1" name="foto_1" accept="image/*" capture="environment" class="hidden-input">
+                </div>
+
+                <div class="photo-item">
+                    <label>2. Foto de detalle (Estado del Faceplate/Jack):</label>
+                    <label for="foto_2" class="photo-square" id="preview_2">
+                        <span>📷 Tomar Foto</span>
+                    </label>
+                    <input type="file" id="foto_2" name="foto_2" accept="image/*" capture="environment" class="hidden-input">
+                </div>
+
+                <div class="photo-item">
+                    <label>3. Evidencia adicional (Opcional - Daños o Test):</label>
+                    <label for="foto_3" class="photo-square" id="preview_3">
+                        <span>📷 Tomar Foto</span>
+                    </label>
+                    <input type="file" id="foto_3" name="foto_3" accept="image/*" capture="environment" class="hidden-input">
+                </div>
+            </div>
+
+            <button type="submit" id="btn_guardar_principal">Guardar Inspección</button>
+        </form>
+    </div>
 </div>
 
 <!-- Modal 1: Decisión Inicial -->
@@ -719,12 +602,13 @@
     </div>
 </div>
 
-<!-- ÚNICO SCRIPT: Todo integrado como módulo para compartir el alcance de Firebase -->
+<!-- SCRIPT y FIREBASE -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+    // 🔴 REEMPLAZA ESTO CON LOS DATOS DEL PASO 2 DE LA GUÍA 🔴
     const firebaseConfig = {
         apiKey: "AIzaSyAuJtE7VKOm1wG5BEd_pde8_9aDaq33j8E",
         authDomain: "dc-telematica-auditoria.firebaseapp.com",
@@ -738,7 +622,7 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Protección de ruta robusta
+    // Protección de ruta
     onAuthStateChanged(auth, (user) => { 
         if (!user) {
             if (window.location.hostname || window.location.protocol.startsWith('http')) {
@@ -753,7 +637,6 @@
     // LÓGICA DE INTERFAZ Y FORMULARIO
     // ==========================================
     
-    // Configuración de Fecha y Contador
     const campoFecha = document.getElementById('fecha_hora');
     const opcionesFecha = { 
         year: 'numeric', month: '2-digit', day: '2-digit', 
@@ -767,7 +650,6 @@
     contadorActual = !contadorActual ? 1 : parseInt(contadorActual);
     campoRegistro.value = contadorActual;
 
-    // Lógica Mostrar/Ocultar "Otros" en Canalización
     const checkOtros = document.getElementById('tipo_otros');
     const inputOtrosTexto = document.getElementById('otro_canalizacion_texto');
     checkOtros.addEventListener('change', function() {
@@ -780,7 +662,6 @@
         }
     });
 
-    // Lógica Switches Dinámicos
     const inputNumSwitches = document.getElementById('num_switches');
     const containerSwitches = document.getElementById('dynamic-switches-container');
 
@@ -814,7 +695,7 @@
                 <input type="text" name="switch_ref_${i}" placeholder="Ej. Catalyst 2960-X, SG350...">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <label>Tipo de Cable / Medio de Enlace:</label>
+                <label>Tipo de Cable / Medio de Enlace (Respuesta Única):</label>
                 <div class="checkbox-container" style="background-color: #ffffff; margin-bottom: 0;">
                     <div class="checkbox-group">
                         <input type="radio" id="cable_fo_${i}" name="switch_cable_${i}" value="FO">
@@ -842,7 +723,6 @@
     inputNumSwitches.addEventListener('input', renderSwitchFields);
     renderSwitchFields();
 
-    // Previsualización de Fotos
     ['foto_1', 'foto_2', 'foto_3'].forEach((id, index) => {
         const input = document.getElementById(id);
         const preview = document.getElementById('preview_' + (index + 1));
@@ -869,9 +749,8 @@
     const modalDecision = document.getElementById('modalDecision');
     const modalDespedida = document.getElementById('modalDespedida');
     const btnPrincipal = document.getElementById('btn_guardar_principal');
-    const logoWrapper = document.getElementById('logo_wrapper');
+    const windowFrame = document.getElementById('main_window_frame');
 
-    // Mostrar modal 1 (Decisión)
     formulario.addEventListener('submit', function(e) {
         e.preventDefault(); 
         modalDecision.style.display = 'flex'; 
@@ -879,7 +758,6 @@
 
     document.getElementById('btnCancelarModal').addEventListener('click', () => modalDecision.style.display = 'none');
 
-    // Acción del Modal 2 (Despedida) - Cerrar sesión / volver al index
     document.getElementById('btnCerrarSesion').addEventListener('click', () => {
         if (window.location.hostname || window.location.protocol.startsWith('http')) {
             window.location.href = "index.html"; 
@@ -888,27 +766,22 @@
         }
     });
 
-    // Función asíncrona fluida para guardar en Firebase con Diagnóstico
     async function guardarAuditoria(accion) {
         document.getElementById('accion_post_guardado').value = accion;
-        
-        // 1. Cerramos el modal inicial inmediatamente
         modalDecision.style.display = 'none';
 
-        // ⚠️ VALIDACIÓN PREVIA DE SESIÓN
         const currentUser = auth.currentUser;
         if (!currentUser) {
             alert("⚠️ DIAGNÓSTICO FIREBASE:\nNo hay un usuario autenticado activo en este momento. Firebase bloqueará el guardado porque requiere permisos de sesión.\n\nPor favor, ingresa desde tu Landing Page (index.html) primero.");
             return;
         }
         
-        // 2. Bloqueamos el botón y cambiamos el texto
         const textoOriginal = btnPrincipal.innerText;
         btnPrincipal.innerText = "Guardando Datos...";
         btnPrincipal.disabled = true;
 
-        // 3. Activamos la animación de la luz giratoria
-        logoWrapper.classList.add('active');
+        // ACTIVAR ANIMACIÓN EN TODA LA VENTANA
+        windowFrame.classList.add('active');
 
         try {
             const formData = new FormData(formulario);
@@ -916,7 +789,7 @@
             
             for (let [key, value] of formData.entries()) {
                 if (!(value instanceof File)) {
-                    if (data[key]) {
+                    if (data.hasOwnProperty(key)) {
                         if (!Array.isArray(data[key])) {
                             data[key] = [data[key]];
                         }
@@ -927,44 +800,32 @@
                 }
             }
             data.timestamp = new Date();
-            data.tecnicoId = currentUser.uid; // Agregamos el ID del técnico que guarda los datos
+            data.tecnicoId = currentUser.uid;
 
             // Guardado en Firebase
             await addDoc(collection(db, "inspecciones"), data);
 
-            // Subimos el contador global
             contadorActual++;
             localStorage.setItem('dc_telematica_contador', contadorActual);
 
-            // Damos un tiempo elegante para que el usuario vea la animación
             setTimeout(() => {
                 if (accion === 'terminar_jornada') {
-                    // Animación se apaga, botón cambia a Terminado
-                    logoWrapper.classList.remove('active');
+                    windowFrame.classList.remove('active');
                     btnPrincipal.innerText = "¡Jornada Terminada!";
-                    
-                    // Mostrar el Modal de Agradecimiento
                     modalDespedida.style.display = 'flex';
                 } else {
-                    // Siguiente punto (Mantenemos la vista actual y limpiamos)
                     btnPrincipal.innerText = "¡Guardado Exitoso!";
-                    
-                    // Esperamos brevemente para mostrar éxito y luego limpiamos el formulario de forma segura
                     setTimeout(() => {
                         try {
                             formulario.reset();
-                            
-                            // Restauramos el contador nuevo y la fecha
                             campoRegistro.value = contadorActual;
                             campoFecha.value = new Date().toLocaleString('es-CO', opcionesFecha);
                             
-                            // Reseteamos UI dinámica (Canalización "Otros" y Switches)
                             inputNumSwitches.value = 1;
                             renderSwitchFields();
                             const checkOtrosText = document.getElementById('otro_canalizacion_texto');
                             if (checkOtrosText) checkOtrosText.style.display = 'none';
 
-                            // Limpiamos las previsualizaciones de fotos
                             ['preview_1', 'preview_2', 'preview_3'].forEach(id => {
                                 const prev = document.getElementById(id);
                                 if (prev) {
@@ -975,35 +836,32 @@
                                 }
                             });
                         } catch (e) {
-                            console.error("Error al limpiar el formulario:", e);
+                            console.error("Error al limpiar:", e);
                         } finally {
-                            logoWrapper.classList.remove('active');
+                            windowFrame.classList.remove('active');
                             btnPrincipal.innerText = textoOriginal;
                             btnPrincipal.disabled = false;
                             window.scrollTo({ top: 0, behavior: 'smooth' });
                         }
                     }, 1500); 
                 }
-            }, 800); 
+            }, 1000); 
 
         } catch (error) {
-            // ⚠️ AQUÍ CAPTURAMOS Y MOSTRAMOS EL ERROR REAL DE FIREBASE AL USUARIO
             console.error("🔥 Error completo de Firebase:", error);
-            
             let mensajeError = error.message;
             if (error.code === "permission-denied") {
-                mensajeError = "PERMISO DENEGADO (permission-denied).\nEsto ocurre porque las 'Reglas de Seguridad de Firestore' (Firestore Rules) en tu consola de Firebase están en modo producción o bloqueando la escritura. Debes actualizarlas para permitir escribir en la colección 'inspecciones'.";
+                mensajeError = "PERMISO DENEGADO (permission-denied).\nConfigura las Reglas de Seguridad en tu consola de Firestore para permitir la escritura a usuarios autenticados.";
             }
 
             alert("❌ FALLÓ EL GUARDADO EN FIREBASE\n\nMotivo: " + mensajeError + "\n\nCódigo de Error: " + error.code);
             
-            logoWrapper.classList.remove('active');
+            windowFrame.classList.remove('active');
             btnPrincipal.innerText = textoOriginal;
             btnPrincipal.disabled = false;
         }
     }
 
-    // Eventos de los botones de decisión del Modal 1
     document.getElementById('btnContinuarPunto').addEventListener('click', () => guardarAuditoria('continuar_punto'));
     document.getElementById('btnTerminarJornada').addEventListener('click', () => guardarAuditoria('terminar_jornada'));
 
