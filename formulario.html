@@ -35,11 +35,35 @@
         .logo-container {
             text-align: center;
             margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .logo-container img {
             max-width: 220px;
             height: auto;
+            transition: all 0.3s ease;
+        }
+
+        /* --- Animación Elegante para el Logo --- */
+        @keyframes elegantGlow {
+            0% { 
+                filter: drop-shadow(0 0 5px rgba(51, 63, 122, 0.1)); 
+                transform: scale(1); 
+            }
+            50% { 
+                filter: drop-shadow(0 0 25px rgba(51, 63, 122, 0.8)) drop-shadow(0 0 10px rgba(229, 51, 54, 0.4)); 
+                transform: scale(1.05); 
+            }
+            100% { 
+                filter: drop-shadow(0 0 5px rgba(51, 63, 122, 0.1)); 
+                transform: scale(1); 
+            }
+        }
+
+        .logo-animating {
+            animation: elegantGlow 1.5s ease-in-out infinite;
         }
 
         /* Estilo del encabezado para el hospital */
@@ -248,12 +272,18 @@
             transition: background-color 0.3s, transform 0.1s;
         }
 
-        button:hover {
+        button:hover:not(:disabled) {
             background-color: #273163;
         }
 
-        button:active {
+        button:active:not(:disabled) {
             transform: translateY(2px);
+        }
+
+        button:disabled {
+            background-color: #7b85a3;
+            cursor: not-allowed;
+            transform: none;
         }
 
         /* --- Estilos para la Ventana Modal de Confirmación --- */
@@ -339,8 +369,8 @@
 
 <div class="container">
     <div class="logo-container">
-        <!-- Puedes cambiar la URL por tu logo oficial -->
-        <img src="dc_telematica.png" alt="DC Telemática">
+        <!-- Logo principal con id para la animación -->
+        <img src="dc_telematica.png" alt="DC Telemática" id="main_logo">
     </div>
 
     <div class="consultoria-header">
@@ -660,10 +690,9 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // 1. Protección de ruta robusta contra entornos de previsualización (iframes, local, about:srcdoc)
+    // Protección de ruta robusta
     onAuthStateChanged(auth, (user) => { 
         if (!user) {
-            // Previene el error de "not a valid URL" si se ejecuta fuera de un servidor o dominio válido
             if (window.location.hostname || window.location.protocol.startsWith('http')) {
                 window.location.href = "index.html"; 
             } else {
@@ -678,13 +707,12 @@
     
     // Configuración de Fecha y Contador
     const campoFecha = document.getElementById('fecha_hora');
-    const ahora = new Date();
     const opcionesFecha = { 
         year: 'numeric', month: '2-digit', day: '2-digit', 
         hour: '2-digit', minute: '2-digit', second: '2-digit', 
         hour12: true 
     };
-    campoFecha.value = ahora.toLocaleString('es-CO', opcionesFecha);
+    campoFecha.value = new Date().toLocaleString('es-CO', opcionesFecha);
 
     const campoRegistro = document.getElementById('registro_num');
     let contadorActual = localStorage.getItem('dc_telematica_contador');
@@ -787,13 +815,14 @@
     });
 
     // ==========================================
-    // LÓGICA DEL MODAL Y FIREBASE
+    // LÓGICA DEL MODAL Y FIREBASE ANIMADO
     // ==========================================
     const formulario = document.getElementById('formularioAuditoria');
     const modal = document.getElementById('modalDecision');
     const btnPrincipal = document.getElementById('btn_guardar_principal');
+    const logoImg = document.getElementById('main_logo');
 
-    // Al darle submit (validará los inputs nativos HTML) mostramos el modal
+    // Mostrar modal
     formulario.addEventListener('submit', function(e) {
         e.preventDefault(); 
         modal.style.display = 'flex'; 
@@ -801,21 +830,26 @@
 
     document.getElementById('btnCancelarModal').addEventListener('click', () => modal.style.display = 'none');
 
-    // Función segura para guardar en Firebase
+    // Función asíncrona fluida para guardar en Firebase
     async function guardarAuditoria(accion) {
         document.getElementById('accion_post_guardado').value = accion;
+        
+        // 1. Cerramos el modal inmediatamente
         modal.style.display = 'none';
         
+        // 2. Bloqueamos el botón y cambiamos el texto
         const textoOriginal = btnPrincipal.innerText;
         btnPrincipal.innerText = "Guardando Datos...";
         btnPrincipal.disabled = true;
+
+        // 3. Activamos la animación de resalte del logo
+        logoImg.classList.add('logo-animating');
 
         try {
             const formData = new FormData(formulario);
             const data = {};
             
             for (let [key, value] of formData.entries()) {
-                // Filtramos los archivos
                 if (!(value instanceof File)) {
                     if (data[key]) {
                         if (!Array.isArray(data[key])) {
@@ -829,29 +863,62 @@
             }
             data.timestamp = new Date();
 
-            // Guardamos el documento principal
+            // Guardado en Firebase
             await addDoc(collection(db, "inspecciones"), data);
 
-            // Subimos el contador
-            localStorage.setItem('dc_telematica_contador', contadorActual + 1);
+            // Subimos el contador global
+            contadorActual++;
+            localStorage.setItem('dc_telematica_contador', contadorActual);
 
-            // Redireccionamiento limpio y corregido
-            if (accion === 'terminar_jornada') {
-                if (window.location.hostname || window.location.protocol.startsWith('http')) {
-                    window.location.href = "index.html"; 
+            // Damos un tiempo de respiro elegante para que el usuario vea la animación
+            setTimeout(() => {
+                if (accion === 'terminar_jornada') {
+                    if (window.location.hostname || window.location.protocol.startsWith('http')) {
+                        window.location.href = "index.html"; 
+                    } else {
+                        btnPrincipal.innerText = "¡Jornada Terminada!";
+                        logoImg.classList.remove('logo-animating');
+                    }
                 } else {
-                    alert("Inspección guardada. Jornada terminada (Simulado para vista previa).");
-                    window.location.reload(); 
+                    // Si eligió siguiente punto: Limpiamos SIN recargar la página (Cero errores de URL)
+                    btnPrincipal.innerText = "¡Guardado Exitoso!";
+                    
+                    // Esperamos 1.5 segundos para mostrar el éxito y luego limpiamos todo
+                    setTimeout(() => {
+                        formulario.reset();
+                        
+                        // Restauramos contador visual y fecha
+                        campoRegistro.value = contadorActual;
+                        campoFecha.value = new Date().toLocaleString('es-CO', opcionesFecha);
+                        
+                        // Reseteamos UI dinámica
+                        inputNumSwitches.value = 1;
+                        renderSwitchFields();
+                        document.getElementById('otro_canalizacion_texto').style.display = 'none';
+
+                        ['preview_1', 'preview_2', 'preview_3'].forEach(id => {
+                            const prev = document.getElementById(id);
+                            prev.style.backgroundImage = 'none';
+                            prev.style.borderStyle = 'dashed';
+                            prev.querySelector('span').innerHTML = '📷 Tomar Foto';
+                        });
+
+                        // Desactivamos animaciones y restauramos el botón principal
+                        logoImg.classList.remove('logo-animating');
+                        btnPrincipal.innerText = textoOriginal;
+                        btnPrincipal.disabled = false;
+                        
+                        // Llevamos la pantalla hacia arriba elegantemente
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                    }, 1500); 
                 }
-            } else {
-                // CORRECCIÓN PRINCIPAL: Se utiliza location.reload() en lugar de location.pathname
-                // Esto previene completamente el error de URL inválida en iframes y sandboxes.
-                window.location.reload(); 
-            }
+            }, 800); // 800ms de animación extra obligatoria para una sensación premium
 
         } catch (error) {
             console.error("Error al guardar en Firebase:", error);
             alert("Error al guardar. Verifica tu conexión a internet.");
+            logoImg.classList.remove('logo-animating');
             btnPrincipal.innerText = textoOriginal;
             btnPrincipal.disabled = false;
         }
