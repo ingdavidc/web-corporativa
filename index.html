@@ -24,19 +24,52 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // Se expone la función al window para que pueda ser llamada desde el onclick del HTML
-        window.accesoCorporativo = async () => {
-            const email = prompt("Ingrese el correo del técnico:");
-            // Nota: prompt muestra la contraseña en texto plano. Se recomienda usar un modal de HTML en el futuro.
-            const pass = prompt("Ingrese la contraseña:"); 
+        // --- Nueva Lógica de Login con Modal ---
+        window.rolSeleccionado = 'tecnico'; // Por defecto
+
+        window.accesoCorporativo = () => {
+            document.getElementById('loginModal').style.display = 'flex';
+        };
+
+        window.cerrarLogin = () => {
+            document.getElementById('loginModal').style.display = 'none';
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPass').value = '';
+        };
+
+        window.seleccionarRol = (rol) => {
+            window.rolSeleccionado = rol;
+            document.getElementById('btnRoleTecnico').classList.toggle('active', rol === 'tecnico');
+            document.getElementById('btnRoleIngeniero').classList.toggle('active', rol === 'ingeniero');
+        };
+
+        window.ejecutarLogin = async () => {
+            const email = document.getElementById('loginEmail').value;
+            const pass = document.getElementById('loginPass').value;
+            const btnSubmit = document.getElementById('btnSubmitLogin');
             
-            if(email && pass) {
-                try {
-                    await signInWithEmailAndPassword(auth, email, pass);
+            if (!email || !pass) {
+                alert("Por favor, ingrese correo y contraseña.");
+                return;
+            }
+
+            btnSubmit.innerText = "Autenticando...";
+            btnSubmit.disabled = true;
+
+            try {
+                // Validación con Firebase
+                await signInWithEmailAndPassword(auth, email, pass);
+                
+                // Redirección condicionada al rol seleccionado
+                if (window.rolSeleccionado === 'tecnico') {
                     window.location.href = "formulario.html";
-                } catch(e) {
-                    alert("Acceso denegado: Credenciales incorrectas.");
+                } else {
+                    window.location.href = "panel.html";
                 }
+            } catch(e) {
+                alert("Acceso denegado: Credenciales incorrectas.");
+                btnSubmit.innerText = "Ingresar";
+                btnSubmit.disabled = false;
             }
         };
     </script>
@@ -46,7 +79,6 @@
     <meta property="og:title" content="DC Telemática | Infraestructura Digital Avanzada">
     <meta property="og:description" content="Especialistas en ingeniería de redes Wi-Fi, VoIP corporativa, consultoría tecnológica y gestión de proyectos telemáticos.">
     <meta property="og:image" content="https://dctelematica.com/dc_telematica.png">
-    <!-- CORRECCIÓN: Se agregó el / faltante en la URL -->
     <meta property="og:image:secure_url" content="https://dctelematica.com/dc_telematica.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -57,7 +89,6 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="DC Telemática | Cybernetics & Infrastructure Design">
     <meta name="twitter:description" content="Diseño e implementación de infraestructura de redes y telecomunicaciones de nivel carrier.">
-    <!-- CORRECCIÓN: Se agregó el / faltante en la URL -->
     <meta name="twitter:image" content="https://dctelematica.com/dc_telematica.png">
 
     <style>
@@ -106,6 +137,53 @@
         @media (min-width: 992px) { footer { flex-direction: row; max-width: 1200px; margin: 0 auto; background-color: transparent; } }
         .footer-terminal { font-family: monospace; font-size: 10px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
         .footer-terminal span { color: var(--neon-red); }
+
+        /* --- Modal de Login Corporativo --- */
+        .login-modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(3, 6, 15, 0.85); z-index: 9999;
+            align-items: center; justify-content: center; backdrop-filter: blur(8px);
+        }
+        .login-modal-content {
+            background: linear-gradient(135deg, var(--carbon-dark), #04060d);
+            border: 1px solid rgba(0, 242, 254, 0.3);
+            padding: 30px; border-radius: 12px; width: 90%; max-width: 380px;
+            box-shadow: 0 0 40px rgba(0, 242, 254, 0.15); text-align: center;
+        }
+        .login-modal-content h3 { 
+            color: var(--text-pure); margin-bottom: 20px; font-size: 1.4rem; 
+            letter-spacing: 1px; text-transform: uppercase; 
+        }
+        .role-selector { display: flex; gap: 10px; margin-bottom: 20px; }
+        .role-btn {
+            flex: 1; padding: 12px; background: rgba(255,255,255,0.03); color: var(--text-muted);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; cursor: pointer; 
+            transition: all 0.3s; font-weight: bold; font-size: 0.95rem; outline: none;
+        }
+        .role-btn.active {
+            background: rgba(0, 242, 254, 0.1); color: var(--neon-cyan); border-color: var(--neon-cyan);
+            box-shadow: inset 0 0 10px rgba(0, 242, 254, 0.2);
+        }
+        .login-input {
+            width: 100%; padding: 14px; margin-bottom: 15px; background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.15); color: white; border-radius: 6px; outline: none;
+            transition: all 0.3s; font-size: 0.95rem; box-sizing: border-box;
+        }
+        .login-input:focus { border-color: var(--neon-cyan); box-shadow: 0 0 10px rgba(0, 242, 254, 0.2); }
+        .login-submit {
+            width: 100%; padding: 14px; background: transparent; color: var(--neon-cyan); font-weight: 800;
+            border: 1px solid var(--neon-cyan); border-radius: 6px; cursor: pointer; transition: all 0.3s; 
+            margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .login-submit:hover:not(:disabled) { 
+            background: rgba(0, 242, 254, 0.1); box-shadow: 0 0 20px rgba(0, 242, 254, 0.4); 
+        }
+        .login-submit:disabled { color: #555; border-color: #555; cursor: not-allowed; }
+        .login-cancel { 
+            color: var(--text-muted); text-decoration: underline; cursor: pointer; 
+            font-size: 0.9rem; transition: color 0.3s; 
+        }
+        .login-cancel:hover { color: white; }
     </style>
 </head>
 <body>
@@ -153,6 +231,24 @@
         <div class="footer-terminal">&copy; 2026 DC TELEMÁTICA. ALL CHANNELS OPERATIONAL.</div>
     </footer>
 
+    <!-- MODAL DE ACCESO CORPORATIVO -->
+    <div class="login-modal-overlay" id="loginModal">
+        <div class="login-modal-content">
+            <h3>Acceso Corporativo</h3>
+            
+            <div class="role-selector">
+                <button type="button" class="role-btn active" id="btnRoleTecnico" onclick="seleccionarRol('tecnico')">Técnico</button>
+                <button type="button" class="role-btn" id="btnRoleIngeniero" onclick="seleccionarRol('ingeniero')">Ingeniero</button>
+            </div>
+            
+            <input type="email" id="loginEmail" class="login-input" placeholder="Correo electrónico">
+            <input type="password" id="loginPass" class="login-input" placeholder="Contraseña">
+            
+            <button class="login-submit" id="btnSubmitLogin" onclick="ejecutarLogin()">Ingresar</button>
+            <div class="login-cancel" onclick="cerrarLogin()">Cancelar</div>
+        </div>
+    </div>
+
     <script type="text/javascript">
         function lanzarEnlaceWhatsApp(servicio) {
             var telefono = "573174251419";
@@ -168,7 +264,7 @@
             var msgClean = encodeURIComponent(mensaje);
             var urlWhatsapp = "https://wa.me/" + telefono + "?text=" + msgClean;
             
-            // Abre WhatsApp en una nueva pestaña ('_blank'), manteniendo el index abierto y activo en la pestaña original.
+            // Abre WhatsApp en una nueva pestaña
             window.open(urlWhatsapp, '_blank');
         }
     </script>
