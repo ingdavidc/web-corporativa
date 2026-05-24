@@ -2,427 +2,271 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Control - DC Telemática</title>
-    
-    <!-- Librerías para exportar a Excel y PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DC Telemática | Cybernetics & Infrastructure Design</title>
 
-    <style>
-        :root {
-            --brand-blue: #333F7A; 
-            --brand-red: #E53336;  
-            --bg-color: #f4f6f9;
-            --text-color: #333333;
-            --border-color: #dce1e6;
-        }
+    <meta name="description" content="Diseño e implementación de infraestructura digital avanzada, redes Wi-Fi de alta densidad, telefonía IP, call centers, consultoría de TI y gerencia de proyectos en Saravena, Arauca.">
+    <meta name="keywords" content="DC Telematica, redes, telecomunicaciones, wifi, telefonía ip, mikrotik, consultoria, proyectos, saravena, arauca">
+    <meta name="author" content="DC Telemática">
 
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 0;
-        }
-
-        /* --- VISTA DE LOGIN --- */
-        #login-view {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background-color: #e2e8f0;
-        }
-
-        .login-box {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-
-        .login-box h2 {
-            color: var(--brand-blue);
-            margin-bottom: 20px;
-        }
-
-        .login-box input {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            box-sizing: border-box;
-        }
-
-        .login-box button {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--brand-blue);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .login-box button:hover { background-color: #273163; }
-
-        /* --- VISTA DEL DASHBOARD --- */
-        #dashboard-view {
-            display: none;
-            padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: white;
-            padding: 20px 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            margin-bottom: 25px;
-        }
-
-        .header-title h1 {
-            margin: 0;
-            color: var(--brand-blue);
-            font-size: 1.5rem;
-        }
-
-        .header-title p {
-            margin: 5px 0 0 0;
-            color: #64748b;
-            font-size: 0.9rem;
-        }
-
-        .btn-logout {
-            background-color: #f1f5f9;
-            color: var(--brand-red);
-            border: 1px solid #cbd5e1;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .btn-logout:hover { background-color: #e2e8f0; }
-
-        .actions-bar {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .btn-export {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: opacity 0.3s;
-        }
-
-        .btn-export:hover { opacity: 0.9; }
-        .btn-excel { background-color: #10b981; }
-        .btn-pdf { background-color: var(--brand-red); }
-
-        .table-container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-
-        th, td {
-            padding: 15px;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.9rem;
-        }
-
-        th {
-            background-color: #f8fafc;
-            color: var(--brand-blue);
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        tr:hover { background-color: #f1f5f9; }
-
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-
-        .status-ok { background-color: #d1fae5; color: #065f46; }
-        .status-warn { background-color: #fef3c7; color: #92400e; }
-        .status-err { background-color: #fee2e2; color: #991b1b; }
-
-    </style>
-</head>
-<body>
-
-    <!-- VISTA DE LOGIN -->
-    <div id="login-view">
-        <div class="login-box">
-            <h2>Acceso Administrativo</h2>
-            <form id="loginForm">
-                <input type="email" id="adminEmail" placeholder="Correo electrónico" required>
-                <input type="password" id="adminPass" placeholder="Contraseña" required>
-                <button type="submit">Ingresar al Panel</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- VISTA DEL DASHBOARD -->
-    <div id="dashboard-view">
-        <header>
-            <div class="header-title">
-                <h1>Panel de Auditoría de Red</h1>
-                <p>DC Telemática - Hospital San Vicente de Arauca E.S.E.</p>
-            </div>
-            <button class="btn-logout" id="btnLogout">Cerrar Sesión</button>
-        </header>
-
-        <div class="actions-bar">
-            <button class="btn-export btn-excel" id="btnExportExcel">
-                📊 Exportar a Excel
-            </button>
-            <button class="btn-export btn-pdf" id="btnExportPDF">
-                📄 Exportar a PDF
-            </button>
-        </div>
-
-        <div class="table-container">
-            <table id="dataTable">
-                <thead>
-                    <tr>
-                        <th>N° Reg</th>
-                        <th>Fecha y Hora</th>
-                        <th>ID Punto</th>
-                        <th>Ubicación</th>
-                        <th>Enlace</th>
-                        <th>DHCP</th>
-                        <th>Puerto Switch</th>
-                        <th>Estado Cat.</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    <tr><td colspan="8" style="text-align: center;">Cargando datos...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- SCRIPT y FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-        // Configuración de Firebase
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        
         const firebaseConfig = {
             apiKey: "AIzaSyAuJtE7VKOm1wG5BEd_pde8_9aDaq33j8E",
             authDomain: "dc-telematica-auditoria.firebaseapp.com",
             projectId: "dc-telematica-auditoria",
             storageBucket: "dc-telematica-auditoria.firebasestorage.app",
             messagingSenderId: "1052355352106",
-            appId: "1:1052355352106:web:8d9a81c06959bda325d553",
-            measurementId: "G-XBXH4DEMBD"
+            appId: "1:1052355352106:web:8d9a81c06959bda325d553"
         };
-
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
 
-        // Referencias a la UI
-        const loginView = document.getElementById('login-view');
-        const dashboardView = document.getElementById('dashboard-view');
-        const loginForm = document.getElementById('loginForm');
-        const tableBody = document.getElementById('tableBody');
-        
-        let globalData = []; // Guardará los datos para exportación
+        // --- Nueva Lógica de Login con Modal ---
+        window.rolSeleccionado = 'tecnico'; // Por defecto
 
-        // Control de Sesión
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                loginView.style.display = 'none';
-                dashboardView.style.display = 'block';
-                cargarDatos();
-            } else {
-                loginView.style.display = 'flex';
-                dashboardView.style.display = 'none';
-            }
-        });
+        window.accesoCorporativo = () => {
+            document.getElementById('loginModal').style.display = 'flex';
+        };
 
-        // Evento Login
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('adminEmail').value;
-            const pass = document.getElementById('adminPass').value;
-            try {
-                await signInWithEmailAndPassword(auth, email, pass);
-            } catch (error) {
-                alert("Error al iniciar sesión: Credenciales incorrectas.");
-            }
-        });
+        window.cerrarLogin = () => {
+            document.getElementById('loginModal').style.display = 'none';
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPass').value = '';
+        };
 
-        // Evento Logout
-        document.getElementById('btnLogout').addEventListener('click', () => {
-            signOut(auth);
-        });
+        window.seleccionarRol = (rol) => {
+            window.rolSeleccionado = rol;
+            document.getElementById('btnRoleTecnico').classList.toggle('active', rol === 'tecnico');
+            document.getElementById('btnRoleIngeniero').classList.toggle('active', rol === 'ingeniero');
+        };
 
-        // Cargar Datos de Firestore
-        async function cargarDatos() {
-            try {
-                // Traemos los datos ordenados por fecha de captura descendentemente
-                const q = query(collection(db, "inspecciones"), orderBy("timestamp", "desc"));
-                const querySnapshot = await getDocs(q);
-                
-                tableBody.innerHTML = '';
-                globalData = [];
-
-                if (querySnapshot.empty) {
-                    tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No hay registros aún.</td></tr>';
-                    return;
-                }
-
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    globalData.push(data); // Guardamos para exportar
-
-                    // Helpers para formato
-                    const enlace = data.enlace || 'N/A';
-                    let enlaceBadge = '';
-                    if(enlace === 'estable') enlaceBadge = '<span class="status-badge status-ok">Estable</span>';
-                    else if(enlace === 'intermitente') enlaceBadge = '<span class="status-badge status-warn">Intermitente</span>';
-                    else enlaceBadge = '<span class="status-badge status-err">Sin Conexión</span>';
-
-                    const dhcp = data.dhcp === 'exitoso' ? '<span class="status-badge status-ok">Exitoso</span>' : '<span class="status-badge status-err">Falla</span>';
-
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><strong>${data.registro_num || '-'}</strong></td>
-                        <td>${data.fecha_hora || '-'}</td>
-                        <td>${data.punto_id || '-'}</td>
-                        <td>${data.ubicacion || '-'}</td>
-                        <td>${enlaceBadge}</td>
-                        <td>${data.dhcp ? dhcp : '-'}</td>
-                        <td>${data.switch_port || '-'}</td>
-                        <td>${data.patch_cat || 'N/A'}</td>
-                    `;
-                    tableBody.appendChild(tr);
-                });
-
-            } catch (error) {
-                console.error("Error al cargar datos:", error);
-                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: red;">Error al cargar datos. Verifica los permisos de Firebase.</td></tr>';
-            }
-        }
-
-        // ==========================================
-        // EXPORTAR A EXCEL (Usando SheetJS)
-        // ==========================================
-        document.getElementById('btnExportExcel').addEventListener('click', () => {
-            if (globalData.length === 0) {
-                alert("No hay datos para exportar.");
-                return;
-            }
-
-            // Mapeamos los datos para aplanar los Arrays en strings separados por comas
-            const excelData = globalData.map(item => {
-                let flattened = {};
-                for (let key in item) {
-                    if (Array.isArray(item[key])) {
-                        flattened[key] = item[key].join(', ');
-                    } else if (key !== 'timestamp') { // Omitimos el objeto de fecha interno de Firebase
-                        flattened[key] = item[key];
-                    }
-                }
-                return flattened;
-            });
-
-            const worksheet = XLSX.utils.json_to_sheet(excelData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Auditorías");
+        window.ejecutarLogin = async () => {
+            const email = document.getElementById('loginEmail').value;
+            const pass = document.getElementById('loginPass').value;
+            const btnSubmit = document.getElementById('btnSubmitLogin');
             
-            XLSX.writeFile(workbook, "Reporte_Auditorias_Red.xlsx");
-        });
-
-        // ==========================================
-        // EXPORTAR A PDF (Usando jsPDF + AutoTable)
-        // ==========================================
-        document.getElementById('btnExportPDF').addEventListener('click', () => {
-            if (globalData.length === 0) {
-                alert("No hay datos para exportar.");
+            if (!email || !pass) {
+                alert("Por favor, ingrese correo y contraseña.");
                 return;
             }
 
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('landscape'); // Horizontal para que quepan más columnas
+            btnSubmit.innerText = "Autenticando...";
+            btnSubmit.disabled = true;
 
-            // Título
-            doc.setFontSize(16);
-            doc.text("Reporte de Auditoría de Puntos de Red", 14, 15);
-            doc.setFontSize(10);
-            doc.text("DC Telemática - Hospital San Vicente de Arauca", 14, 22);
+            try {
+                // Validación con Firebase
+                await signInWithEmailAndPassword(auth, email, pass);
+                
+                // Redirección condicionada al rol seleccionado
+                if (window.rolSeleccionado === 'tecnico') {
+                    window.location.href = "formulario.html";
+                } else {
+                    window.location.href = "panel.html";
+                }
+            } catch(e) {
+                alert("Acceso denegado: Credenciales incorrectas.");
+                btnSubmit.innerText = "Ingresar";
+                btnSubmit.disabled = false;
+            }
+        };
+    </script>
 
-            // Preparar las columnas y filas para AutoTable
-            const columns = [
-                { header: 'Registro', dataKey: 'reg' },
-                { header: 'Fecha', dataKey: 'fecha' },
-                { header: 'ID Punto', dataKey: 'punto' },
-                { header: 'Ubicación', dataKey: 'ubicacion' },
-                { header: 'Enlace', dataKey: 'enlace' },
-                { header: 'Switch Port', dataKey: 'puerto' },
-                { header: 'Categoría', dataKey: 'cat' }
-            ];
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://dctelematica.com">
+    <meta property="og:title" content="DC Telemática | Infraestructura Digital Avanzada">
+    <meta property="og:description" content="Especialistas en ingeniería de redes Wi-Fi, VoIP corporativa, consultoría tecnológica y gestión de proyectos telemáticos.">
+    <meta property="og:image" content="https://dctelematica.com/dc_telematica.png">
+    <meta property="og:image:secure_url" content="https://dctelematica.com/dc_telematica.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:site_name" content="DC Telemática">
+    <meta property="og:locale" content="es_CO">
 
-            const rows = globalData.map(item => ({
-                reg: item.registro_num || '-',
-                fecha: item.fecha_hora || '-',
-                punto: item.punto_id || '-',
-                ubicacion: item.ubicacion || '-',
-                enlace: item.enlace || '-',
-                puerto: item.switch_port || '-',
-                cat: item.patch_cat || '-'
-            }));
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="DC Telemática | Cybernetics & Infrastructure Design">
+    <meta name="twitter:description" content="Diseño e implementación de infraestructura de redes y telecomunicaciones de nivel carrier.">
+    <meta name="twitter:image" content="https://dctelematica.com/dc_telematica.png">
 
-            // Generar tabla PDF
-            doc.autoTable({
-                columns: columns,
-                body: rows,
-                startY: 30,
-                theme: 'striped',
-                headStyles: { fillColor: [51, 63, 122] }, // Color --brand-blue
-                styles: { fontSize: 9 }
-            });
+    <style>
+        @property --cyber-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+        :root { --bg-deep: #03060f; --neon-red: #ff003c; --neon-cyan: #00f2fe; --carbon-light: #1a0f15; --carbon-dark: #090c15; --text-pure: #ffffff; --text-muted: #7e8da4; --glass-base: rgba(9, 12, 21, 0.65); }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        body { min-height: 100vh; background-color: var(--bg-deep); color: var(--text-pure); display: flex; flex-direction: column; overflow-x: hidden; position: relative; perspective: 1200px; }
 
-            doc.save("Reporte_Resumido_Auditorias.pdf");
-        });
+        .matrix-floor { position: absolute; width: 200%; height: 200%; bottom: -60%; left: -50%; background-image: linear-gradient(rgba(255, 0, 60, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 0, 60, 0.08) 1px, transparent 1px); background-size: 50px 50px; transform: rotateX(80deg) translateZ(-50px); transform-origin: bottom center; pointer-events: none; z-index: 1; mask-image: linear-gradient(to top, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 80%); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 80%); }
+        .plasma-orb { position: absolute; border-radius: 50%; filter: blur(140px); pointer-events: none; z-index: 0; opacity: 0.35; }
+        .orb-left { width: 500px; height: 500px; background: radial-gradient(circle, var(--neon-red) 0%, transparent 75%); top: -5%; left: -5%; animation: orbitalMove 20s infinite linear; }
+        .orb-right { width: 600px; height: 600px; background: radial-gradient(circle, var(--neon-cyan) 0%, transparent 75%); bottom: -5%; right: -5%; animation: orbitalMove 25s infinite linear reverse; }
+        @keyframes orbitalMove { 0% { transform: rotate(0deg) translate(20px) scale(1); } 50% { transform: rotate(180deg) translate(-40px) scale(1.05); } 100% { transform: rotate(360deg) translate(20px) scale(1); } }
+        header { width: 100%; max-width: 1200px; margin: 0 auto; padding: 40px 20px 20px 20px; display: flex; justify-content: center; align-items: center; z-index: 10; }
+        .brand-link { display: flex; flex-direction: column; align-items: center; text-decoration: none; gap: 12px; cursor: pointer; }
+        .brand-logo-holder { height: 110px; display: flex; align-items: center; justify-content: center; transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1); animation: cyberGlowPulse 4s infinite ease-in-out; }
+        .brand-logo-holder img { height: 100%; width: auto; object-fit: contain; }
+        @keyframes cyberGlowPulse { 0%, 100% { filter: drop-shadow(0 0 15px rgba(255, 0, 60, 0.5)) drop-shadow(0 0 30px rgba(0, 242, 254, 0.1)); transform: scale(1); } 50% { filter: drop-shadow(0 0 25px rgba(255, 0, 60, 0.85)) drop-shadow(0 0 45px rgba(0, 242, 254, 0.35)); transform: scale(1.03); } }
+        .brand-link:hover .brand-logo-holder { animation-play-state: paused; transform: scale(1.06) translateY(-4px); filter: drop-shadow(0 0 30px rgba(255, 0, 60, 0.95)) drop-shadow(0 0 50px rgba(0, 242, 254, 0.5)); }
+        .brand-name { font-size: 22px; font-weight: 900; letter-spacing: 6px; color: var(--text-pure); text-transform: uppercase; margin-right: -6px; text-shadow: 0 0 15px rgba(255, 255, 255, 0.15); }
+        .wrapper-main { flex: 1; width: 100%; max-width: 1200px; margin: 0 auto; padding: 10px 20px 60px 20px; display: grid; grid-template-columns: 1fr; gap: 50px; align-items: center; z-index: 10; }
+        @media (min-width: 992px) { .wrapper-main { grid-template-columns: 0.95fr 1.05fr; padding-top: 10px; } }
+        .core-intro h1 { font-size: 42px; font-weight: 900; line-height: 1.1; letter-spacing: -0.5px; margin-bottom: 24px; text-transform: uppercase; }
+        @media (min-width: 768px) { .core-intro h1 { font-size: 52px; } }
+        .core-intro h1 span { display: block; background: linear-gradient(90deg, var(--neon-red), var(--neon-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 10px rgba(255, 0, 60, 0.2)); }
+        .core-intro p { font-size: 15px; color: var(--text-muted); line-height: 1.6; margin-bottom: 30px; max-width: 540px; }
+        .contact-fast-info { display: flex; flex-direction: column; gap: 12px; margin-bottom: 35px; background: rgba(26, 15, 21, 0.4); border-left: 2px solid var(--neon-red); padding: 16px 20px; border-radius: 0 12px 12px 0; max-width: 540px; box-shadow: inset 10px 0 20px rgba(255, 0, 60, 0.02); }
+        .info-link-item { display: flex; align-items: center; gap: 12px; color: var(--text-pure); text-decoration: none; font-size: 13px; font-weight: 600; transition: all 0.3s ease; cursor: pointer; }
+        .info-link-item:hover { color: var(--neon-cyan); transform: translateX(3px); }
+        .info-icon-tag { font-family: monospace; font-size: 10px; color: var(--neon-red); border: 1px solid rgba(255, 0, 60, 0.35); padding: 2px 6px; border-radius: 4px; background: rgba(255, 0, 60, 0.05); width: 75px; text-align: center; font-weight: 800; letter-spacing: 0.5px; }
+        .action-link { position: relative; display: inline-flex; align-items: center; justify-content: center; padding: 15px 36px; background: transparent; color: var(--neon-red); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; text-decoration: none; border: 1px solid rgba(255, 0, 60, 0.35); overflow: hidden; transition: all 0.4s ease; max-width: 280px; cursor: pointer; margin-bottom: 10px; }
+        .action-link:hover { border-color: var(--neon-red); box-shadow: 0 0 30px rgba(255, 0, 60, 0.35); color: #ffffff; background-color: rgba(255, 0, 60, 0.04); }
+        .action-link.corporativo { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+        .action-link.corporativo:hover { border-color: var(--neon-cyan); box-shadow: 0 0 30px rgba(0, 242, 254, 0.35); background-color: rgba(0, 242, 254, 0.04); }
+        .cyber-grid-container { padding: 1px; background-image: conic-gradient(from var(--cyber-angle), transparent, var(--neon-red), var(--neon-cyan), transparent 70%); animation: rotateLaser 5s linear infinite; border-radius: 16px; transform: rotateY(-10deg) rotateX(4deg); transform-style: preserve-3d; box-shadow: -25px 35px 55px rgba(0,0,0,0.7); }
+        .cyber-grid-inner { background: linear-gradient(135deg, var(--carbon-dark), #04060d); border-radius: 15px; padding: 24px; display: flex; flex-direction: column; gap: 12px; max-height: 520px; overflow-y: auto; }
+        .cyber-grid-inner::-webkit-scrollbar { width: 4px; }
+        .cyber-grid-inner::-webkit-scrollbar-thumb { background: rgba(255, 0, 60, 0.3); border-radius: 4px; }
+        @keyframes rotateLaser { 0% { --cyber-angle: 0deg; } 100% { --cyber-angle: 360deg; } }
+        .card-node { background: rgba(14, 18, 33, 0.4); border: 1px solid rgba(255, 255, 255, 0.02); padding: 16px 18px; border-radius: 10px; display: flex; align-items: flex-start; gap: 16px; transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1); cursor: pointer; }
+        .card-node:hover { background: rgba(18, 23, 42, 0.75); border-color: rgba(255, 0, 60, 0.25); transform: translateZ(15px) translateX(4px); box-shadow: -5px 10px 18px rgba(0,0,0,0.5); }
+        .node-index { font-size: 10px; font-weight: 900; color: var(--neon-red); font-family: monospace; border: 1px solid rgba(255, 0, 60, 0.35); padding: 2px 6px; border-radius: 4px; background: rgba(255, 0, 60, 0.04); flex-shrink: 0; }
+        .node-data h3 { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; color: var(--text-pure); }
+        .node-data p { font-size: 12.5px; color: var(--text-muted); line-height: 1.45; }
+        footer { width: 100%; padding: 30px 20px; background-color: #020308; border-top: 1px solid rgba(255,255,255,0.01); z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 15px; }
+        @media (min-width: 992px) { footer { flex-direction: row; max-width: 1200px; margin: 0 auto; background-color: transparent; } }
+        .footer-terminal { font-family: monospace; font-size: 10px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+        .footer-terminal span { color: var(--neon-red); }
 
+        /* --- Modal de Login Corporativo --- */
+        .login-modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(3, 6, 15, 0.85); z-index: 9999;
+            align-items: center; justify-content: center; backdrop-filter: blur(8px);
+        }
+        .login-modal-content {
+            background: linear-gradient(135deg, var(--carbon-dark), #04060d);
+            border: 1px solid rgba(0, 242, 254, 0.3);
+            padding: 30px; border-radius: 12px; width: 90%; max-width: 380px;
+            box-shadow: 0 0 40px rgba(0, 242, 254, 0.15); text-align: center;
+        }
+        .login-modal-content h3 { 
+            color: var(--text-pure); margin-bottom: 20px; font-size: 1.4rem; 
+            letter-spacing: 1px; text-transform: uppercase; 
+        }
+        .role-selector { display: flex; gap: 10px; margin-bottom: 20px; }
+        .role-btn {
+            flex: 1; padding: 12px; background: rgba(255,255,255,0.03); color: var(--text-muted);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; cursor: pointer; 
+            transition: all 0.3s; font-weight: bold; font-size: 0.95rem; outline: none;
+        }
+        .role-btn.active {
+            background: rgba(0, 242, 254, 0.1); color: var(--neon-cyan); border-color: var(--neon-cyan);
+            box-shadow: inset 0 0 10px rgba(0, 242, 254, 0.2);
+        }
+        .login-input {
+            width: 100%; padding: 14px; margin-bottom: 15px; background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.15); color: white; border-radius: 6px; outline: none;
+            transition: all 0.3s; font-size: 0.95rem; box-sizing: border-box;
+        }
+        .login-input:focus { border-color: var(--neon-cyan); box-shadow: 0 0 10px rgba(0, 242, 254, 0.2); }
+        .login-submit {
+            width: 100%; padding: 14px; background: transparent; color: var(--neon-cyan); font-weight: 800;
+            border: 1px solid var(--neon-cyan); border-radius: 6px; cursor: pointer; transition: all 0.3s; 
+            margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .login-submit:hover:not(:disabled) { 
+            background: rgba(0, 242, 254, 0.1); box-shadow: 0 0 20px rgba(0, 242, 254, 0.4); 
+        }
+        .login-submit:disabled { color: #555; border-color: #555; cursor: not-allowed; }
+        .login-cancel { 
+            color: var(--text-muted); text-decoration: underline; cursor: pointer; 
+            font-size: 0.9rem; transition: color 0.3s; 
+        }
+        .login-cancel:hover { color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="matrix-floor"></div>
+    <div class="plasma-orb orb-left"></div>
+    <div class="plasma-orb orb-right"></div>
+
+    <header>
+        <div class="brand-link" onclick="lanzarEnlaceWhatsApp('general')">
+            <div class="brand-logo-holder"><img src="dc_telematica.png" alt="DC Telemática"></div>
+            <span class="brand-name">DC Telemática</span>
+        </div>
+    </header>
+
+    <main class="wrapper-main">
+        <div class="core-intro">
+            <h1>Telecomm & Network <span>Architectures.</span></h1>
+            <p>Diseñamos e implementamos ecosistemas de comunicación unificada, gestión de turnos, consultoría de TI y conectividad corporativa inalámbrica masiva de alta densidad. Infraestructura digital blindada para operaciones de alto rendimiento.</p>
+            
+            <div class="contact-fast-info">
+                <div class="info-link-item" onclick="lanzarEnlaceWhatsApp('general')"><span class="info-icon-tag">WHATSAPP</span> +57 317 425 1419</div>
+                <a href="mailto:ing.david@dctelematica.com" class="info-link-item"><span class="info-icon-tag">EMAIL</span> ing.david@dctelematica.com</a>
+                <div class="info-link-item"><span class="info-icon-tag">LOC_ID</span> Cr. 16 No. 26 - 45 B. Centro, Saravena - Arauca</div>
+            </div>
+
+            <div class="action-link" onclick="lanzarEnlaceWhatsApp('general')">Iniciar Mensaje</div>
+            <div class="action-link corporativo" onclick="accesoCorporativo()">Corporativo</div>
+        </div>
+
+        <div class="cyber-grid-container">
+            <div class="cyber-grid-inner">
+                <div class="card-node" onclick="lanzarEnlaceWhatsApp('wifi')"><span class="node-index">01</span><div class="node-data"><h3>Advanced Wi-Fi Networks</h3><p>Diseño y despliegue de cobertura inalámbrica avanzada, portales cautivos Hotspot empresariales y optimización de espectro de alta densidad.</p></div></div>
+                <div class="card-node" onclick="lanzarEnlaceWhatsApp('voip')"><span class="node-index">02</span><div class="node-data"><h3>IP Telephony & VoIP</h3><p>Centrales telefónicas IP corporativas, aprovisionamiento de troncales SIP y arquitecturas de voz sobre IP escalables de alta disponibilidad.</p></div></div>
+                <div class="card-node" onclick="lanzarEnlaceWhatsApp('callcenter')"><span class="node-index">03</span><div class="node-data"><h3>Call Centers & Digiturnos</h3><p>Implementación de plataformas integradas de Contact Center y sistemas inteligentes de turnos digitales para optimizar la experiencia del usuario.</p></div></div>
+                <div class="card-node" onclick="lanzarEnlaceWhatsApp('consultoria')"><span class="node-index">04</span><div class="node-data"><h3>Consultoría Tecnológica (IT)</h3><p>Auditoría de infraestructura, análisis de seguridad perimetral, diagnóstico de vulnerabilidades en la red y optimización de recursos telemáticos.</p></div></div>
+                <div class="card-node" onclick="lanzarEnlaceWhatsApp('proyectos')"><span class="node-index">05</span><div class="node-data"><h3>Gestión y Diseño de Proyectos</h3><p>Formulación, estructuración y dirección técnica de proyectos de telecomunicaciones e infraestructura de datos bajo estándares internacionales.</p></div></div>
+                <div class="card-node" onclick="lanzarEnlaceWhatsApp('infraestructura')"><span class="node-index">06</span><div class="node-data"><h3>Secure Cyber-Infrastructure</h3><p>Ingeniería de enrutamiento avanzado con hardware MikroTik, cortafuegos perimetrales avanzados (Firewall) y balanceo dinámico de cargas WAN.</p></div></div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-terminal">NET_STATUS: <span>ACTIVE</span> // BROADCAST_LOC: <span>SARAVENA_ARAUCA_CO</span></div>
+        <div class="footer-terminal">&copy; 2026 DC TELEMÁTICA. ALL CHANNELS OPERATIONAL.</div>
+    </footer>
+
+    <!-- MODAL DE ACCESO CORPORATIVO -->
+    <div class="login-modal-overlay" id="loginModal">
+        <div class="login-modal-content">
+            <h3>Acceso Corporativo</h3>
+            
+            <div class="role-selector">
+                <button type="button" class="role-btn active" id="btnRoleTecnico" onclick="seleccionarRol('tecnico')">Técnico</button>
+                <button type="button" class="role-btn" id="btnRoleIngeniero" onclick="seleccionarRol('ingeniero')">Ingeniero</button>
+            </div>
+            
+            <input type="email" id="loginEmail" class="login-input" placeholder="Correo electrónico">
+            <input type="password" id="loginPass" class="login-input" placeholder="Contraseña">
+            
+            <button class="login-submit" id="btnSubmitLogin" onclick="ejecutarLogin()">Ingresar</button>
+            <div class="login-cancel" onclick="cerrarLogin()">Cancelar</div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        function lanzarEnlaceWhatsApp(servicio) {
+            var telefono = "573174251419";
+            var mensaje = "Hola, solicito soporte tecnico de DC Telematica.";
+            
+            if (servicio === 'wifi') mensaje = "Hola, solicito informacion sobre redes Wi-Fi avanzadas.";
+            if (servicio === 'voip') mensaje = "Hola, solicito informacion sobre telefonia IP y VoIP.";
+            if (servicio === 'callcenter') mensaje = "Hola, solicito informacion sobre Call Centers y Digiturnos.";
+            if (servicio === 'consultoria') mensaje = "Hola, solicito una consultoria tecnologica de IT.";
+            if (servicio === 'proyectos') mensaje = "Hola, solicito informacion sobre gestion de proyectos.";
+            if (servicio === 'infraestructura') mensaje = "Hola, solicito soporte sobre infraestructura de red Mikrotik.";
+            
+            var msgClean = encodeURIComponent(mensaje);
+            var urlWhatsapp = "https://wa.me/" + telefono + "?text=" + msgClean;
+            
+            // Abre WhatsApp en una nueva pestaña
+            window.open(urlWhatsapp, '_blank');
+        }
     </script>
 </body>
 </html>
