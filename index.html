@@ -157,6 +157,7 @@
         function lanzarEnlaceWhatsApp(servicio) {
             var telefono = "573174251419";
             var mensaje = "Hola, solicito soporte tecnico de DC Telematica.";
+            
             if (servicio === 'wifi') mensaje = "Hola, solicito informacion sobre redes Wi-Fi avanzadas.";
             if (servicio === 'voip') mensaje = "Hola, solicito informacion sobre telefonia IP y VoIP.";
             if (servicio === 'callcenter') mensaje = "Hola, solicito informacion sobre Call Centers y Digiturnos.";
@@ -165,19 +166,10 @@
             if (servicio === 'infraestructura') mensaje = "Hola, solicito soporte sobre infraestructura de red Mikrotik.";
             
             var msgClean = encodeURIComponent(mensaje);
-            var esDispositivoMovil = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            var urlWhatsapp = "https://wa.me/" + telefono + "?text=" + msgClean;
             
-            if (esDispositivoMovil) {
-                // CORRECCIÓN: Faltaba el '/' después de wa.me, lo que generaba "https://wa.me573174251419"
-                var fallbackTimer = setTimeout(function() { 
-                    window.location.href = "https://wa.me/" + telefono + "?text=" + msgClean; 
-                }, 400);
-                window.location.href = "whatsapp://send?phone=" + telefono + "&text=" + msgClean;
-            } else {
-                // Simplificamos la URL para PC, la ofuscación no es necesaria hoy en día
-                var baseUrlPC = "https://wa.me/" + telefono;
-                window.location.href = baseUrlPC + "?text=" + msgClean;
-            }
+            // Abre WhatsApp en una nueva pestaña ('_blank'), manteniendo el index abierto y activo en la pestaña original.
+            window.open(urlWhatsapp, '_blank');
         }
     </script>
 </body>
