@@ -5,39 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DC Telemática | Cybernetics & Infrastructure Design</title>
 
+    <!-- METATAGS DE OPTIMIZACIÓN SEO -->
     <meta name="description" content="Diseño e implementación de infraestructura digital avanzada, redes Wi-Fi de alta densidad, telefonía IP, call centers, consultoría de TI y gerencia de proyectos en Saravena, Arauca.">
     <meta name="keywords" content="DC Telematica, redes, telecomunicaciones, wifi, telefonía ip, mikrotik, consultoria, proyectos, saravena, arauca">
     <meta name="author" content="DC Telemática">
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        
-        const firebaseConfig = {
-            apiKey: "AIzaSyAuJtE7VKOm1wG5BEd_pde8_9aDaq33j8E",
-            authDomain: "dc-telematica-auditoria.firebaseapp.com",
-            projectId: "dc-telematica-auditoria",
-            storageBucket: "dc-telematica-auditoria.firebasestorage.app",
-            messagingSenderId: "1052355352106",
-            appId: "1:1052355352106:web:8d9a81c06959bda325d553"
-        };
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        window.accesoCorporativo = async () => {
-            const email = prompt("Ingrese el correo del técnico:");
-            const pass = prompt("Ingrese la contraseña:");
-            if(email && pass) {
-                try {
-                    await signInWithEmailAndPassword(auth, email, pass);
-                    window.location.href = "formulario.html";
-                } catch(e) {
-                    alert("Acceso denegado: Credenciales incorrectas.");
-                }
-            }
-        };
-    </script>
-
+    <!-- PROTOCOLO OPEN GRAPH (TARJETAS DE VISTA PREVIA PARA WHATSAPP) -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://dctelematica.com">
     <meta property="og:title" content="DC Telemática | Infraestructura Digital Avanzada">
@@ -50,120 +23,550 @@
     <meta property="og:site_name" content="DC Telemática">
     <meta property="og:locale" content="es_CO">
 
+    <!-- METATAGS PARA TWITTER / X -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="DC Telemática | Cybernetics & Infrastructure Design">
     <meta name="twitter:description" content="Diseño e implementación de infraestructura de redes y telecomunicaciones de nivel carrier.">
     <meta name="twitter:image" content="https://dctelematica.comdc_telematica.png">
 
     <style>
-        @property --cyber-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
-        :root { --bg-deep: #03060f; --neon-red: #ff003c; --neon-cyan: #00f2fe; --carbon-light: #1a0f15; --carbon-dark: #090c15; --text-pure: #ffffff; --text-muted: #7e8da4; --glass-base: rgba(9, 12, 21, 0.65); }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-        body { min-height: 100vh; background-color: var(--bg-deep); color: var(--text-pure); display: flex; flex-direction: column; overflow-x: hidden; position: relative; perspective: 1200px; }
+        /* Registro de variable angular para el haz perimetral dinámico */
+        @property --cyber-angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
+        }
 
-        .matrix-floor { position: absolute; width: 200%; height: 200%; bottom: -60%; left: -50%; background-image: linear-gradient(rgba(255, 0, 60, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 0, 60, 0.08) 1px, transparent 1px); background-size: 50px 50px; transform: rotateX(80deg) translateZ(-50px); transform-origin: bottom center; pointer-events: none; z-index: 1; mask-image: linear-gradient(to top, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 80%); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 80%); }
-        .plasma-orb { position: absolute; border-radius: 50%; filter: blur(140px); pointer-events: none; z-index: 0; opacity: 0.35; }
-        .orb-left { width: 500px; height: 500px; background: radial-gradient(circle, var(--neon-red) 0%, transparent 75%); top: -5%; left: -5%; animation: orbitalMove 20s infinite linear; }
-        .orb-right { width: 600px; height: 600px; background: radial-gradient(circle, var(--neon-cyan) 0%, transparent 75%); bottom: -5%; right: -5%; animation: orbitalMove 25s infinite linear reverse; }
-        @keyframes orbitalMove { 0% { transform: rotate(0deg) translate(20px) scale(1); } 50% { transform: rotate(180deg) translate(-40px) scale(1.05); } 100% { transform: rotate(360deg) translate(20px) scale(1); } }
-        header { width: 100%; max-width: 1200px; margin: 0 auto; padding: 40px 20px 20px 20px; display: flex; justify-content: center; align-items: center; z-index: 10; }
-        .brand-link { display: flex; flex-direction: column; align-items: center; text-decoration: none; gap: 12px; cursor: pointer; }
-        .brand-logo-holder { height: 110px; display: flex; align-items: center; justify-content: center; transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1); animation: cyberGlowPulse 4s infinite ease-in-out; }
-        .brand-logo-holder img { height: 100%; width: auto; object-fit: contain; }
-        @keyframes cyberGlowPulse { 0%, 100% { filter: drop-shadow(0 0 15px rgba(255, 0, 60, 0.5)) drop-shadow(0 0 30px rgba(0, 242, 254, 0.1)); transform: scale(1); } 50% { filter: drop-shadow(0 0 25px rgba(255, 0, 60, 0.85)) drop-shadow(0 0 45px rgba(0, 242, 254, 0.35)); transform: scale(1.03); } }
-        .brand-link:hover .brand-logo-holder { animation-play-state: paused; transform: scale(1.06) translateY(-4px); filter: drop-shadow(0 0 30px rgba(255, 0, 60, 0.95)) drop-shadow(0 0 50px rgba(0, 242, 254, 0.5)); }
-        .brand-name { font-size: 22px; font-weight: 900; letter-spacing: 6px; color: var(--text-pure); text-transform: uppercase; margin-right: -6px; text-shadow: 0 0 15px rgba(255, 255, 255, 0.15); }
-        .wrapper-main { flex: 1; width: 100%; max-width: 1200px; margin: 0 auto; padding: 10px 20px 60px 20px; display: grid; grid-template-columns: 1fr; gap: 50px; align-items: center; z-index: 10; }
-        @media (min-width: 992px) { .wrapper-main { grid-template-columns: 0.95fr 1.05fr; padding-top: 10px; } }
-        .core-intro h1 { font-size: 42px; font-weight: 900; line-height: 1.1; letter-spacing: -0.5px; margin-bottom: 24px; text-transform: uppercase; }
-        @media (min-width: 768px) { .core-intro h1 { font-size: 52px; } }
-        .core-intro h1 span { display: block; background: linear-gradient(90deg, var(--neon-red), var(--neon-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 10px rgba(255, 0, 60, 0.2)); }
-        .core-intro p { font-size: 15px; color: var(--text-muted); line-height: 1.6; margin-bottom: 30px; max-width: 540px; }
-        .contact-fast-info { display: flex; flex-direction: column; gap: 12px; margin-bottom: 35px; background: rgba(26, 15, 21, 0.4); border-left: 2px solid var(--neon-red); padding: 16px 20px; border-radius: 0 12px 12px 0; max-width: 540px; box-shadow: inset 10px 0 20px rgba(255, 0, 60, 0.02); }
-        .info-link-item { display: flex; align-items: center; gap: 12px; color: var(--text-pure); text-decoration: none; font-size: 13px; font-weight: 600; transition: all 0.3s ease; cursor: pointer; }
-        .info-link-item:hover { color: var(--neon-cyan); transform: translateX(3px); }
-        .info-icon-tag { font-family: monospace; font-size: 10px; color: var(--neon-red); border: 1px solid rgba(255, 0, 60, 0.35); padding: 2px 6px; border-radius: 4px; background: rgba(255, 0, 60, 0.05); width: 75px; text-align: center; font-weight: 800; letter-spacing: 0.5px; }
-        .action-link { position: relative; display: inline-flex; align-items: center; justify-content: center; padding: 15px 36px; background: transparent; color: var(--neon-red); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; text-decoration: none; border: 1px solid rgba(255, 0, 60, 0.35); overflow: hidden; transition: all 0.4s ease; max-width: 280px; cursor: pointer; margin-bottom: 10px; }
-        .action-link:hover { border-color: var(--neon-red); box-shadow: 0 0 30px rgba(255, 0, 60, 0.35); color: #ffffff; background-color: rgba(255, 0, 60, 0.04); }
-        .action-link.corporativo { border-color: var(--neon-cyan); color: var(--neon-cyan); }
-        .action-link.corporativo:hover { border-color: var(--neon-cyan); box-shadow: 0 0 30px rgba(0, 242, 254, 0.35); background-color: rgba(0, 242, 254, 0.04); }
-        .cyber-grid-container { padding: 1px; background-image: conic-gradient(from var(--cyber-angle), transparent, var(--neon-red), var(--neon-cyan), transparent 70%); animation: rotateLaser 5s linear infinite; border-radius: 16px; transform: rotateY(-10deg) rotateX(4deg); transform-style: preserve-3d; box-shadow: -25px 35px 55px rgba(0,0,0,0.7); }
-        .cyber-grid-inner { background: linear-gradient(135deg, var(--carbon-dark), #04060d); border-radius: 15px; padding: 24px; display: flex; flex-direction: column; gap: 12px; max-height: 520px; overflow-y: auto; }
-        .cyber-grid-inner::-webkit-scrollbar { width: 4px; }
-        .cyber-grid-inner::-webkit-scrollbar-thumb { background: rgba(255, 0, 60, 0.3); border-radius: 4px; }
-        @keyframes rotateLaser { 0% { --cyber-angle: 0deg; } 100% { --cyber-angle: 360deg; } }
-        .card-node { background: rgba(14, 18, 33, 0.4); border: 1px solid rgba(255, 255, 255, 0.02); padding: 16px 18px; border-radius: 10px; display: flex; align-items: flex-start; gap: 16px; transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1); cursor: pointer; }
-        .card-node:hover { background: rgba(18, 23, 42, 0.75); border-color: rgba(255, 0, 60, 0.25); transform: translateZ(15px) translateX(4px); box-shadow: -5px 10px 18px rgba(0,0,0,0.5); }
-        .node-index { font-size: 10px; font-weight: 900; color: var(--neon-red); font-family: monospace; border: 1px solid rgba(255, 0, 60, 0.35); padding: 2px 6px; border-radius: 4px; background: rgba(255, 0, 60, 0.04); flex-shrink: 0; }
-        .node-data h3 { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; color: var(--text-pure); }
-        .node-data p { font-size: 12.5px; color: var(--text-muted); line-height: 1.45; }
-        footer { width: 100%; padding: 30px 20px; background-color: #020308; border-top: 1px solid rgba(255,255,255,0.01); z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 15px; }
-        @media (min-width: 992px) { footer { flex-direction: row; max-width: 1200px; margin: 0 auto; background-color: transparent; } }
-        .footer-terminal { font-family: monospace; font-size: 10px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
-        .footer-terminal span { color: var(--neon-red); }
+        :root {
+            --bg-deep: #03060f;
+            --neon-red: #ff003c; /* Rojo original de tu logotipo */
+            --neon-cyan: #00f2fe; /* Contraste cian eléctrico de alta energía */
+            --carbon-light: #1a0f15;
+            --carbon-dark: #090c15;
+            --text-pure: #ffffff;
+            --text-muted: #7e8da4;
+            --glass-base: rgba(9, 12, 21, 0.65);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background-color: var(--bg-deep);
+            color: var(--text-pure);
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            position: relative;
+            perspective: 1200px;
+        }
+
+        /* REJILLA HOLOGRÁFICA TRIDIMENSIONAL EN ROJO */
+        .matrix-floor {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            bottom: -60%;
+            left: -50%;
+            background-image: 
+                linear-gradient(rgba(255, 0, 60, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 0, 60, 0.08) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: rotateX(80deg) translateZ(-50px);
+            transform-origin: bottom center;
+            pointer-events: none;
+            z-index: 1;
+            mask-image: linear-gradient(to top, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 80%);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 80%);
+        }
+
+        /* ENERGÍA DE FONDO COMBINADA */
+        .plasma-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(140px);
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.35;
+        }
+
+        .orb-left {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, var(--neon-red) 0%, transparent 75%);
+            top: -5%;
+            left: -5%;
+            animation: orbitalMove 20s infinite linear;
+        }
+
+        .orb-right {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--neon-cyan) 0%, transparent 75%);
+            bottom: -5%;
+            right: -5%;
+            animation: orbitalMove 25s infinite linear reverse;
+        }
+
+        @keyframes orbitalMove {
+            0% { transform: rotate(0deg) translate(20px) scale(1); }
+            50% { transform: rotate(180deg) translate(-40px) scale(1.05); }
+            100% { transform: rotate(360deg) translate(20px) scale(1); }
+        }
+
+        /* CABECERA CON LOGOTIPO CENTRADO */
+        header {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px 20px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .brand-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        /* EFECTO DE GLOW PULSANTE */
+        .brand-logo-holder {
+            height: 110px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+            animation: cyberGlowPulse 4s infinite ease-in-out;
+        }
+
+        .brand-logo-holder img {
+            height: 100%;
+            width: auto;
+            object-fit: contain;
+        }
+
+        @keyframes cyberGlowPulse {
+            0%, 100% {
+                filter: drop-shadow(0 0 15px rgba(255, 0, 60, 0.5)) drop-shadow(0 0 30px rgba(0, 242, 254, 0.1));
+                transform: scale(1);
+            }
+            50% {
+                filter: drop-shadow(0 0 25px rgba(255, 0, 60, 0.85)) drop-shadow(0 0 45px rgba(0, 242, 254, 0.35));
+                transform: scale(1.03);
+            }
+        }
+
+        .brand-link:hover .brand-logo-holder {
+            animation-play-state: paused;
+            transform: scale(1.06) translateY(-4px);
+            filter: drop-shadow(0 0 30px rgba(255, 0, 60, 0.95)) drop-shadow(0 0 50px rgba(0, 242, 254, 0.5));
+        }
+
+        .brand-name {
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: 6px;
+            color: var(--text-pure);
+            text-transform: uppercase;
+            margin-right: -6px;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.15);
+        }
+
+        /* MAQUETACIÓN HERO BI-COLUMNA */
+        .wrapper-main {
+            flex: 1;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 10px 20px 60px 20px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 50px;
+            align-items: center;
+            z-index: 10;
+        }
+
+        @media (min-width: 992px) {
+            .wrapper-main {
+                grid-template-columns: 0.95fr 1.05fr;
+                padding-top: 10px;
+            }
+        }
+
+        /* TEXTOS DE IMPACTO */
+        .core-intro h1 {
+            font-size: 42px;
+            font-weight: 900;
+            line-height: 1.1;
+            letter-spacing: -0.5px;
+            margin-bottom: 24px;
+            text-transform: uppercase;
+        }
+
+        @media (min-width: 768px) {
+            .core-intro h1 { font-size: 52px; }
+        }
+
+        .core-intro h1 span {
+            display: block;
+            background: linear-gradient(90deg, var(--neon-red), var(--neon-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 10px rgba(255, 0, 60, 0.2));
+        }
+
+        .core-intro p {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 30px;
+            max-width: 540px;
+        }
+
+        /* INFO DE CONTACTO EN FILTRO CYBER */
+        .contact-fast-info {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 35px;
+            background: rgba(26, 15, 21, 0.4);
+            border-left: 2px solid var(--neon-red);
+            padding: 16px 20px;
+            border-radius: 0 12px 12px 0;
+            max-width: 540px;
+            box-shadow: inset 10px 0 20px rgba(255, 0, 60, 0.02);
+        }
+
+        .info-link-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-pure);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .info-link-item:hover {
+            color: var(--neon-cyan);
+            transform: translateX(3px);
+        }
+
+        .info-icon-tag {
+            font-family: monospace;
+            font-size: 10px;
+            color: var(--neon-red);
+            border: 1px solid rgba(255, 0, 60, 0.35);
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 0, 60, 0.05);
+            width: 75px;
+            text-align: center;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        /* BOTÓN DE ACCIÓN CON EFECTO LÁSER */
+        .action-link {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 36px;
+            background: transparent;
+            color: var(--neon-red);
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-decoration: none;
+            border: 1px solid rgba(255, 0, 60, 0.35);
+            overflow: hidden;
+            transition: all 0.4s ease;
+            max-width: 280px;
+            cursor: pointer;
+        }
+
+        .action-link:hover {
+            border-color: var(--neon-red);
+            box-shadow: 0 0 30px rgba(255, 0, 60, 0.35);
+            color: #ffffff;
+            background-color: rgba(255, 0, 60, 0.04);
+        }
+
+        .action-link:hover::before {
+            left: 100%;
+        }
+
+        /* CONTENEDOR 3D CON HAZ LÁSER ROJO / CIAN */
+        .cyber-grid-container {
+            padding: 1px;
+            background-image: conic-gradient(from var(--cyber-angle), transparent, var(--neon-red), var(--neon-cyan), transparent 70%);
+            animation: rotateLaser 5s linear infinite;
+            border-radius: 16px;
+            transform: rotateY(-10deg) rotateX(4deg);
+            transform-style: preserve-3d;
+            box-shadow: -25px 35px 55px rgba(0,0,0,0.7);
+        }
+
+        .cyber-grid-inner {
+            background: linear-gradient(135deg, var(--carbon-dark), #04060d);
+            border-radius: 15px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 520px;
+            overflow-y: auto;
+        }
+
+        .cyber-grid-inner::-webkit-scrollbar {
+            width: 4px;
+        }
+        .cyber-grid-inner::-webkit-scrollbar-thumb {
+            background: rgba(255, 0, 60, 0.3);
+            border-radius: 4px;
+        }
+
+        @keyframes rotateLaser {
+            0% { --cyber-angle: 0deg; }
+            100% { --cyber-angle: 360deg; }
+        }
+
+        /* TARJETAS INTERNAS DE SERVICIOS */
+        .card-node {
+            background: rgba(14, 18, 33, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            padding: 16px 18px;
+            border-radius: 10px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            cursor: pointer;
+        }
+
+        .card-node:hover {
+            background: rgba(18, 23, 42, 0.75);
+            border-color: rgba(255, 0, 60, 0.25);
+            transform: translateZ(15px) translateX(4px);
+            box-shadow: -5px 10px 18px rgba(0,0,0,0.5);
+        }
+
+        .node-index {
+            font-size: 10px;
+            font-weight: 900;
+            color: var(--neon-red);
+            font-family: monospace;
+            border: 1px solid rgba(255, 0, 60, 0.35);
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 0, 60, 0.04);
+            flex-shrink: 0;
+        }
+
+        .node-data h3 {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            color: var(--text-pure);
+        }
+
+        .node-data p {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            line-height: 1.45;
+        }
+
+        /* TERMINAL FOOTER */
+        footer {
+            width: 100%;
+            padding: 30px 20px;
+            background-color: #020308;
+            border-top: 1px solid rgba(255,255,255,0.01);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        @media (min-width: 992px) {
+            footer {
+                flex-direction: row;
+                max-width: 1200px;
+                margin: 0 auto;
+                background-color: transparent;
+            }
+        }
+
+        .footer-terminal {
+            font-family: monospace;
+            font-size: 10px;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .footer-terminal span {
+            color: var(--neon-red);
+        }
     </style>
 </head>
 <body>
 
+    <!-- REJILLA Y LABS DE ILUMINACIÓN CYBER -->
     <div class="matrix-floor"></div>
     <div class="plasma-orb orb-left"></div>
     <div class="plasma-orb orb-right"></div>
 
+    <!-- CABECERA CON LOGOTIPO CENTRADO -->
     <header>
         <div class="brand-link" onclick="lanzarEnlaceWhatsApp('general')">
-            <div class="brand-logo-holder"><img src="dc_telematica.png" alt="DC Telemática"></div>
+            <div class="brand-logo-holder">
+                <img src="dc_telematica.png" alt="DC Telemática">
+            </div>
             <span class="brand-name">DC Telemática</span>
         </div>
     </header>
 
+    <!-- NÚCLEO DE INTERFAZ -->
     <main class="wrapper-main">
+        
+        <!-- INTRODUCCIÓN E INFORMACIÓN ESTRUCTURADA -->
         <div class="core-intro">
             <h1>Telecomm & Network <span>Architectures.</span></h1>
             <p>Diseñamos e implementamos ecosistemas de comunicación unificada, gestión de turnos, consultoría de TI y conectividad corporativa inalámbrica masiva de alta densidad. Infraestructura digital blindada para operaciones de alto rendimiento.</p>
             
+            <!-- PANEL DE CONTACTO INTEGRADO -->
             <div class="contact-fast-info">
-                <div class="info-link-item" onclick="lanzarEnlaceWhatsApp('general')"><span class="info-icon-tag">WHATSAPP</span> +57 317 425 1419</div>
-                <a href="mailto:ing.david@dctelematica.com" class="info-link-item"><span class="info-icon-tag">EMAIL</span> ing.david@dctelematica.com</a>
-                <div class="info-link-item"><span class="info-icon-tag">LOC_ID</span> Cr. 16 No. 26 - 45 B. Centro, Saravena - Arauca</div>
+                <div class="info-link-item" onclick="lanzarEnlaceWhatsApp('general')">
+                    <span class="info-icon-tag">WHATSAPP</span> +57 317 425 1419
+                </div>
+                <a href="mailto:ing.david@dctelematica.com" class="info-link-item">
+                    <span class="info-icon-tag">EMAIL</span> ing.david@dctelematica.com
+                </a>
+                <div class="info-link-item">
+                    <span class="info-icon-tag">LOC_ID</span> Cr. 16 No. 26 - 45 B. Centro, Saravena - Arauca
+                </div>
             </div>
 
+            <!-- BOTÓN PRINCIPAL -->
             <div class="action-link" onclick="lanzarEnlaceWhatsApp('general')">Iniciar Mensaje</div>
-            <div class="action-link corporativo" onclick="accesoCorporativo()">Corporativo</div>
         </div>
 
+        <!-- RECUADRO CON PERSPECTIVA TRIDIMENSIONAL ACTIVA -->
         <div class="cyber-grid-container">
             <div class="cyber-grid-inner">
-                <div class="card-node" onclick="lanzarEnlaceWhatsApp('wifi')"><span class="node-index">01</span><div class="node-data"><h3>Advanced Wi-Fi Networks</h3><p>Diseño y despliegue de cobertura inalámbrica avanzada, portales cautivos Hotspot empresariales y optimización de espectro de alta densidad.</p></div></div>
-                <div class="card-node" onclick="lanzarEnlaceWhatsApp('voip')"><span class="node-index">02</span><div class="node-data"><h3>IP Telephony & VoIP</h3><p>Centrales telefónicas IP corporativas, aprovisionamiento de troncales SIP y arquitecturas de voz sobre IP escalables de alta disponibilidad.</p></div></div>
-                <div class="card-node" onclick="lanzarEnlaceWhatsApp('callcenter')"><span class="node-index">03</span><div class="node-data"><h3>Call Centers & Digiturnos</h3><p>Implementación de plataformas integradas de Contact Center y sistemas inteligentes de turnos digitales para optimizar la experiencia del usuario.</p></div></div>
-                <div class="card-node" onclick="lanzarEnlaceWhatsApp('consultoria')"><span class="node-index">04</span><div class="node-data"><h3>Consultoría Tecnológica (IT)</h3><p>Auditoría de infraestructura, análisis de seguridad perimetral, diagnóstico de vulnerabilidades en la red y optimización de recursos telemáticos.</p></div></div>
-                <div class="card-node" onclick="lanzarEnlaceWhatsApp('proyectos')"><span class="node-index">05</span><div class="node-data"><h3>Gestión y Diseño de Proyectos</h3><p>Formulación, estructuración y dirección técnica de proyectos de telecomunicaciones e infraestructura de datos bajo estándares internacionales.</p></div></div>
-                <div class="card-node" onclick="lanzarEnlaceWhatsApp('infraestructura')"><span class="node-index">06</span><div class="node-data"><h3>Secure Cyber-Infrastructure</h3><p>Ingeniería de enrutamiento avanzado con hardware MikroTik, cortafuegos perimetrales avanzados (Firewall) y balanceo dinámico de cargas WAN.</p></div></div>
+                
+                <!-- Servicio 01 -->
+                <div class="card-node" onclick="lanzarEnlaceWhatsApp('wifi')">
+                    <span class="node-index">01</span>
+                    <div class="node-data">
+                        <h3>Advanced Wi-Fi Networks</h3>
+                        <p>Diseño y despliegue de cobertura inalámbrica avanzada, portales cautivos Hotspot empresariales y optimización de espectro de alta densidad.</p>
+                    </div>
+                </div>
+
+                <!-- Servicio 02 -->
+                <div class="card-node" onclick="lanzarEnlaceWhatsApp('voip')">
+                    <span class="node-index">02</span>
+                    <div class="node-data">
+                        <h3>IP Telephony & VoIP</h3>
+                        <p>Centrales telefónicas IP corporativas, aprovisionamiento de troncales SIP y arquitecturas de voz sobre IP escalables de alta disponibilidad.</p>
+                    </div>
+                </div>
+
+                <!-- Servicio 03 -->
+                <div class="card-node" onclick="lanzarEnlaceWhatsApp('callcenter')">
+                    <span class="node-index">03</span>
+                    <div class="node-data">
+                        <h3>Call Centers & Digiturnos</h3>
+                        <p>Implementación de plataformas integradas de Contact Center y sistemas inteligentes de turnos digitales para optimizar la experiencia del usuario.</p>
+                    </div>
+                </div>
+
+                <!-- Servicio 04 -->
+                <div class="card-node" onclick="lanzarEnlaceWhatsApp('consultoria')">
+                    <span class="node-index">04</span>
+                    <div class="node-data">
+                        <h3>Consultoría Tecnológica (IT)</h3>
+                        <p>Auditoría de infraestructura, análisis de seguridad perimetral, diagnóstico de vulnerabilidades en la red y optimización de recursos telemáticos.</p>
+                    </div>
+                </div>
+
+                <!-- Servicio 05 -->
+                <div class="card-node" onclick="lanzarEnlaceWhatsApp('proyectos')">
+                    <span class="node-index">05</span>
+                    <div class="node-data">
+                        <h3>Gestión y Diseño de Proyectos</h3>
+                        <p>Formulación, estructuración y dirección técnica de proyectos de telecomunicaciones e infraestructura de datos bajo estándares internacionales.</p>
+                    </div>
+                </div>
+
+                <!-- Servicio 06 -->
+                <div class="card-node" onclick="lanzarEnlaceWhatsApp('infraestructura')">
+                    <span class="node-index">06</span>
+                    <div class="node-data">
+                        <h3>Secure Cyber-Infrastructure</h3>
+                        <p>Ingeniería de enrutamiento avanzado con hardware MikroTik, cortafuegos perimetrales avanzados (Firewall) y balanceo dinámico de cargas WAN.</p>
+                    </div>
+                </div>
+
             </div>
         </div>
     </main>
 
+    <!-- FOOTER TERMINAL -->
     <footer>
         <div class="footer-terminal">NET_STATUS: <span>ACTIVE</span> // BROADCAST_LOC: <span>SARAVENA_ARAUCA_CO</span></div>
         <div class="footer-terminal">&copy; 2026 DC TELEMÁTICA. ALL CHANNELS OPERATIONAL.</div>
     </footer>
 
+    <!-- INTERFAZ DE ENRUTAMIENTO DIRECTO MEDIANTE EL PUENTE DE META VERIFICADO -->
     <script type="text/javascript">
         function lanzarEnlaceWhatsApp(servicio) {
             var telefono = "573174251419";
             var mensaje = "Hola, solicito soporte tecnico de DC Telematica.";
+
             if (servicio === 'wifi') mensaje = "Hola, solicito informacion sobre redes Wi-Fi avanzadas.";
             if (servicio === 'voip') mensaje = "Hola, solicito informacion sobre telefonia IP y VoIP.";
             if (servicio === 'callcenter') mensaje = "Hola, solicito informacion sobre Call Centers y Digiturnos.";
             if (servicio === 'consultoria') mensaje = "Hola, solicito una consultoria tecnologica de IT.";
             if (servicio === 'proyectos') mensaje = "Hola, solicito informacion sobre gestion de proyectos.";
             if (servicio === 'infraestructura') mensaje = "Hola, solicito soporte sobre infraestructura de red Mikrotik.";
+
             var msgClean = encodeURIComponent(mensaje);
+            
+            // Detector preciso de agentes móviles (móviles y tablets)
             var esDispositivoMovil = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
             if (esDispositivoMovil) {
-                var fallbackTimer = setTimeout(function() { window.location.href = "https://wa.me" + telefono + "?text=" + msgClean; }, 400);
+                // EN CELULAR: Se mantiene intacta la app nativa (funciona perfecto)
+                var fallbackTimer = setTimeout(function() {
+                    window.location.href = "https://wa.me" + telefono + "?text=" + msgClean;
+                }, 400);
+
                 window.location.href = "whatsapp://send?phone=" + telefono + "&text=" + msgClean;
             } else {
+                // SOLUCIÓN DEFINITIVA PC: Inyección limpia empleando códigos ASCII puros para forzar la barra '/' fija en Chrome
+                // Esto levanta obligatoriamente la pantalla oficial verde "Open WhatsApp" vinculando tu chat privado al 100% sin desvíos
                 var baseUrlPC = "https:" + String.fromCharCode(47, 47) + "wa.me" + String.fromCharCode(47) + telefono;
                 window.location.href = baseUrlPC + "?text=" + msgClean;
             }
@@ -171,3 +574,4 @@
     </script>
 </body>
 </html>
+
