@@ -888,12 +888,19 @@
         }
     });
 
-    // Función asíncrona fluida para guardar en Firebase
+    // Función asíncrona fluida para guardar en Firebase con Diagnóstico
     async function guardarAuditoria(accion) {
         document.getElementById('accion_post_guardado').value = accion;
         
         // 1. Cerramos el modal inicial inmediatamente
         modalDecision.style.display = 'none';
+
+        // ⚠️ VALIDACIÓN PREVIA DE SESIÓN
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+            alert("⚠️ DIAGNÓSTICO FIREBASE:\nNo hay un usuario autenticado activo en este momento. Firebase bloqueará el guardado porque requiere permisos de sesión.\n\nPor favor, ingresa desde tu Landing Page (index.html) primero.");
+            return;
+        }
         
         // 2. Bloqueamos el botón y cambiamos el texto
         const textoOriginal = btnPrincipal.innerText;
@@ -920,6 +927,7 @@
                 }
             }
             data.timestamp = new Date();
+            data.tecnicoId = currentUser.uid; // Agregamos el ID del técnico que guarda los datos
 
             // Guardado en Firebase
             await addDoc(collection(db, "inspecciones"), data);
@@ -969,13 +977,9 @@
                         } catch (e) {
                             console.error("Error al limpiar el formulario:", e);
                         } finally {
-                            // Este bloque "finally" garantiza que el sistema siempre se desbloquee, 
-                            // solucionando el problema de que el botón quedara atascado.
                             logoWrapper.classList.remove('active');
                             btnPrincipal.innerText = textoOriginal;
                             btnPrincipal.disabled = false;
-                            
-                            // Llevamos la pantalla hacia arriba elegantemente
                             window.scrollTo({ top: 0, behavior: 'smooth' });
                         }
                     }, 1500); 
@@ -983,8 +987,16 @@
             }, 800); 
 
         } catch (error) {
-            console.error("Error al guardar en Firebase:", error);
-            alert("Error al guardar. Verifica tu conexión a internet.");
+            // ⚠️ AQUÍ CAPTURAMOS Y MOSTRAMOS EL ERROR REAL DE FIREBASE AL USUARIO
+            console.error("🔥 Error completo de Firebase:", error);
+            
+            let mensajeError = error.message;
+            if (error.code === "permission-denied") {
+                mensajeError = "PERMISO DENEGADO (permission-denied).\nEsto ocurre porque las 'Reglas de Seguridad de Firestore' (Firestore Rules) en tu consola de Firebase están en modo producción o bloqueando la escritura. Debes actualizarlas para permitir escribir en la colección 'inspecciones'.";
+            }
+
+            alert("❌ FALLÓ EL GUARDADO EN FIREBASE\n\nMotivo: " + mensajeError + "\n\nCódigo de Error: " + error.code);
+            
             logoWrapper.classList.remove('active');
             btnPrincipal.innerText = textoOriginal;
             btnPrincipal.disabled = false;
