@@ -1,11 +1,6 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { Background3D } from "@/components/background-3d";
-
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: 'DC Telemática - Soluciones en Telecomunicaciones',
@@ -38,11 +33,11 @@ export default function RootLayout({
   return (
     <html lang="es" className="bg-background">
       <body className="font-sans antialiased">
-        {/* Aquí insertamos tu nuevo fondo 3D */}
+        {/* Tu fondo 3D global */}
         <Background3D />
         
+        {/* El contenido de tu página */}
         {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
   )
