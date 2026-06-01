@@ -1,0 +1,276 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* DC Telemática Brand Colors */
+  /* Primary: RGB (237, 28, 36) = #ED1C24 */
+  /* Secondary: RGB (34, 42, 104) = #222A68 */
+  --background: oklch(0.08 0.015 265);
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(0.12 0.02 265);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.12 0.02 265);
+  --popover-foreground: oklch(0.98 0 0);
+  /* Primary: Vibrant Red #ED1C24 */
+  --primary: oklch(0.55 0.24 25);
+  --primary-foreground: oklch(0.98 0 0);
+  /* Secondary: Dark Navy Blue #222A68 */
+  --secondary: oklch(0.28 0.1 265);
+  --secondary-foreground: oklch(0.95 0 0);
+  --muted: oklch(0.18 0.02 265);
+  --muted-foreground: oklch(0.65 0 0);
+  /* Accent: Navy Blue */
+  --accent: oklch(0.35 0.12 265);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.55 0.24 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.22 0.03 265);
+  --input: oklch(0.15 0.02 265);
+  --ring: oklch(0.55 0.24 25);
+  --chart-1: oklch(0.55 0.24 25);
+  --chart-2: oklch(0.35 0.12 265);
+  --chart-3: oklch(0.6 0.2 30);
+  --chart-4: oklch(0.4 0.14 270);
+  --chart-5: oklch(0.5 0.22 25);
+  --radius: 0.75rem;
+  --sidebar: oklch(0.1 0.02 265);
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.55 0.24 25);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.28 0.1 265);
+  --sidebar-accent-foreground: oklch(0.98 0 0);
+  --sidebar-border: oklch(0.22 0.03 265);
+  --sidebar-ring: oklch(0.55 0.24 25);
+}
+
+@theme inline {
+  --font-sans: 'Geist', 'Geist Fallback';
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  
+  /* Custom brand colors for direct use */
+  --color-brand-red: oklch(0.55 0.24 25);
+  --color-brand-navy: oklch(0.28 0.1 265);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Futuristic Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(1deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { 
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes circuit-flow {
+  0% { stroke-dashoffset: 100; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes data-stream {
+  0% { opacity: 0; transform: translateY(-10px); }
+  50% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(10px); }
+}
+
+@keyframes border-glow {
+  0%, 100% { 
+    box-shadow: 0 0 5px oklch(0.55 0.24 25 / 0.3),
+                0 0 10px oklch(0.55 0.24 25 / 0.2),
+                0 0 15px oklch(0.55 0.24 25 / 0.1);
+  }
+  50% { 
+    box-shadow: 0 0 10px oklch(0.55 0.24 25 / 0.5),
+                0 0 20px oklch(0.55 0.24 25 / 0.3),
+                0 0 30px oklch(0.55 0.24 25 / 0.2);
+  }
+}
+
+@keyframes rotate-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes logo-glow {
+  0%, 100% { 
+    filter: drop-shadow(0 0 8px oklch(0.55 0.24 25 / 0.4)) drop-shadow(0 0 16px oklch(0.28 0.1 265 / 0.3));
+  }
+  50% { 
+    filter: drop-shadow(0 0 12px oklch(0.55 0.24 25 / 0.6)) drop-shadow(0 0 24px oklch(0.28 0.1 265 / 0.4));
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    oklch(0.55 0.24 25 / 0.1) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
+}
+
+.animate-border-glow {
+  animation: border-glow 3s ease-in-out infinite;
+}
+
+.animate-rotate-slow {
+  animation: rotate-slow 20s linear infinite;
+}
+
+.animate-logo-glow {
+  animation: logo-glow 4s ease-in-out infinite;
+}
+
+/* Grid pattern with circuit aesthetic */
+.bg-grid-pattern {
+  background-image: 
+    linear-gradient(oklch(0.55 0.24 25 / 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.55 0.24 25 / 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* Circuit board pattern */
+.bg-circuit-pattern {
+  background-image: 
+    radial-gradient(circle at 25% 25%, oklch(0.55 0.24 25 / 0.08) 1px, transparent 1px),
+    radial-gradient(circle at 75% 75%, oklch(0.28 0.1 265 / 0.08) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Gradient text effect */
+.text-gradient {
+  background: linear-gradient(135deg, oklch(0.55 0.24 25) 0%, oklch(0.65 0.2 30) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Futuristic border effect */
+.border-futuristic {
+  position: relative;
+}
+
+.border-futuristic::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, oklch(0.55 0.24 25 / 0.5), oklch(0.28 0.1 265 / 0.5));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: oklch(0.1 0.015 265);
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(0.28 0.1 265);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.55 0.24 25);
+}
