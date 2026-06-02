@@ -103,6 +103,11 @@ export default function FormularioPage() {
       data.accion_post_guardado = accion;
       data.timestamp = new Date().toISOString();
 
+      // NUEVO: Eliminamos los objetos 'File' crudos que Firestore no soporta
+      delete data.foto_1;
+      delete data.foto_2;
+      delete data.foto_3;
+
       // Guardamos directamente el texto Base64 comprimido en la base de datos
       data.foto_1_base64 = photos[1] || "";
       data.foto_2_base64 = photos[2] || "";
