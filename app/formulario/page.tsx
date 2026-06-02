@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, collection, addDoc } from "firebase/firestore";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "firebase/firestore";
 
 // Configuración de Firebase (Se inicializa solo si no existe)
 const firebaseConfig = {
@@ -39,9 +39,30 @@ export default function FormularioPage() {
       }
     });
 
-    // Lee el contador local. Las eliminaciones en el panel NO afectan este número.
-    const contador = parseInt(localStorage.getItem("dc_telematica_contador") || "1");
-    setRegistroNum(contador);
+    // Leer siempre el último número desde la base de datos de Firebase
+    const fetchUltimoRegistro = async () => {
+      try {
+        const q = query(collection(db, "inspecciones"), orderBy("timestamp", "desc"), limit(1));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          const ultimoDoc = querySnapshot.docs[0].data();
+          const ultimoNum = parseInt(ultimoDoc.registro_num || "0");
+          // Setea el próximo número sumándole 1 al último que encontró en Firebase
+          setRegistroNum(ultimoNum + 1);
+        } else {
+          // Si no hay registros, empieza en 1
+          setRegistroNum(1);
+        }
+      } catch (error) {
+        console.error("Error obteniendo el último registro:", error);
+        // Fallback: si falla el internet, usa el contador local por seguridad
+        const contadorLocal = parseInt(localStorage.getItem("dc_telematica_contador") || "1");
+        setRegistroNum(contadorLocal);
+      }
+    };
+
+    fetchUltimoRegistro();
 
     const now = new Date();
     setFechaHora(
@@ -114,7 +135,7 @@ export default function FormularioPage() {
 
       await addDoc(collection(db, "inspecciones"), data);
       
-      // Aumentamos el contador local de manera segura
+      // Mantenemos el contador local actualizado por si en el futuro se quedan sin internet
       localStorage.setItem("dc_telematica_contador", (registroNum + 1).toString());
 
       setIsSaving(false);
