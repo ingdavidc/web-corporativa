@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, collection, addDoc } from "firebase/firestore";
@@ -27,7 +28,7 @@ export default function FormularioPage() {
   const [showModal, setShowModal] = useState(false);
   const [photos, setPhotos] = useState<{ [key: number]: string | null }>({ 1: null, 2: null, 3: null });
   const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState<string | null>(null); // NUEVO: Estado para el mensaje de éxito
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -38,6 +39,7 @@ export default function FormularioPage() {
       }
     });
 
+    // Lee el contador local. Las eliminaciones en el panel NO afectan este número.
     const contador = parseInt(localStorage.getItem("dc_telematica_contador") || "1");
     setRegistroNum(contador);
 
@@ -54,7 +56,7 @@ export default function FormularioPage() {
   // --- FUNCIÓN PARA COMPRIMIR FOTOS Y AHORRAR ESPACIO EN FIRESTORE ---
   const compressImage = (base64Str: string, maxWidth = 800): Promise<string> => {
     return new Promise((resolve) => {
-      const img = new Image();
+      const img = new globalThis.Image();
       img.src = base64Str;
       img.onload = () => {
         const canvas = document.createElement("canvas");
@@ -89,12 +91,12 @@ export default function FormularioPage() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setShowModal(true);
-    setSaveSuccess(null); // Reiniciamos el mensaje si vuelve a abrir el modal
+    setSaveSuccess(null); 
   };
 
   const procesarGuardado = async (accion: string) => {
     if (!formRef.current) return;
-    setIsSaving(true); // Activa la animación sutil de carga
+    setIsSaving(true); 
 
     try {
       const formData = new FormData(formRef.current);
@@ -111,12 +113,12 @@ export default function FormularioPage() {
       data.foto_3_base64 = photos[3] || "";
 
       await addDoc(collection(db, "inspecciones"), data);
+      
+      // Aumentamos el contador local de manera segura
       localStorage.setItem("dc_telematica_contador", (registroNum + 1).toString());
 
-      // Ocultamos el spinner de carga
       setIsSaving(false);
 
-      // Mostramos la animación de éxito y esperamos antes de redirigir
       if (accion === "continuar_punto") {
         setSaveSuccess("¡Punto de red guardado correctamente!");
         setTimeout(() => {
@@ -126,7 +128,7 @@ export default function FormularioPage() {
         setSaveSuccess("¡Muchas gracias por su dedicación y responsabilidad! Cada vez más cerca de la excelencia.");
         setTimeout(() => {
           router.push("/");
-        }, 3500); // Espera 3.5 segundos para que pueda leerlo
+        }, 3500); 
       }
 
     } catch (error: unknown) {
@@ -147,11 +149,27 @@ export default function FormularioPage() {
     <main className="relative z-10 min-h-screen p-4 md:p-8 flex justify-center pb-24 text-gray-200">
       <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl w-full max-w-3xl p-6 md:p-10 shadow-[0_0_40px_rgba(0,0,0,0.5)]">
         
-        {/* Cabecera */}
-        <div className="text-center mb-8 border border-cyan-500/30 bg-cyan-900/10 p-4 rounded-lg">
-          <h1 className="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase tracking-wider">
-            Consultoría Hospital San Vicente de Arauca E.S.E.
-          </h1>
+        {/* Cabecera con Logotipo Animado */}
+        <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-8 border border-cyan-500/30 bg-cyan-900/10 p-6 rounded-lg shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+          {/* Contenedor del Logo 3D */}
+          <div className="relative w-24 h-24 md:w-28 md:h-28 transition-transform duration-700 hover:scale-110 hover:rotate-y-12 hover:rotate-x-12 perspective-1000 shrink-0">
+            <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-xl animate-pulse"></div>
+            <Image
+              src="/logo.png" 
+              alt="Logo DC Telemática"
+              fill
+              className="object-contain drop-shadow-[0_0_15px_rgba(6,182,212,0.8)]"
+              priority
+            />
+          </div>
+          <div className="text-center md:text-left">
+            <h1 className="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase tracking-wider">
+              Consultoría Hospital San Vicente de Arauca
+            </h1>
+            <p className="text-cyan-100/70 text-sm mt-2 font-medium tracking-wide">
+              MÓDULO DE AUDITORÍA TÉCNICA E INSPECCIÓN FÍSICA
+            </p>
+          </div>
         </div>
 
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-8">
@@ -398,7 +416,7 @@ export default function FormularioPage() {
               </div>
             )}
 
-            {/* ESTADO 3: Pregunta inicial (Solo se muestra si no está guardando ni ha tenido éxito) */}
+            {/* ESTADO 3: Pregunta inicial */}
             {!isSaving && !saveSuccess && (
               <div className="animate-in fade-in duration-300">
                 <h3 className="text-2xl font-bold text-cyan-400 mb-2">Inspección Lista</h3>
