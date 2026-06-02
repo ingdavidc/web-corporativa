@@ -121,6 +121,8 @@ export default function FormularioPage() {
       if (accion === "continuar_punto") {
         window.location.reload();
       } else {
+        // NUEVO: Mensaje de agradecimiento antes de salir
+        alert("¡Muchas gracias por su dedicación y responsabilidad! Cada vez más cerca de la excelencia.");
         router.push("/");
       }
     } catch (error: unknown) {
