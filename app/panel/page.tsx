@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
-import { getFirestore, collection, onSnapshot, doc, deleteDoc, updateDoc, query, orderBy } from "firebase/firestore";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "firebase/firestore";
 
 // Configuración de Firebase (Se inicializa solo si no existe)
 const firebaseConfig = {
@@ -18,299 +18,448 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Tipo de dato para TypeScript
-interface Inspeccion {
-  id: string;
-  registro_num?: string;
-  fecha_hora?: string;
-  punto_id?: string;
-  ubicacion?: string;
-  switch_port?: string;
-  foto_1_base64?: string;
-  foto_2_base64?: string;
-  foto_3_base64?: string;
-  [key: string]: any; 
-}
-
-export default function PanelPage() {
+export default function FormularioPage() {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
-  const [inspecciones, setInspecciones] = useState<Inspeccion[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Estados para los modales
-  const [viewDoc, setViewDoc] = useState<Inspeccion | null>(null);
-  const [editDoc, setEditDoc] = useState<Inspeccion | null>(null);
+  const [registroNum, setRegistroNum] = useState(1);
+  const [fechaHora, setFechaHora] = useState("");
+  const [numSwitches, setNumSwitches] = useState(1);
+  const [showOtros, setShowOtros] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [photos, setPhotos] = useState<{ [key: number]: string | null }>({ 1: null, 2: null, 3: null });
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     setIsClient(true);
-    
-    // 1. Protección de ruta
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
         router.push("/");
       }
     });
 
-    // 2. Traer los datos en tiempo real ordenados por fecha
-    const q = query(collection(db, "inspecciones"), orderBy("timestamp", "desc"));
-    const unsubscribeDb = onSnapshot(q, (snapshot) => {
-      const docs: Inspeccion[] = [];
-      snapshot.forEach((doc) => {
-        docs.push({ id: doc.id, ...doc.data() });
-      });
-      setInspecciones(docs);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error al cargar datos:", error);
-      setLoading(false);
-    });
-
-    return () => {
-      unsubscribeAuth();
-      unsubscribeDb();
+    // Leer siempre el último número desde la base de datos de Firebase
+    const fetchUltimoRegistro = async () => {
+      try {
+        const q = query(collection(db, "inspecciones"), orderBy("timestamp", "desc"), limit(1));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          const ultimoDoc = querySnapshot.docs[0].data();
+          const ultimoNum = parseInt(ultimoDoc.registro_num || "0");
+          // Setea el próximo número sumándole 1 al último que encontró en Firebase
+          setRegistroNum(ultimoNum + 1);
+        } else {
+          // Si no hay registros, empieza en 1
+          setRegistroNum(1);
+        }
+      } catch (error) {
+        console.error("Error obteniendo el último registro:", error);
+        // Fallback: si falla el internet, usa el contador local por seguridad
+        const contadorLocal = parseInt(localStorage.getItem("dc_telematica_contador") || "1");
+        setRegistroNum(contadorLocal);
+      }
     };
+
+    fetchUltimoRegistro();
+
+    const now = new Date();
+    setFechaHora(
+      now.toLocaleString("es-CO", {
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true,
+      })
+    );
+    return () => unsubscribe();
   }, [router]);
 
-  // Función para cerrar sesión
-  const handleLogout = async () => {
-    await signOut(auth);
-    router.push("/");
+  // --- FUNCIÓN PARA COMPRIMIR FOTOS Y AHORRAR ESPACIO EN FIRESTORE ---
+  const compressImage = (base64Str: string, maxWidth = 800): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new globalThis.Image();
+      img.src = base64Str;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ratio = maxWidth / img.width;
+        if (ratio < 1) {
+          canvas.width = maxWidth;
+          canvas.height = img.height * ratio;
+        } else {
+          canvas.width = img.width;
+          canvas.height = img.height;
+        }
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.6));
+      };
+    });
   };
 
-  // Función para eliminar un registro (Elimina de la base de datos, NO resetea el contador local)
-  const handleDelete = async (id: string) => {
-    if (window.confirm("⚠️ ¿Estás seguro de que deseas eliminar este registro permanentemente del panel?")) {
-      try {
-        await deleteDoc(doc(db, "inspecciones", id));
-        // Nota: NO modificamos localStorage("dc_telematica_contador") aquí.
-        // Esto asegura que la secuencia en el formulario (Registro N°) continúe sin alterarse.
-      } catch (error) {
-        console.error("Error eliminando:", error);
-        alert("Hubo un error al eliminar el registro.");
-      }
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const originalBase64 = reader.result as string;
+        const compressedBase64 = await compressImage(originalBase64);
+        setPhotos((prev) => ({ ...prev, [index]: compressedBase64 }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  // Función para guardar cambios en la edición
-  const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!editDoc) return;
-    
+    setShowModal(true);
+    setSaveSuccess(null); 
+  };
+
+  const procesarGuardado = async (accion: string) => {
+    if (!formRef.current) return;
+    setIsSaving(true); 
+
     try {
-      const formData = new FormData(e.currentTarget);
-      const dataToUpdate = Object.fromEntries(formData.entries());
+      const formData = new FormData(formRef.current);
+      const data = Object.fromEntries(formData.entries());
+      data.accion_post_guardado = accion;
+      data.timestamp = new Date().toISOString();
+
+      delete data.foto_1;
+      delete data.foto_2;
+      delete data.foto_3;
+
+      data.foto_1_base64 = photos[1] || "";
+      data.foto_2_base64 = photos[2] || "";
+      data.foto_3_base64 = photos[3] || "";
+
+      await addDoc(collection(db, "inspecciones"), data);
       
-      await updateDoc(doc(db, "inspecciones", editDoc.id), dataToUpdate);
-      setEditDoc(null); 
-      alert("✅ Registro actualizado correctamente");
-    } catch (error) {
-      console.error("Error actualizando:", error);
-      alert("Error al actualizar el registro.");
+      // Mantenemos el contador local actualizado por si en el futuro se quedan sin internet
+      localStorage.setItem("dc_telematica_contador", (registroNum + 1).toString());
+
+      setIsSaving(false);
+
+      if (accion === "continuar_punto") {
+        setSaveSuccess("¡Punto de red guardado correctamente!");
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        setSaveSuccess("¡Muchas gracias por su dedicación y responsabilidad! Cada vez más cerca de la excelencia.");
+        setTimeout(() => {
+          router.push("/");
+        }, 3500); 
+      }
+
+    } catch (error: unknown) {
+      console.error("Error al guardar en Firebase:", error);
+      const errorMessage = error instanceof Error ? error.message : "Revisa la conexión.";
+      if (errorMessage.includes("exceeds the maximum")) {
+          alert("Error: Las fotos son demasiado pesadas. Intenta tomar fotos de menor resolución.");
+      } else {
+          alert("Error de Firebase: " + errorMessage);
+      }
+      setIsSaving(false);
     }
   };
 
   if (!isClient) return null;
 
   return (
-    <main className="relative z-10 min-h-screen p-4 md:p-8 text-gray-200">
-      
-      {/* Encabezado del Panel */}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-8 bg-black/60 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-        <div className="flex items-center gap-6">
-           {/* Logo con animación 3D sutil */}
-           <div className="relative w-24 h-24 md:w-32 md:h-32 transition-transform duration-700 hover:scale-110 hover:rotate-y-12 hover:rotate-x-12 perspective-1000">
-              <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-2xl animate-pulse"></div>
-              <Image
-                src="/logo.png" 
-                alt="Logo DC Telemática"
-                fill
-                className="object-contain drop-shadow-[0_0_15px_rgba(6,182,212,0.8)]"
-              />
-            </div>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase tracking-wider">
-              Panel de Ingeniería
+    <main className="relative z-10 min-h-screen p-4 md:p-8 flex justify-center pb-24 text-gray-200">
+      <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl w-full max-w-3xl p-6 md:p-10 shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+        
+        {/* Cabecera con Logotipo Animado */}
+        <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-8 border border-cyan-500/30 bg-cyan-900/10 p-6 rounded-lg shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+          {/* Contenedor del Logo 3D */}
+          <div className="relative w-24 h-24 md:w-28 md:h-28 transition-transform duration-700 hover:scale-110 hover:rotate-y-12 hover:rotate-x-12 perspective-1000 shrink-0">
+            <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-xl animate-pulse"></div>
+            <Image
+              src="/logo.png" 
+              alt="Logo DC Telemática"
+              fill
+              className="object-contain drop-shadow-[0_0_15px_rgba(6,182,212,0.8)]"
+              priority
+            />
+          </div>
+          <div className="text-center md:text-left">
+            <h1 className="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase tracking-wider">
+              Consultoría Hospital San Vicente de Arauca
             </h1>
-            <p className="text-gray-400 text-sm mt-1">Gestión y Auditoría Hospital San Vicente de Arauca</p>
+            <p className="text-cyan-100/70 text-sm mt-2 font-medium tracking-wide">
+              MÓDULO DE AUDITORÍA TÉCNICA E INSPECCIÓN FÍSICA
+            </p>
           </div>
         </div>
-        <button 
-          onClick={handleLogout}
-          className="mt-4 md:mt-0 px-6 py-2 bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500 hover:text-white rounded-lg transition-all font-bold"
-        >
-          Cerrar Sesión
-        </button>
-      </div>
 
-      {/* Contenedor de la Tabla */}
-      <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl w-full p-4 md:p-8 shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-x-auto">
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="w-12 h-12 border-4 border-cyan-900 border-t-cyan-400 rounded-full animate-spin"></div>
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-8">
+          
+          {/* Metadatos */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white/5 p-4 rounded-xl border border-white/10">
+            <div className="col-span-1">
+              <label className="text-xs text-gray-400 uppercase font-semibold">Registro N°:</label>
+              <input type="text" name="registro_num" value={registroNum} readOnly className="w-full bg-black/50 border border-white/10 rounded p-3 text-cyan-400 font-bold text-center mt-1 outline-none" />
+            </div>
+            <div className="col-span-1 md:col-span-2">
+              <label className="text-xs text-gray-400 uppercase font-semibold">Fecha y Hora:</label>
+              <input type="text" name="fecha_hora" value={fechaHora} readOnly className="w-full bg-black/50 border border-white/10 rounded p-3 text-gray-300 font-bold mt-1 outline-none" />
+            </div>
           </div>
-        ) : inspecciones.length === 0 ? (
-          <div className="text-center py-20 text-gray-500">
-            <p className="text-xl">No hay registros de inspección todavía.</p>
-          </div>
-        ) : (
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-white/10 text-cyan-400">
-                <th className="py-4 px-4 font-semibold">Reg N°</th>
-                <th className="py-4 px-4 font-semibold">Fecha</th>
-                <th className="py-4 px-4 font-semibold">Punto ID</th>
-                <th className="py-4 px-4 font-semibold">Ubicación</th>
-                <th className="py-4 px-4 font-semibold text-center">Fotos</th>
-                <th className="py-4 px-4 font-semibold text-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inspecciones.map((inspeccion) => (
-                <tr key={inspeccion.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                  <td className="py-4 px-4 font-bold">{inspeccion.registro_num || "-"}</td>
-                  <td className="py-4 px-4 text-sm text-gray-400">{inspeccion.fecha_hora || "-"}</td>
-                  <td className="py-4 px-4 font-medium text-cyan-100">{inspeccion.punto_id || "-"}</td>
-                  <td className="py-4 px-4 text-sm">{inspeccion.ubicacion || "-"}</td>
-                  <td className="py-4 px-4 text-center">
-                    {inspeccion.foto_1_base64 || inspeccion.foto_2_base64 ? "📷 Sí" : "❌ No"}
-                  </td>
-                  <td className="py-4 px-4">
-                    <div className="flex justify-center gap-3">
-                      {/* Botón Ver */}
-                      <button onClick={() => setViewDoc(inspeccion)} className="p-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded transition-colors" title="Ver Detalles">
-                        👁️
-                      </button>
-                      {/* Botón Editar */}
-                      <button onClick={() => setEditDoc(inspeccion)} className="p-2 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500 hover:text-black rounded transition-colors" title="Editar">
-                        ✏️
-                      </button>
-                      {/* Botón Eliminar */}
-                      <button onClick={() => handleDelete(inspeccion.id)} className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded transition-colors" title="Eliminar">
-                        🗑️
-                      </button>
+
+          {/* 1. Identificación del Punto */}
+          <section>
+            <h2 className="text-xl font-bold text-cyan-400 border-b border-white/10 pb-2 mb-4 relative after:content-[''] after:absolute after:left-0 after:-bottom-[1px] after:w-16 after:h-[2px] after:bg-red-500">
+              1. Identificación del Punto
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-semibold mb-1 block">ID del Punto de Red:</label>
+                <input type="text" name="punto_id" placeholder="Ej. Nodo A, P-01..." required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 focus:border-cyan-500 outline-none transition-colors" />
+              </div>
+              <div>
+                <label className="text-sm font-semibold mb-1 block">Ubicación Física:</label>
+                <input type="text" name="ubicacion" placeholder="Ej. Piso 2, Oficina Contabilidad..." required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 focus:border-cyan-500 outline-none transition-colors" />
+              </div>
+            </div>
+          </section>
+
+          {/* 2. Estado Físico y Estructural */}
+          <section>
+            <h2 className="text-xl font-bold text-cyan-400 border-b border-white/10 pb-2 mb-4 relative after:content-[''] after:absolute after:left-0 after:-bottom-[1px] after:w-16 after:h-[2px] after:bg-red-500">
+              2. Estado Físico y Estructural
+            </h2>
+            
+            <div className="space-y-6">
+              {/* Faceplate */}
+              <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                <label className="font-semibold block mb-3 text-cyan-100">Faceplate y Jack RJ45:</label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <label className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-white/5 rounded"><input type="checkbox" name="fisico" value="buen_estado" className="w-5 h-5 accent-cyan-500" /><span>Buen estado general</span></label>
+                  <label className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-white/5 rounded"><input type="checkbox" name="fisico" value="roto" className="w-5 h-5 accent-cyan-500" /><span>Faceplate roto/suelto</span></label>
+                  <label className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-white/5 rounded"><input type="checkbox" name="fisico" value="pines_dañados" className="w-5 h-5 accent-cyan-500" /><span>Pines oxidados/doblados</span></label>
+                </div>
+              </div>
+
+              {/* Cableado */}
+              <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                <label className="font-semibold block mb-3 text-cyan-100">Cableado y Etiquetado:</label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <label className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-white/5 rounded"><input type="checkbox" name="cable" value="etiquetado" className="w-5 h-5 accent-cyan-500" /><span>Correctamente etiquetado</span></label>
+                  <label className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-white/5 rounded"><input type="checkbox" name="cable" value="sin_etiqueta" className="w-5 h-5 accent-cyan-500" /><span>Sin identificar</span></label>
+                  <label className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-white/5 rounded"><input type="checkbox" name="cable" value="expuesto" className="w-5 h-5 accent-cyan-500" /><span>Cable expuesto</span></label>
+                </div>
+              </div>
+
+              {/* Continuidad */}
+              <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                <label className="font-semibold block mb-3 text-cyan-100">Continuidad del Cableado Horizontal:</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <label className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-white/5 rounded"><input type="checkbox" name="continuidad" value="ok" className="w-5 h-5 accent-cyan-500" /><span>Continuidad OK (8 hilos)</span></label>
+                  <label className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-white/5 rounded"><input type="checkbox" name="continuidad" value="abierto" className="w-5 h-5 accent-cyan-500" /><span>Pares abiertos / rotos</span></label>
+                  <label className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-white/5 rounded"><input type="checkbox" name="continuidad" value="cruzado" className="w-5 h-5 accent-cyan-500" /><span>Pares cruzados</span></label>
+                  <label className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-white/5 rounded"><input type="checkbox" name="continuidad" value="corto" className="w-5 h-5 accent-cyan-500" /><span>Cortocircuito</span></label>
+                </div>
+              </div>
+
+              {/* Canalización */}
+              <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                <label className="font-semibold block mb-3 text-cyan-100">Tipo de Canalización:</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                  <label className="flex items-center space-x-3 cursor-pointer"><input type="checkbox" name="tipo_canalizacion" value="canaleta" className="w-5 h-5 accent-cyan-500" /><span>Canaleta Plástica</span></label>
+                  <label className="flex items-center space-x-3 cursor-pointer"><input type="checkbox" name="tipo_canalizacion" value="emt" className="w-5 h-5 accent-cyan-500" /><span>Tubería EMT</span></label>
+                  <label className="flex items-center space-x-3 cursor-pointer"><input type="checkbox" name="tipo_canalizacion" value="pvc" className="w-5 h-5 accent-cyan-500" /><span>Tubería PVC</span></label>
+                  <label className="flex items-center space-x-3 cursor-pointer"><input type="checkbox" name="tipo_canalizacion" value="bandeja" className="w-5 h-5 accent-cyan-500" /><span>Bandeja Portacable</span></label>
+                  <label className="flex items-center space-x-3 cursor-pointer"><input type="checkbox" name="tipo_canalizacion" value="otros" onChange={(e) => setShowOtros(e.target.checked)} className="w-5 h-5 accent-cyan-500" /><span>Otros</span></label>
+                </div>
+                {showOtros && (
+                  <input type="text" name="otro_canalizacion_texto" placeholder="Especifique..." className="w-full bg-black/40 border border-white/10 rounded p-3 mb-4 outline-none focus:border-cyan-500" />
+                )}
+
+                <label className="font-semibold block mb-3 mt-4 text-cyan-100 border-t border-white/10 pt-4">Estado de la Canalización:</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <label className="flex items-center space-x-3 cursor-pointer"><input type="checkbox" name="est_canalizacion" value="buen_estado" className="w-5 h-5 accent-cyan-500" /><span>Buen estado</span></label>
+                  <label className="flex items-center space-x-3 cursor-pointer"><input type="checkbox" name="est_canalizacion" value="suelta" className="w-5 h-5 accent-cyan-500" /><span>Suelta / Mal fijada</span></label>
+                  <label className="flex items-center space-x-3 cursor-pointer"><input type="checkbox" name="est_canalizacion" value="saturada" className="w-5 h-5 accent-cyan-500" /><span>Sobresaturada</span></label>
+                  <label className="flex items-center space-x-3 cursor-pointer"><input type="checkbox" name="est_canalizacion" value="rota" className="w-5 h-5 accent-cyan-500" /><span>Rota / Sin tapas</span></label>
+                </div>
+              </div>
+
+              {/* Patch Cord */}
+              <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                <label className="font-semibold block mb-3 text-cyan-100">Patch Cord (Toma a PC):</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                  <label className="flex items-center space-x-3 cursor-pointer"><input type="checkbox" name="patch_estado" value="buen_estado" className="w-5 h-5 accent-cyan-500" /><span>Buen estado</span></label>
+                  <label className="flex items-center space-x-3 cursor-pointer"><input type="checkbox" name="patch_estado" value="roto" className="w-5 h-5 accent-cyan-500" /><span>Conectores rotos</span></label>
+                  <label className="flex items-center space-x-3 cursor-pointer"><input type="checkbox" name="patch_estado" value="deteriorado" className="w-5 h-5 accent-cyan-500" /><span>Cable deteriorado</span></label>
+                  <label className="flex items-center space-x-3 cursor-pointer"><input type="checkbox" name="patch_estado" value="ausente" className="w-5 h-5 accent-cyan-500" /><span>Ausente</span></label>
+                </div>
+                <div className="grid grid-cols-2 gap-3 border-t border-white/10 pt-4 mb-4">
+                  <label className="flex items-center space-x-2"><input type="checkbox" name="patch_cat" value="cat5e" className="w-5 h-5 accent-cyan-500" /><span>Cat 5e</span></label>
+                  <label className="flex items-center space-x-2"><input type="checkbox" name="patch_cat" value="cat6" className="w-5 h-5 accent-cyan-500" /><span>Cat 6/6A</span></label>
+                  <label className="flex items-center space-x-2"><input type="checkbox" name="patch_tipo" value="fabrica" className="w-5 h-5 accent-cyan-500" /><span>De Fábrica</span></label>
+                  <label className="flex items-center space-x-2"><input type="checkbox" name="patch_tipo" value="armado" className="w-5 h-5 accent-cyan-500" /><span>Armado (Hechizo)</span></label>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <input type="text" name="patch_marca" placeholder="Marca (Ej. Panduit)" className="w-full bg-black/40 border border-white/10 rounded p-3 outline-none focus:border-cyan-500" />
+                  <input type="text" name="patch_longitud" placeholder="Longitud (Ej. 2m)" className="w-full bg-black/40 border border-white/10 rounded p-3 outline-none focus:border-cyan-500" />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 3. Trazabilidad a Switch */}
+          <section>
+            <h2 className="text-xl font-bold text-cyan-400 border-b border-white/10 pb-2 mb-4 relative after:content-[''] after:absolute after:left-0 after:-bottom-[1px] after:w-16 after:h-[2px] after:bg-red-500">
+              3. Trazabilidad a Cuarto de Equipos
+            </h2>
+            <div className="mb-4">
+              <label className="text-sm font-semibold mb-1 block">Cantidad Total de Switches en la ruta:</label>
+              <input type="number" min="1" value={numSwitches} onChange={(e) => setNumSwitches(parseInt(e.target.value) || 1)} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 outline-none focus:border-cyan-500" />
+            </div>
+
+            <div className="space-y-4">
+              {Array.from({ length: numSwitches }).map((_, i) => (
+                <div key={i} className="bg-black/30 border-l-4 border-cyan-500 p-4 rounded-r-xl border border-white/5">
+                  <h3 className="font-bold text-cyan-400 mb-3">{i === 0 ? "Switch 1 (Acceso / Borde)" : `Switch ${i + 1} (Intermedio / Core)`}</h3>
+                  {i === 0 && (
+                    <input type="text" name={`switch_nombre_${i + 1}`} placeholder="Nombre/IP (Ej. SW-Piso2 o 192.168.10.5)" className="w-full mb-3 bg-black/50 border border-white/10 rounded p-3 outline-none focus:border-cyan-500" />
+                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                    <input type="text" name={`switch_marca_${i + 1}`} placeholder="Marca (Ej. Cisco)" className="w-full bg-black/50 border border-white/10 rounded p-3 outline-none focus:border-cyan-500" />
+                    <input type="text" name={`switch_ref_${i + 1}`} placeholder="Modelo (Ej. 2960-X)" className="w-full bg-black/50 border border-white/10 rounded p-3 outline-none focus:border-cyan-500" />
+                  </div>
+                  <div className="bg-white/5 p-3 rounded">
+                    <label className="text-xs text-gray-400 uppercase font-semibold mb-2 block">Medio de Enlace:</label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      <label className="flex items-center space-x-2 text-sm"><input type="radio" name={`switch_cable_${i + 1}`} value="FO" className="w-4 h-4 accent-cyan-500" /><span>FO</span></label>
+                      <label className="flex items-center space-x-2 text-sm"><input type="radio" name={`switch_cable_${i + 1}`} value="6" className="w-4 h-4 accent-cyan-500" /><span>Cat 6</span></label>
+                      <label className="flex items-center space-x-2 text-sm"><input type="radio" name={`switch_cable_${i + 1}`} value="6A" className="w-4 h-4 accent-cyan-500" /><span>Cat 6A</span></label>
+                      <label className="flex items-center space-x-2 text-sm"><input type="radio" name={`switch_cable_${i + 1}`} value="5E" className="w-4 h-4 accent-cyan-500" /><span>Cat 5e</span></label>
                     </div>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
-        )}
+            </div>
+
+            <div className="mt-4">
+              <label className="text-sm font-semibold mb-1 block">Puerto del Switch / Patch Panel:</label>
+              <input type="text" name="switch_port" placeholder="Ej. Gi1/0/24 o Panel A-12" className="w-full bg-black/40 border border-white/10 rounded-lg p-3 outline-none focus:border-cyan-500 mb-4" />
+              
+              <label className="text-sm font-semibold mb-2 block text-cyan-100">Estado en el Equipo Activo:</label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white/5 p-4 rounded-xl border border-white/10">
+                <label className="flex items-center space-x-2"><input type="checkbox" name="switch_estado" value="up" className="w-5 h-5 accent-cyan-500" /><span>Puerto Up</span></label>
+                <label className="flex items-center space-x-2"><input type="checkbox" name="switch_estado" value="down" className="w-5 h-5 accent-cyan-500" /><span>Shutdown</span></label>
+                <label className="flex items-center space-x-2"><input type="checkbox" name="switch_estado" value="poe" className="w-5 h-5 accent-cyan-500" /><span>PoE Activo</span></label>
+              </div>
+            </div>
+          </section>
+
+          {/* 4. Conectividad */}
+          <section>
+            <h2 className="text-xl font-bold text-cyan-400 border-b border-white/10 pb-2 mb-4 relative after:content-[''] after:absolute after:left-0 after:-bottom-[1px] after:w-16 after:h-[2px] after:bg-red-500">
+              4. Conectividad y Capa Lógica
+            </h2>
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="font-semibold block mb-3 text-cyan-100">Estado del Enlace:</label>
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2"><input type="checkbox" name="enlace" value="estable" className="w-5 h-5 accent-cyan-500" /><span>Estable</span></label>
+                  <label className="flex items-center space-x-2"><input type="checkbox" name="enlace" value="intermitente" className="w-5 h-5 accent-cyan-500" /><span>Intermitente</span></label>
+                  <label className="flex items-center space-x-2"><input type="checkbox" name="enlace" value="sin_conexion" className="w-5 h-5 accent-cyan-500" /><span>Sin conexión (Down)</span></label>
+                </div>
+              </div>
+              <div>
+                <label className="font-semibold block mb-3 text-cyan-100">Prueba DHCP / IP:</label>
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2"><input type="checkbox" name="dhcp" value="exitoso" className="w-5 h-5 accent-cyan-500" /><span>Asignación IP correcta</span></label>
+                  <label className="flex items-center space-x-2"><input type="checkbox" name="dhcp" value="falla" className="w-5 h-5 accent-cyan-500" /><span>Falla DHCP / Conflicto</span></label>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 5. Fotos */}
+          <section>
+            <h2 className="text-xl font-bold text-cyan-400 border-b border-white/10 pb-2 mb-4 relative after:content-[''] after:absolute after:left-0 after:-bottom-[1px] after:w-16 after:h-[2px] after:bg-red-500">
+              5. Registro Fotográfico
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[1, 2, 3].map((num) => (
+                <div key={num} className="flex flex-col">
+                  <label className="text-sm font-semibold mb-2">
+                    {num === 1 ? "1. Panorámica (Ubicación)" : num === 2 ? "2. Detalle (Faceplate/Jack)" : "3. Evidencia Adicional"}
+                  </label>
+                  <label
+                    htmlFor={`foto_${num}`}
+                    className="h-48 border-2 border-dashed border-cyan-500/50 rounded-xl flex items-center justify-center cursor-pointer hover:bg-cyan-500/10 transition-colors bg-cover bg-center overflow-hidden"
+                    style={{ backgroundImage: photos[num] ? `url(${photos[num]})` : "none", borderStyle: photos[num] ? 'solid' : 'dashed' }}
+                  >
+                    <span className="bg-white/90 text-black px-4 py-2 rounded-full font-bold shadow-lg text-sm pointer-events-none">
+                      {photos[num] ? "🔄 Cambiar Foto" : "📷 Tomar Foto"}
+                    </span>
+                  </label>
+                  <input type="file" id={`foto_${num}`} name={`foto_${num}`} accept="image/*" capture="environment" className="hidden" onChange={(e) => handlePhotoChange(e, num)} />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <button type="submit" className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-4 rounded-xl text-lg transition-all shadow-[0_0_20px_rgba(6,182,212,0.5)]">
+            Guardar Inspección
+          </button>
+        </form>
       </div>
 
-      {/* =========================================================
-          MODAL DE VISUALIZACIÓN DE DETALLES Y FOTOS
-         ========================================================= */}
-      {viewDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
-          <div className="bg-[#0a0a0a] border border-cyan-500/30 p-6 md:p-8 rounded-2xl w-full max-w-4xl shadow-[0_0_50px_rgba(6,182,212,0.15)] my-8">
-            <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
-              <h2 className="text-2xl font-bold text-cyan-400">Detalles de Inspección</h2>
-              <button onClick={() => setViewDoc(null)} className="text-gray-500 hover:text-white font-bold text-xl">✕</button>
-            </div>
+      {/* Modal de Decisión y Animación de Guardado */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 transition-opacity duration-300">
+          <div className="bg-[#0a0a0a] border border-cyan-500/30 p-6 md:p-8 rounded-2xl w-full max-w-sm text-center shadow-[0_0_50px_rgba(6,182,212,0.15)] relative overflow-hidden">
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Columna de Datos de Texto */}
-              <div className="space-y-4 text-sm">
-                <div className="bg-white/5 p-4 rounded-lg">
-                  <h3 className="text-cyan-500 font-bold mb-2">📍 Datos Principales</h3>
-                  <p><span className="text-gray-400">Registro N°:</span> {viewDoc.registro_num}</p>
-                  <p><span className="text-gray-400">Fecha:</span> {viewDoc.fecha_hora}</p>
-                  <p><span className="text-gray-400">Punto ID:</span> {viewDoc.punto_id}</p>
-                  <p><span className="text-gray-400">Ubicación:</span> {viewDoc.ubicacion}</p>
-                </div>
-                
-                <div className="bg-white/5 p-4 rounded-lg">
-                  <h3 className="text-cyan-500 font-bold mb-2">🔌 Red y Conectividad</h3>
-                  <p><span className="text-gray-400">Puerto Switch:</span> {viewDoc.switch_port || "N/A"}</p>
-                  <p><span className="text-gray-400">Estado Switch:</span> {viewDoc.switch_estado || "N/A"}</p>
-                  <p><span className="text-gray-400">Enlace:</span> {viewDoc.enlace || "N/A"}</p>
-                  <p><span className="text-gray-400">Prueba DHCP:</span> {viewDoc.dhcp || "N/A"}</p>
-                </div>
+            {/* ESTADO 1: Animación de Carga */}
+            {isSaving && (
+              <div className="flex flex-col items-center py-6 animate-in fade-in zoom-in duration-300">
+                <div className="w-16 h-16 border-4 border-cyan-900 border-t-cyan-400 rounded-full animate-spin mb-6"></div>
+                <h3 className="text-xl font-bold text-cyan-400 animate-pulse">Guardando datos...</h3>
+                <p className="text-sm text-gray-500 mt-2">Comprimiendo imágenes y enviando registro</p>
+              </div>
+            )}
 
-                <div className="bg-white/5 p-4 rounded-lg">
-                  <h3 className="text-cyan-500 font-bold mb-2">🏗️ Infraestructura Física</h3>
-                  <p><span className="text-gray-400">Canalización:</span> {viewDoc.tipo_canalizacion || "N/A"}</p>
-                  <p><span className="text-gray-400">Estado Canalización:</span> {viewDoc.est_canalizacion || "N/A"}</p>
-                  <p><span className="text-gray-400">Patch Cord:</span> {viewDoc.patch_estado || "N/A"} - {viewDoc.patch_cat}</p>
+            {/* ESTADO 2: Mensaje de Éxito */}
+            {!isSaving && saveSuccess && (
+              <div className="flex flex-col items-center py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="w-20 h-20 bg-green-500/10 text-green-400 rounded-full flex items-center justify-center mb-6 border border-green-500/30 shadow-[0_0_30px_rgba(34,197,94,0.2)]">
+                  <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2 leading-relaxed">{saveSuccess}</h3>
+              </div>
+            )}
+
+            {/* ESTADO 3: Pregunta inicial */}
+            {!isSaving && !saveSuccess && (
+              <div className="animate-in fade-in duration-300">
+                <h3 className="text-2xl font-bold text-cyan-400 mb-2">Inspección Lista</h3>
+                <p className="text-gray-400 mb-6">¿Qué deseas hacer a continuación?</p>
+                
+                <div className="flex flex-col gap-3">
+                  <button onClick={() => procesarGuardado('continuar_punto')} className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-lg transition-all hover:scale-[1.02]">
+                    Siguiente Punto de Red
+                  </button>
+                  <button onClick={() => procesarGuardado('terminar_jornada')} className="w-full bg-transparent border-2 border-red-500/50 text-red-400 hover:bg-red-500/10 hover:border-red-500 font-bold py-3 rounded-lg transition-all hover:scale-[1.02]">
+                    Terminar Jornada del Día
+                  </button>
+                  <button onClick={() => setShowModal(false)} className="w-full text-gray-500 hover:text-white underline py-2 mt-2 transition-colors">
+                    Cancelar y revisar formulario
+                  </button>
                 </div>
               </div>
+            )}
 
-              {/* Columna de Registro Fotográfico */}
-              <div className="space-y-4">
-                <h3 className="text-cyan-500 font-bold bg-white/5 p-3 rounded-lg text-center">📸 Registro Fotográfico</h3>
-                
-                {/* Foto 1 */}
-                <div className="border border-white/10 rounded-lg p-2 bg-black/50">
-                  <p className="text-xs text-gray-400 mb-2">1. Panorámica / Ubicación</p>
-                  {viewDoc.foto_1_base64 ? (
-                    <img src={viewDoc.foto_1_base64} alt="Foto 1" className="w-full h-auto max-h-48 object-contain rounded" />
-                  ) : (
-                    <div className="h-32 flex items-center justify-center text-gray-600 bg-white/5 rounded">Sin foto</div>
-                  )}
-                </div>
-
-                {/* Foto 2 */}
-                <div className="border border-white/10 rounded-lg p-2 bg-black/50">
-                  <p className="text-xs text-gray-400 mb-2">2. Detalle Faceplate</p>
-                  {viewDoc.foto_2_base64 ? (
-                    <img src={viewDoc.foto_2_base64} alt="Foto 2" className="w-full h-auto max-h-48 object-contain rounded" />
-                  ) : (
-                    <div className="h-32 flex items-center justify-center text-gray-600 bg-white/5 rounded">Sin foto</div>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-8 text-center">
-              <button onClick={() => setViewDoc(null)} className="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg transition-colors">
-                Cerrar Detalles
-              </button>
-            </div>
           </div>
         </div>
       )}
-
-      {/* =========================================================
-          MODAL DE EDICIÓN DE REGISTRO
-         ========================================================= */}
-      {editDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
-          <div className="bg-[#0a0a0a] border border-yellow-500/30 p-6 md:p-8 rounded-2xl w-full max-w-lg shadow-[0_0_50px_rgba(234,179,8,0.15)] my-8">
-            <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
-              <h2 className="text-2xl font-bold text-yellow-400">Editar Registro Principal</h2>
-              <button onClick={() => setEditDoc(null)} className="text-gray-500 hover:text-white font-bold text-xl">✕</button>
-            </div>
-            
-            <form onSubmit={handleUpdate} className="space-y-4">
-              <div>
-                <label className="text-sm font-semibold text-gray-300 block mb-1">Punto ID:</label>
-                <input type="text" name="punto_id" defaultValue={editDoc.punto_id} required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" />
-              </div>
-              
-              <div>
-                <label className="text-sm font-semibold text-gray-300 block mb-1">Ubicación:</label>
-                <input type="text" name="ubicacion" defaultValue={editDoc.ubicacion} required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" />
-              </div>
-
-              <div>
-                <label className="text-sm font-semibold text-gray-300 block mb-1">Puerto Switch:</label>
-                <input type="text" name="switch_port" defaultValue={editDoc.switch_port} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" />
-              </div>
-
-              <div className="pt-6 border-t border-white/10 flex gap-4">
-                <button type="button" onClick={() => setEditDoc(null)} className="w-1/2 py-3 bg-transparent border border-gray-600 text-gray-400 hover:bg-white/5 rounded-lg transition-colors font-bold">
-                  Cancelar
-                </button>
-                <button type="submit" className="w-1/2 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg transition-colors">
-                  Guardar Cambios
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
     </main>
   );
 }
