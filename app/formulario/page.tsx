@@ -29,56 +29,70 @@ export default function FormularioPage() {
   const [isSaving, setIsSaving] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
-  // Efecto de inicialización
   useEffect(() => {
     setIsClient(true);
-
-    // 1. Protección de ruta (Redirige al inicio si no hay sesión)
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
         router.push("/");
       }
     });
 
-    // 2. Cargar contador y fecha
     const contador = parseInt(localStorage.getItem("dc_telematica_contador") || "1");
     setRegistroNum(contador);
 
     const now = new Date();
     setFechaHora(
       now.toLocaleString("es-CO", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: true,
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true,
       })
     );
-
     return () => unsubscribe();
   }, [router]);
 
-  // Manejador de previsualización de fotos
+  // --- NUEVO: FUNCIÓN PARA COMPRIMIR FOTOS Y AHORRAR ESPACIO EN FIRESTORE ---
+  const compressImage = (base64Str: string, maxWidth = 800): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = base64Str;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ratio = maxWidth / img.width;
+        // Solo comprimimos si la imagen es más ancha que nuestro límite
+        if (ratio < 1) {
+          canvas.width = maxWidth;
+          canvas.height = img.height * ratio;
+        } else {
+          canvas.width = img.width;
+          canvas.height = img.height;
+        }
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        // Exportamos comprimido a JPEG con calidad al 60%
+        resolve(canvas.toDataURL("image/jpeg", 0.6));
+      };
+    });
+  };
+
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (event) => {
-        setPhotos((prev) => ({ ...prev, [index]: event.target?.result as string }));
+      reader.onload = async () => {
+        const originalBase64 = reader.result as string;
+        // Comprimimos la imagen en el momento que se toma
+        const compressedBase64 = await compressImage(originalBase64);
+        setPhotos((prev) => ({ ...prev, [index]: compressedBase64 }));
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // Manejador para abrir el modal
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setShowModal(true);
   };
 
-  // Manejador de guardado final
   const procesarGuardado = async (accion: string) => {
     if (!formRef.current) return;
     setIsSaving(true);
@@ -89,27 +103,35 @@ export default function FormularioPage() {
       data.accion_post_guardado = accion;
       data.timestamp = new Date().toISOString();
 
-      // Guardar en Firebase
+      // Guardamos directamente el texto Base64 comprimido en la base de datos
+      data.foto_1_base64 = photos[1] || "";
+      data.foto_2_base64 = photos[2] || "";
+      data.foto_3_base64 = photos[3] || "";
+
       await addDoc(collection(db, "inspecciones"), data);
 
-      // Incrementar contador local
       localStorage.setItem("dc_telematica_contador", (registroNum + 1).toString());
 
-      // Acciones post-guardado
       setShowModal(false);
       if (accion === "continuar_punto") {
         window.location.reload();
       } else {
-        router.push("/"); // Volver al inicio si termina la jornada
+        router.push("/");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error al guardar en Firebase:", error);
-      alert("Error de Firebase: " + (error.message || "Revisa la conexión."));
+      const errorMessage = error instanceof Error ? error.message : "Revisa la conexión.";
+      // Si el error es por tamaño, damos un mensaje claro
+      if (errorMessage.includes("exceeds the maximum")) {
+          alert("Error: Las fotos son demasiado pesadas incluso después de comprimirlas. Intenta tomar fotos de menor resolución en tu celular.");
+      } else {
+          alert("Error de Firebase: " + errorMessage);
+      }
       setIsSaving(false);
     }
   };
 
-  if (!isClient) return null; // Evitar errores de hidratación
+  if (!isClient) return null;
 
   return (
     <main className="relative z-10 min-h-screen p-4 md:p-8 flex justify-center pb-24 text-gray-200">
