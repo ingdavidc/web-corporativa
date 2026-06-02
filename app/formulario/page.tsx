@@ -27,6 +27,7 @@ export default function FormularioPage() {
   const [showModal, setShowModal] = useState(false);
   const [photos, setPhotos] = useState<{ [key: number]: string | null }>({ 1: null, 2: null, 3: null });
   const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null); // NUEVO: Estado para el mensaje de éxito
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -50,7 +51,7 @@ export default function FormularioPage() {
     return () => unsubscribe();
   }, [router]);
 
-  // --- NUEVO: FUNCIÓN PARA COMPRIMIR FOTOS Y AHORRAR ESPACIO EN FIRESTORE ---
+  // --- FUNCIÓN PARA COMPRIMIR FOTOS Y AHORRAR ESPACIO EN FIRESTORE ---
   const compressImage = (base64Str: string, maxWidth = 800): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -58,7 +59,6 @@ export default function FormularioPage() {
       img.onload = () => {
         const canvas = document.createElement("canvas");
         const ratio = maxWidth / img.width;
-        // Solo comprimimos si la imagen es más ancha que nuestro límite
         if (ratio < 1) {
           canvas.width = maxWidth;
           canvas.height = img.height * ratio;
@@ -68,7 +68,6 @@ export default function FormularioPage() {
         }
         const ctx = canvas.getContext("2d");
         ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-        // Exportamos comprimido a JPEG con calidad al 60%
         resolve(canvas.toDataURL("image/jpeg", 0.6));
       };
     });
@@ -80,7 +79,6 @@ export default function FormularioPage() {
       const reader = new FileReader();
       reader.onload = async () => {
         const originalBase64 = reader.result as string;
-        // Comprimimos la imagen en el momento que se toma
         const compressedBase64 = await compressImage(originalBase64);
         setPhotos((prev) => ({ ...prev, [index]: compressedBase64 }));
       };
@@ -91,11 +89,12 @@ export default function FormularioPage() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setShowModal(true);
+    setSaveSuccess(null); // Reiniciamos el mensaje si vuelve a abrir el modal
   };
 
   const procesarGuardado = async (accion: string) => {
     if (!formRef.current) return;
-    setIsSaving(true);
+    setIsSaving(true); // Activa la animación sutil de carga
 
     try {
       const formData = new FormData(formRef.current);
@@ -103,34 +102,38 @@ export default function FormularioPage() {
       data.accion_post_guardado = accion;
       data.timestamp = new Date().toISOString();
 
-      // NUEVO: Eliminamos los objetos 'File' crudos que Firestore no soporta
       delete data.foto_1;
       delete data.foto_2;
       delete data.foto_3;
 
-      // Guardamos directamente el texto Base64 comprimido en la base de datos
       data.foto_1_base64 = photos[1] || "";
       data.foto_2_base64 = photos[2] || "";
       data.foto_3_base64 = photos[3] || "";
 
       await addDoc(collection(db, "inspecciones"), data);
-
       localStorage.setItem("dc_telematica_contador", (registroNum + 1).toString());
 
-      setShowModal(false);
+      // Ocultamos el spinner de carga
+      setIsSaving(false);
+
+      // Mostramos la animación de éxito y esperamos antes de redirigir
       if (accion === "continuar_punto") {
-        window.location.reload();
+        setSaveSuccess("¡Punto de red guardado correctamente!");
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
       } else {
-        // NUEVO: Mensaje de agradecimiento antes de salir
-        alert("¡Muchas gracias por su dedicación y responsabilidad! Cada vez más cerca de la excelencia.");
-        router.push("/");
+        setSaveSuccess("¡Muchas gracias por su dedicación y responsabilidad! Cada vez más cerca de la excelencia.");
+        setTimeout(() => {
+          router.push("/");
+        }, 3500); // Espera 3.5 segundos para que pueda leerlo
       }
+
     } catch (error: unknown) {
       console.error("Error al guardar en Firebase:", error);
       const errorMessage = error instanceof Error ? error.message : "Revisa la conexión.";
-      // Si el error es por tamaño, damos un mensaje claro
       if (errorMessage.includes("exceeds the maximum")) {
-          alert("Error: Las fotos son demasiado pesadas incluso después de comprimirlas. Intenta tomar fotos de menor resolución en tu celular.");
+          alert("Error: Las fotos son demasiado pesadas. Intenta tomar fotos de menor resolución.");
       } else {
           alert("Error de Firebase: " + errorMessage);
       }
@@ -369,24 +372,52 @@ export default function FormularioPage() {
         </form>
       </div>
 
-      {/* Modal de Decisión */}
+      {/* Modal de Decisión y Animación de Guardado */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-[#111] border border-cyan-500/30 p-6 md:p-8 rounded-2xl w-full max-w-sm text-center shadow-[0_0_50px_rgba(6,182,212,0.2)]">
-            <h3 className="text-2xl font-bold text-cyan-400 mb-2">Inspección Lista</h3>
-            <p className="text-gray-400 mb-6">¿Qué deseas hacer a continuación?</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 transition-opacity duration-300">
+          <div className="bg-[#0a0a0a] border border-cyan-500/30 p-6 md:p-8 rounded-2xl w-full max-w-sm text-center shadow-[0_0_50px_rgba(6,182,212,0.15)] relative overflow-hidden">
             
-            <div className="flex flex-col gap-3">
-              <button onClick={() => procesarGuardado('continuar_punto')} disabled={isSaving} className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-lg transition-colors">
-                {isSaving ? "Guardando..." : "Siguiente Punto de Red"}
-              </button>
-              <button onClick={() => procesarGuardado('terminar_jornada')} disabled={isSaving} className="w-full bg-transparent border-2 border-red-500 text-red-500 hover:bg-red-500/10 font-bold py-3 rounded-lg transition-colors">
-                {isSaving ? "Guardando..." : "Terminar Jornada del Día"}
-              </button>
-              <button onClick={() => setShowModal(false)} disabled={isSaving} className="w-full text-gray-500 hover:text-white underline py-2 mt-2">
-                Cancelar y revisar formulario
-              </button>
-            </div>
+            {/* ESTADO 1: Animación de Carga */}
+            {isSaving && (
+              <div className="flex flex-col items-center py-6 animate-in fade-in zoom-in duration-300">
+                <div className="w-16 h-16 border-4 border-cyan-900 border-t-cyan-400 rounded-full animate-spin mb-6"></div>
+                <h3 className="text-xl font-bold text-cyan-400 animate-pulse">Guardando datos...</h3>
+                <p className="text-sm text-gray-500 mt-2">Comprimiendo imágenes y enviando registro</p>
+              </div>
+            )}
+
+            {/* ESTADO 2: Mensaje de Éxito */}
+            {!isSaving && saveSuccess && (
+              <div className="flex flex-col items-center py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="w-20 h-20 bg-green-500/10 text-green-400 rounded-full flex items-center justify-center mb-6 border border-green-500/30 shadow-[0_0_30px_rgba(34,197,94,0.2)]">
+                  <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2 leading-relaxed">{saveSuccess}</h3>
+              </div>
+            )}
+
+            {/* ESTADO 3: Pregunta inicial (Solo se muestra si no está guardando ni ha tenido éxito) */}
+            {!isSaving && !saveSuccess && (
+              <div className="animate-in fade-in duration-300">
+                <h3 className="text-2xl font-bold text-cyan-400 mb-2">Inspección Lista</h3>
+                <p className="text-gray-400 mb-6">¿Qué deseas hacer a continuación?</p>
+                
+                <div className="flex flex-col gap-3">
+                  <button onClick={() => procesarGuardado('continuar_punto')} className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-lg transition-all hover:scale-[1.02]">
+                    Siguiente Punto de Red
+                  </button>
+                  <button onClick={() => procesarGuardado('terminar_jornada')} className="w-full bg-transparent border-2 border-red-500/50 text-red-400 hover:bg-red-500/10 hover:border-red-500 font-bold py-3 rounded-lg transition-all hover:scale-[1.02]">
+                    Terminar Jornada del Día
+                  </button>
+                  <button onClick={() => setShowModal(false)} className="w-full text-gray-500 hover:text-white underline py-2 mt-2 transition-colors">
+                    Cancelar y revisar formulario
+                  </button>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
       )}
