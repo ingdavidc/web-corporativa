@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, collection, addDoc } from "firebase/firestore";
@@ -17,6 +18,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 export default function FormularioPage() {
+  const router = useRouter();
   const [isClient, setIsClient] = useState(false);
   const [registroNum, setRegistroNum] = useState(1);
   const [fechaHora, setFechaHora] = useState("");
@@ -34,7 +36,7 @@ export default function FormularioPage() {
     // 1. Protección de ruta (Redirige al inicio si no hay sesión)
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
-        window.location.href = "/";
+        router.push("/");
       }
     });
 
@@ -56,7 +58,7 @@ export default function FormularioPage() {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [router]);
 
   // Manejador de previsualización de fotos
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
@@ -98,11 +100,11 @@ export default function FormularioPage() {
       if (accion === "continuar_punto") {
         window.location.reload();
       } else {
-        window.location.href = "/"; // Volver al inicio si termina la jornada
+        router.push("/"); // Volver al inicio si termina la jornada
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error al guardar en Firebase:", error);
-      alert("Hubo un error al guardar en la base de datos. Verifica tu conexión.");
+      alert("Error de Firebase: " + (error.message || "Revisa la conexión."));
       setIsSaving(false);
     }
   };
