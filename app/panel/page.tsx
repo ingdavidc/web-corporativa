@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import { getFirestore, collection, onSnapshot, doc, deleteDoc, updateDoc, query, orderBy } from "firebase/firestore";
@@ -77,11 +78,13 @@ export default function PanelPage() {
     router.push("/");
   };
 
-  // Función para eliminar un registro
+  // Función para eliminar un registro (Elimina de la base de datos, NO resetea el contador local)
   const handleDelete = async (id: string) => {
-    if (window.confirm("⚠️ ¿Estás seguro de que deseas eliminar este registro permanentemente?")) {
+    if (window.confirm("⚠️ ¿Estás seguro de que deseas eliminar este registro permanentemente del panel?")) {
       try {
         await deleteDoc(doc(db, "inspecciones", id));
+        // Nota: NO modificamos localStorage("dc_telematica_contador") aquí.
+        // Esto asegura que la secuencia en el formulario (Registro N°) continúe sin alterarse.
       } catch (error) {
         console.error("Error eliminando:", error);
         alert("Hubo un error al eliminar el registro.");
@@ -114,11 +117,23 @@ export default function PanelPage() {
       
       {/* Encabezado del Panel */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 bg-black/60 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase tracking-wider">
-            Panel de Ingeniería
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">Gestión y Auditoría Hospital San Vicente de Arauca</p>
+        <div className="flex items-center gap-6">
+           {/* Logo con animación 3D sutil */}
+           <div className="relative w-24 h-24 md:w-32 md:h-32 transition-transform duration-700 hover:scale-110 hover:rotate-y-12 hover:rotate-x-12 perspective-1000">
+              <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-2xl animate-pulse"></div>
+              <Image
+                src="/logo.png" 
+                alt="Logo DC Telemática"
+                fill
+                className="object-contain drop-shadow-[0_0_15px_rgba(6,182,212,0.8)]"
+              />
+            </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase tracking-wider">
+              Panel de Ingeniería
+            </h1>
+            <p className="text-gray-400 text-sm mt-1">Gestión y Auditoría Hospital San Vicente de Arauca</p>
+          </div>
         </div>
         <button 
           onClick={handleLogout}
