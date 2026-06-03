@@ -105,12 +105,18 @@ export default function PanelPage() {
   };
 
   // ========================================================
-  // MOTOR DE GENERACIÓN DE PDF PROFESIONAL (AJUSTADO A 1 HOJA)
+  // MOTOR DE GENERACIÓN DE PDF PROFESIONAL (COLORES CORPORATIVOS)
   // ========================================================
   const exportToPDF = async (inspeccionesToExport: Inspeccion[], filename: string) => {
     try {
       const { jsPDF } = await import("jspdf");
       const doc = new jsPDF({ format: "letter" }); // Tamaño Carta Exacto: 215.9mm x 279.4mm
+
+      // Colores Corporativos
+      const azulCorp = { r: 34, g: 42, b: 104 };
+      const rojoCorp = { r: 237, g: 28, b: 36 };
+      const grisPizarra = { r: 80, g: 90, b: 100 };
+      const grisPlatino = { r: 240, g: 242, b: 245 };
 
       // 1. Cargar el Logo Corporativo de forma local
       let logoBase64: string | null = null;
@@ -126,118 +132,121 @@ export default function PanelPage() {
         console.warn("No se pudo cargar el logo para el PDF.");
       }
 
-      // 2. Generar el reporte para cada inspección en 1 sola hoja
+      // 2. Generar el reporte para cada inspección
       for (let i = 0; i < inspeccionesToExport.length; i++) {
         const item = inspeccionesToExport[i];
         if (i > 0) doc.addPage();
 
-        // Margen y coordenadas iniciales
-        let y = 35;
+        let y = 15; // Empezamos desde arriba
 
         // --- ENCABEZADO CORPORATIVO ---
         if (logoBase64) {
-          doc.addImage(logoBase64, 'PNG', 15, 12, 34, 12); 
+          // Ajuste de proporción (Ej. 20x15mm para mantener la relación de aspecto sin verse estirado)
+          doc.addImage(logoBase64, 'PNG', 15, y, 20, 15); 
         }
 
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(6, 182, 212); // Cian Corporativo
-        doc.setFontSize(14);
-        doc.text("INFORME DE AUDITORÍA DE RED", 200, 18, { align: "right" });
+        doc.setTextColor(azulCorp.r, azulCorp.g, azulCorp.b); // Azul Corporativo
+        doc.setFontSize(15);
+        doc.text("INFORME DE AUDITORÍA TÉCNICA", 200, y + 6, { align: "right" });
 
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(100, 116, 139); // Gris
-        doc.setFontSize(8);
-        doc.text("Hospital San Vicente de Arauca — DC Telemática", 200, 23, { align: "right" });
+        doc.setTextColor(grisPizarra.r, grisPizarra.g, grisPizarra.b); // Gris Pizarra
+        doc.setFontSize(8.5);
+        doc.text("Hospital San Vicente de Arauca — DC Telemática", 200, y + 12, { align: "right" });
 
-        // Línea divisoria elegante
-        doc.setDrawColor(6, 182, 212);
-        doc.setLineWidth(0.4);
-        doc.line(15, 28, 200, 28);
+        // Línea divisoria elegante en Rojo Conectividad
+        y += 18;
+        doc.setDrawColor(rojoCorp.r, rojoCorp.g, rojoCorp.b);
+        doc.setLineWidth(0.6);
+        doc.line(15, y, 200, y);
+
+        y += 12; // Espacio amplio después del encabezado
 
         // --- FUNCIONES INTERNAS DE DIBUJO ---
         const drawSectionHeader = (title: string, yPos: number) => {
-          doc.setFillColor(6, 182, 212); // Fondo Cian
-          doc.rect(15, yPos, 185, 5, 'F');
+          doc.setFillColor(azulCorp.r, azulCorp.g, azulCorp.b); // Fondo Azul Corp
+          doc.rect(15, yPos, 185, 7, 'F');
           doc.setFont("helvetica", "bold");
           doc.setTextColor(255, 255, 255);
-          doc.setFontSize(8.5);
-          doc.text(title, 18, yPos + 3.7);
+          doc.setFontSize(9.5);
+          doc.text(title, 18, yPos + 5);
         };
 
         const drawInfoRow = (label1: string, val1: string, label2: string, val2: string, yPos: number) => {
-          // Fondo alternado sutil para legibilidad
-          doc.setFillColor(248, 250, 252);
-          doc.rect(15, yPos, 185, 5, 'F');
+          doc.setFillColor(grisPlatino.r, grisPlatino.g, grisPlatino.b); // Fondo Gris Platino
+          doc.rect(15, yPos, 185, 8, 'F');
 
           doc.setFont("helvetica", "bold");
-          doc.setTextColor(71, 85, 105);
-          doc.setFontSize(8);
-          doc.text(`${label1}:`, 18, yPos + 3.5);
+          doc.setTextColor(grisPizarra.r, grisPizarra.g, grisPizarra.b); // Texto Gris Pizarra
+          doc.setFontSize(8.5);
+          doc.text(`${label1}:`, 18, yPos + 5.5);
+          
           doc.setFont("helvetica", "normal");
-          doc.setTextColor(15, 23, 42);
-          doc.text(`${val1 || "N/A"}`, 48, yPos + 3.5);
+          doc.setTextColor(15, 23, 42); // Texto de respuesta casi negro
+          doc.text(`${val1 || "N/A"}`, 50, yPos + 5.5);
 
           if (label2) {
             doc.setFont("helvetica", "bold");
-            doc.setTextColor(71, 85, 105);
-            doc.text(`${label2}:`, 110, yPos + 3.5);
+            doc.setTextColor(grisPizarra.r, grisPizarra.g, grisPizarra.b);
+            doc.text(`${label2}:`, 110, yPos + 5.5);
+            
             doc.setFont("helvetica", "normal");
             doc.setTextColor(15, 23, 42);
-            doc.text(`${val2 || "N/A"}`, 140, yPos + 3.5);
+            doc.text(`${val2 || "N/A"}`, 145, yPos + 5.5);
           }
         };
 
         // --- SECCIÓN 1: DATOS DE IDENTIFICACIÓN ---
         drawSectionHeader("1. IDENTIFICACIÓN GENERAL", y);
-        y += 5;
+        y += 7;
         drawInfoRow("Registro Número", item.registro_num || "N/A", "Fecha / Hora", item.fecha_hora || "N/A", y);
-        y += 5;
+        y += 9;
         drawInfoRow("ID Punto de Red", item.punto_id || "N/A", "Ubicación Física", item.ubicacion || "N/A", y);
-        y += 8;
+        y += 15; // Separación holgada para abarcar la hoja
 
         // --- SECCIÓN 2: RED Y CAPA ACTIVA ---
         drawSectionHeader("2. CONECTIVIDAD Y EQUIPO ACTIVO", y);
-        y += 5;
+        y += 7;
         drawInfoRow("Puerto en Switch", item.switch_port || "N/A", "Estado del Puerto", item.switch_estado || "N/A", y);
-        y += 5;
+        y += 9;
         drawInfoRow("Estado del Enlace", item.enlace || "N/A", "Prueba DHCP / IP", item.dhcp || "N/A", y);
-        y += 8;
+        y += 15;
 
         // --- SECCIÓN 3: INFRAESTRUCTURA FÍSICA ---
         drawSectionHeader("3. INFRAESTRUCTURA FÍSICA Y ESTRUCTURAL", y);
-        y += 5;
-        drawInfoRow("Tipo Canalización", item.tipo_canalizacion || "N/A", "Estado Canalización", item.est_canalizacion || "N/A", y);
-        y += 5;
-        drawInfoRow("Estado Faceplate", item.fisico || "N/A", "Patch Cord (Toma-PC)", item.patch_estado || "N/A", y);
-        y += 5;
+        y += 7;
+        drawInfoRow("Tipo Canalización", item.tipo_canalizacion || "N/A", "Estado Canal.", item.est_canalizacion || "N/A", y);
+        y += 9;
+        drawInfoRow("Estado Faceplate", item.fisico || "N/A", "Patch Cord (Toma)", item.patch_estado || "N/A", y);
+        y += 9;
         drawInfoRow("Categoría Cable", item.patch_cat || "N/A", "Fabricación Cable", item.patch_tipo || "N/A", y);
-        y += 8;
+        y += 18; // Espacio extra grande antes de las fotos
 
         // --- SECCIÓN 4: REGISTRO FOTOGRÁFICO LADO A LADO ---
         drawSectionHeader("4. REGISTRO FOTOGRÁFICO", y);
-        y += 5;
+        y += 12;
 
-        // Diseñar rejilla lado a lado (3 fotos). Ancho de página útil = 185mm. 
-        // Cada imagen medirá 56mm de ancho por 42mm de alto (Proporción perfecta 4:3)
         const imgWidth = 56;
         const imgHeight = 42;
-        const imgY = y + 4;
+        const imgY = y + 5;
 
         const drawPhotoWithLabel = (base64: string | undefined, title: string, xPos: number) => {
-          doc.setFont("helvetica", "italic");
-          doc.setTextColor(100, 116, 139);
-          doc.setFontSize(7.5);
-          doc.text(title, xPos + (imgWidth / 2), y + 2, { align: "center" });
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(grisPizarra.r, grisPizarra.g, grisPizarra.b);
+          doc.setFontSize(8.5);
+          doc.text(title, xPos + (imgWidth / 2), y, { align: "center" });
 
-          // Dibujar marco gris
-          doc.setDrawColor(226, 232, 240);
-          doc.setFillColor(248, 250, 252);
+          // Dibujar marco Azul Corp y fondo Gris Platino
+          doc.setDrawColor(azulCorp.r, azulCorp.g, azulCorp.b);
+          doc.setFillColor(grisPlatino.r, grisPlatino.g, grisPlatino.b);
+          doc.setLineWidth(0.4);
           doc.rect(xPos, imgY, imgWidth, imgHeight, 'F');
           doc.rect(xPos, imgY, imgWidth, imgHeight, 'S');
 
           if (base64) {
             try {
-              doc.addImage(base64, 'JPEG', xPos + 1, imgY + 1, imgWidth - 2, imgHeight - 2);
+              doc.addImage(base64, 'JPEG', xPos + 0.5, imgY + 0.5, imgWidth - 1, imgHeight - 1);
             } catch (e) {
               doc.setFont("helvetica", "normal");
               doc.setFontSize(7);
@@ -250,32 +259,34 @@ export default function PanelPage() {
           }
         };
 
-        // Renderizar fotos lado a lado con 8.5mm de separación
-        drawPhotoWithLabel(item.foto_1_base64, "Panorámica", 15);
-        drawPhotoWithLabel(item.foto_2_base64, "Detalle Faceplate", 79.5);
-        drawPhotoWithLabel(item.foto_3_base64, "Adicional / Novedad", 144);
+        drawPhotoWithLabel(item.foto_1_base64, "1. Panorámica", 15);
+        drawPhotoWithLabel(item.foto_2_base64, "2. Detalle Faceplate", 79.5);
+        drawPhotoWithLabel(item.foto_3_base64, "3. Evidencia Adicional", 144);
 
-        y += imgHeight + 12;
+        // Bajamos matemáticamente hasta la zona de firmas
+        y = imgY + imgHeight + 25;
 
         // --- PIE DE PÁGINA Y CONTROL DE CALIDAD ---
-        doc.setDrawColor(226, 232, 240);
-        doc.setLineWidth(0.3);
+        doc.setDrawColor(rojoCorp.r, rojoCorp.g, rojoCorp.b); // Línea Roja Inferior
+        doc.setLineWidth(0.5);
         doc.line(15, y, 200, y);
-        y += 4;
+        y += 10;
 
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(71, 85, 105);
-        doc.setFontSize(7.5);
+        doc.setTextColor(azulCorp.r, azulCorp.g, azulCorp.b);
+        doc.setFontSize(9);
         doc.text("Auditor Técnico:", 15, y);
+        doc.setDrawColor(grisPizarra.r, grisPizarra.g, grisPizarra.b);
         doc.line(15, y + 10, 80, y + 10); // Línea para firma del técnico
 
         doc.text("Firma de Recibido (Hospital):", 115, y);
         doc.line(115, y + 10, 180, y + 10); // Línea para firma de hospital
 
+        y += 20;
         doc.setFont("helvetica", "italic");
-        doc.setTextColor(148, 163, 184);
-        doc.setFontSize(6.5);
-        doc.text(`Documento generado por el Panel de Ingeniería de DC Telemática. Id Registro: ${item.id}`, 107.5, 268, { align: "center" });
+        doc.setTextColor(grisPizarra.r, grisPizarra.g, grisPizarra.b);
+        doc.setFontSize(7);
+        doc.text(`Documento generado por el Panel de Ingeniería de DC Telemática. Id Registro: ${item.id}`, 107.5, y, { align: "center" });
       }
 
       doc.save(filename);
