@@ -71,13 +71,11 @@ export default function PanelPage() {
     };
   }, [router]);
 
-  // Función para cerrar sesión
   const handleLogout = async () => {
     await signOut(auth);
     router.push("/");
   };
 
-  // Función para eliminar un registro
   const handleDelete = async (id: string) => {
     if (window.confirm("⚠️ ¿Estás seguro de que deseas eliminar este registro permanentemente del panel?")) {
       try {
@@ -89,7 +87,6 @@ export default function PanelPage() {
     }
   };
 
-  // Función para guardar cambios en la edición
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editDoc) return;
@@ -107,116 +104,193 @@ export default function PanelPage() {
     }
   };
 
-  // ==========================================
-  // MOTOR DE GENERACIÓN DE PDF (jsPDF)
-  // ==========================================
+  // ========================================================
+  // MOTOR DE GENERACIÓN DE PDF PROFESIONAL (AJUSTADO A 1 HOJA)
+  // ========================================================
   const exportToPDF = async (inspeccionesToExport: Inspeccion[], filename: string) => {
     try {
       const { jsPDF } = await import("jspdf");
-      const doc = new jsPDF();
+      const doc = new jsPDF({ format: "letter" }); // Tamaño Carta Exacto: 215.9mm x 279.4mm
 
+      // 1. Cargar el Logo Corporativo de forma local
+      let logoBase64: string | null = null;
+      try {
+        const response = await fetch('/logo.png');
+        const blob = await response.blob();
+        logoBase64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      } catch (e) {
+        console.warn("No se pudo cargar el logo para el PDF.");
+      }
+
+      // 2. Generar el reporte para cada inspección en 1 sola hoja
       for (let i = 0; i < inspeccionesToExport.length; i++) {
         const item = inspeccionesToExport[i];
         if (i > 0) doc.addPage();
 
-        let y = 20;
+        // Margen y coordenadas iniciales
+        let y = 35;
 
-        // Encabezado del PDF
-        doc.setFillColor(6, 182, 212); // Color Cyan
-        doc.rect(0, 0, 210, 30, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(16);
+        // --- ENCABEZADO CORPORATIVO ---
+        if (logoBase64) {
+          doc.addImage(logoBase64, 'PNG', 15, 12, 34, 12); 
+        }
+
         doc.setFont("helvetica", "bold");
-        doc.text("REPORTE DE INSPECCION TECNICA", 105, 15, { align: "center" });
-        doc.setFontSize(10);
+        doc.setTextColor(6, 182, 212); // Cian Corporativo
+        doc.setFontSize(14);
+        doc.text("INFORME DE AUDITORÍA DE RED", 200, 18, { align: "right" });
+
         doc.setFont("helvetica", "normal");
-        doc.text("Hospital San Vicente de Arauca - DC Telematica", 105, 22, { align: "center" });
+        doc.setTextColor(100, 116, 139); // Gris
+        doc.setFontSize(8);
+        doc.text("Hospital San Vicente de Arauca — DC Telemática", 200, 23, { align: "right" });
 
-        y = 40;
-        doc.setTextColor(0, 0, 0);
+        // Línea divisoria elegante
+        doc.setDrawColor(6, 182, 212);
+        doc.setLineWidth(0.4);
+        doc.line(15, 28, 200, 28);
 
-        // Función ayudante para imprimir campos
-        const addField = (label: string, value: string, isTitle = false) => {
-          if (y > 270) { doc.addPage(); y = 20; }
-          if (isTitle) {
-            y += 5;
-            doc.setFontSize(12);
+        // --- FUNCIONES INTERNAS DE DIBUJO ---
+        const drawSectionHeader = (title: string, yPos: number) => {
+          doc.setFillColor(6, 182, 212); // Fondo Cian
+          doc.rect(15, yPos, 185, 5, 'F');
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(8.5);
+          doc.text(title, 18, yPos + 3.7);
+        };
+
+        const drawInfoRow = (label1: string, val1: string, label2: string, val2: string, yPos: number) => {
+          // Fondo alternado sutil para legibilidad
+          doc.setFillColor(248, 250, 252);
+          doc.rect(15, yPos, 185, 5, 'F');
+
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(71, 85, 105);
+          doc.setFontSize(8);
+          doc.text(`${label1}:`, 18, yPos + 3.5);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(15, 23, 42);
+          doc.text(`${val1 || "N/A"}`, 48, yPos + 3.5);
+
+          if (label2) {
             doc.setFont("helvetica", "bold");
-            doc.setTextColor(6, 182, 212);
-            doc.text(label, 20, y);
-            doc.setTextColor(0, 0, 0);
-            y += 7;
-          } else {
-            doc.setFontSize(10);
-            doc.setFont("helvetica", "bold");
-            doc.text(`${label}:`, 20, y);
+            doc.setTextColor(71, 85, 105);
+            doc.text(`${label2}:`, 110, yPos + 3.5);
             doc.setFont("helvetica", "normal");
-            const textWidth = doc.getTextWidth(`${label}: `);
-            doc.text(`${value || "N/A"}`, 20 + textWidth, y);
-            y += 7;
+            doc.setTextColor(15, 23, 42);
+            doc.text(`${val2 || "N/A"}`, 140, yPos + 3.5);
           }
         };
 
-        // Sección: Datos Principales
-        addField("DATOS PRINCIPALES", "", true);
-        addField("Registro N.", item.registro_num || "");
-        addField("Fecha y Hora", item.fecha_hora || "");
-        addField("ID Punto de Red", item.punto_id || "");
-        addField("Ubicacion Fisica", item.ubicacion || "");
+        // --- SECCIÓN 1: DATOS DE IDENTIFICACIÓN ---
+        drawSectionHeader("1. IDENTIFICACIÓN GENERAL", y);
+        y += 5;
+        drawInfoRow("Registro Número", item.registro_num || "N/A", "Fecha / Hora", item.fecha_hora || "N/A", y);
+        y += 5;
+        drawInfoRow("ID Punto de Red", item.punto_id || "N/A", "Ubicación Física", item.ubicacion || "N/A", y);
+        y += 8;
 
-        // Sección: Conectividad
-        addField("RED Y CONECTIVIDAD", "", true);
-        addField("Puerto en Switch", item.switch_port || "");
-        addField("Estado en Switch", item.switch_estado || "");
-        addField("Estado del Enlace", item.enlace || "");
-        addField("Prueba DHCP / IP", item.dhcp || "");
+        // --- SECCIÓN 2: RED Y CAPA ACTIVA ---
+        drawSectionHeader("2. CONECTIVIDAD Y EQUIPO ACTIVO", y);
+        y += 5;
+        drawInfoRow("Puerto en Switch", item.switch_port || "N/A", "Estado del Puerto", item.switch_estado || "N/A", y);
+        y += 5;
+        drawInfoRow("Estado del Enlace", item.enlace || "N/A", "Prueba DHCP / IP", item.dhcp || "N/A", y);
+        y += 8;
 
-        // Sección: Infraestructura
-        addField("INFRAESTRUCTURA FISICA", "", true);
-        addField("Tipo Canalizacion", item.tipo_canalizacion || "");
-        addField("Estado Canalizacion", item.est_canalizacion || "");
-        addField("Estado Patch Cord", `${item.patch_estado || "N/A"} (Cat: ${item.patch_cat || "N/A"})`);
+        // --- SECCIÓN 3: INFRAESTRUCTURA FÍSICA ---
+        drawSectionHeader("3. INFRAESTRUCTURA FÍSICA Y ESTRUCTURAL", y);
+        y += 5;
+        drawInfoRow("Tipo Canalización", item.tipo_canalizacion || "N/A", "Estado Canalización", item.est_canalizacion || "N/A", y);
+        y += 5;
+        drawInfoRow("Estado Faceplate", item.fisico || "N/A", "Patch Cord (Toma-PC)", item.patch_estado || "N/A", y);
+        y += 5;
+        drawInfoRow("Categoría Cable", item.patch_cat || "N/A", "Fabricación Cable", item.patch_tipo || "N/A", y);
+        y += 8;
 
-        // Sección: Fotos
-        addField("REGISTRO FOTOGRAFICO", "", true);
-        y += 2;
+        // --- SECCIÓN 4: REGISTRO FOTOGRÁFICO LADO A LADO ---
+        drawSectionHeader("4. REGISTRO FOTOGRÁFICO", y);
+        y += 5;
 
-        const addImageToDoc = (base64: string | undefined, label: string) => {
-          if (!base64) return;
-          if (y > 180) { doc.addPage(); y = 20; } // Salto de página si no cabe la foto
-          doc.setFontSize(10);
+        // Diseñar rejilla lado a lado (3 fotos). Ancho de página útil = 185mm. 
+        // Cada imagen medirá 56mm de ancho por 42mm de alto (Proporción perfecta 4:3)
+        const imgWidth = 56;
+        const imgHeight = 42;
+        const imgY = y + 4;
+
+        const drawPhotoWithLabel = (base64: string | undefined, title: string, xPos: number) => {
           doc.setFont("helvetica", "italic");
-          doc.text(label, 20, y);
-          y += 5;
-          try {
-            // Dibuja la imagen guardada en Firebase (100x75 mm)
-            doc.addImage(base64, 'JPEG', 20, y, 100, 75); 
-            y += 85;
-          } catch (e) {
-            doc.text("(Error al procesar la imagen)", 20, y);
-            y += 10;
+          doc.setTextColor(100, 116, 139);
+          doc.setFontSize(7.5);
+          doc.text(title, xPos + (imgWidth / 2), y + 2, { align: "center" });
+
+          // Dibujar marco gris
+          doc.setDrawColor(226, 232, 240);
+          doc.setFillColor(248, 250, 252);
+          doc.rect(xPos, imgY, imgWidth, imgHeight, 'F');
+          doc.rect(xPos, imgY, imgWidth, imgHeight, 'S');
+
+          if (base64) {
+            try {
+              doc.addImage(base64, 'JPEG', xPos + 1, imgY + 1, imgWidth - 2, imgHeight - 2);
+            } catch (e) {
+              doc.setFont("helvetica", "normal");
+              doc.setFontSize(7);
+              doc.text("(Error de imagen)", xPos + (imgWidth / 2), imgY + (imgHeight / 2), { align: "center" });
+            }
+          } else {
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(7);
+            doc.text("(Sin registro)", xPos + (imgWidth / 2), imgY + (imgHeight / 2), { align: "center" });
           }
         };
 
-        addImageToDoc(item.foto_1_base64, "1. Panoramica (Ubicacion)");
-        addImageToDoc(item.foto_2_base64, "2. Detalle Faceplate/Jack");
-        addImageToDoc(item.foto_3_base64, "3. Evidencia Adicional");
+        // Renderizar fotos lado a lado con 8.5mm de separación
+        drawPhotoWithLabel(item.foto_1_base64, "Panorámica", 15);
+        drawPhotoWithLabel(item.foto_2_base64, "Detalle Faceplate", 79.5);
+        drawPhotoWithLabel(item.foto_3_base64, "Adicional / Novedad", 144);
+
+        y += imgHeight + 12;
+
+        // --- PIE DE PÁGINA Y CONTROL DE CALIDAD ---
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.3);
+        doc.line(15, y, 200, y);
+        y += 4;
+
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(71, 85, 105);
+        doc.setFontSize(7.5);
+        doc.text("Auditor Técnico:", 15, y);
+        doc.line(15, y + 10, 80, y + 10); // Línea para firma del técnico
+
+        doc.text("Firma de Recibido (Hospital):", 115, y);
+        doc.line(115, y + 10, 180, y + 10); // Línea para firma de hospital
+
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(148, 163, 184);
+        doc.setFontSize(6.5);
+        doc.text(`Documento generado por el Panel de Ingeniería de DC Telemática. Id Registro: ${item.id}`, 107.5, 268, { align: "center" });
       }
 
       doc.save(filename);
     } catch (error) {
       console.error("Error generando PDF:", error);
-      alert("Error al generar PDF. Asegúrate de instalar jspdf (pnpm add jspdf).");
+      alert("Error al procesar PDF. Verifica la instalación de jspdf.");
     }
   };
 
-  // Manejador para envolver la carga del PDF y mostrar el loader
   const handleGeneratePDF = (docs: Inspeccion[], filename: string) => {
     setIsGeneratingPDF(true);
     setTimeout(async () => {
       await exportToPDF(docs, filename);
       setIsGeneratingPDF(false);
-    }, 150); // Pequeño retraso para permitir que React dibuje el modal de carga
+    }, 150); 
   };
 
   if (!isClient) return null;
@@ -224,46 +298,64 @@ export default function PanelPage() {
   return (
     <main className="relative z-10 min-h-screen p-4 md:p-8 text-gray-200">
       
-      {/* =======================
-          MODAL DE CARGA DE PDF 
-          ======================= */}
+      {/* Estilos para animación 3D de logotipo y tarjetas */}
+      <style>{`
+        .perspective-1000 {
+          perspective: 1000px;
+        }
+        @keyframes subtleOrbit {
+          0% { transform: rotateY(-6deg) rotateX(4deg) translateY(0px); }
+          50% { transform: rotateY(6deg) rotateX(-4deg) translateY(-5px); }
+          100% { transform: rotateY(-6deg) rotateX(4deg) translateY(0px); }
+        }
+        .animate-3d-tilt {
+          animation: subtleOrbit 6s ease-in-out infinite;
+          transform-style: preserve-3d;
+        }
+      `}</style>
+
+      {/* =========================================================
+          MODAL DE CARGA DE PDF (Bloqueo elegante)
+         ========================================================= */}
       {isGeneratingPDF && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
-           <div className="w-16 h-16 border-4 border-green-900 border-t-green-400 rounded-full animate-spin mb-4"></div>
-           <h2 className="text-2xl font-bold text-green-400 animate-pulse text-center px-4">Procesando Reporte PDF...</h2>
-           <p className="text-gray-400 mt-2 text-center px-4">Compilando datos y registros fotográficos, por favor espera.</p>
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
+           <div className="w-16 h-16 border-4 border-cyan-900 border-t-cyan-400 rounded-full animate-spin mb-4"></div>
+           <h2 className="text-2xl font-bold text-cyan-400 animate-pulse text-center px-4">Diseñando Documento Carta...</h2>
+           <p className="text-gray-400 mt-2 text-center px-4 max-w-md">Estructurando campos de red y distribuyendo registro fotográfico lado a lado en una sola página.</p>
         </div>
       )}
 
-      {/* Encabezado del Panel */}
+      {/* Encabezado del Panel con Animación 3D */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 bg-black/60 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)]">
         <div className="flex items-center gap-6">
-           {/* Logo con animación 3D sutil */}
-           <div className="relative w-20 h-20 md:w-28 md:h-28 transition-transform duration-700 hover:scale-110 hover:rotate-y-12 hover:rotate-x-12 perspective-1000">
-              <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-2xl animate-pulse"></div>
-              <Image
-                src="/logo.png" 
-                alt="Logo DC Telemática"
-                fill
-                className="object-contain drop-shadow-[0_0_15px_rgba(6,182,212,0.8)]"
-              />
+           {/* Logo Corporativo Animado en 3D sutil */}
+           <div className="relative w-20 h-20 md:w-28 md:h-28 perspective-1000">
+              <div className="absolute inset-0 bg-cyan-500/10 rounded-full blur-2xl animate-pulse"></div>
+              <div className="relative w-full h-full animate-3d-tilt">
+                <Image
+                  src="/logo.png" 
+                  alt="Logo DC Telemática"
+                  fill
+                  className="object-contain drop-shadow-[0_0_12px_rgba(6,182,212,0.7)]"
+                />
+              </div>
             </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase tracking-wider">
               Panel de Ingeniería
             </h1>
-            <p className="text-gray-400 text-sm mt-1">Gestión y Auditoría Hospital San Vicente de Arauca</p>
+            <p className="text-gray-400 text-sm mt-1 font-medium">Gestión y Auditoría Hospital San Vicente de Arauca</p>
           </div>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 mt-6 md:mt-0 w-full md:w-auto">
           {/* BOTÓN EXPORTAR TODO */}
           <button 
-            onClick={() => handleGeneratePDF(inspecciones, "Todos_Los_Registros_Hospital.pdf")}
+            onClick={() => handleGeneratePDF(inspecciones, "Reporte_General_Auditoria.pdf")}
             disabled={inspecciones.length === 0}
-            className="flex-1 md:flex-none px-6 py-3 bg-green-500/10 text-green-400 border border-green-500/30 hover:bg-green-500 hover:text-white rounded-lg transition-all font-bold flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(34,197,94,0.15)]"
+            className="flex-1 md:flex-none px-6 py-3 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500 hover:text-black rounded-lg transition-all font-bold flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(6,182,212,0.15)]"
           >
-            📄 Exportar Todos a PDF
+            📄 Exportar Todo a PDF
           </button>
           
           <button 
@@ -318,7 +410,7 @@ export default function PanelPage() {
                         ✏️
                       </button>
                       {/* Botón PDF INDIVIDUAL */}
-                      <button onClick={() => handleGeneratePDF([inspeccion], `Reporte_Punto_${inspeccion.punto_id || 'Inspeccion'}.pdf`)} className="p-2 bg-green-500/10 text-green-400 hover:bg-green-500 hover:text-white rounded transition-colors" title="Exportar a PDF">
+                      <button onClick={() => handleGeneratePDF([inspeccion], `Reporte_Punto_${inspeccion.punto_id || 'Inspeccion'}.pdf`)} className="p-2 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500 hover:text-black rounded transition-colors" title="Exportar a PDF">
                         📄
                       </button>
                       {/* Botón Eliminar */}
@@ -335,7 +427,7 @@ export default function PanelPage() {
       </div>
 
       {/* =========================================================
-          MODAL DE VISUALIZACIÓN DE DETALLES Y FOTOS
+          MODAL DE VISUALIZACIÓN DE DETALLES
          ========================================================= */}
       {viewDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
