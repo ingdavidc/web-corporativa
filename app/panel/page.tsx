@@ -22,6 +22,8 @@ interface Inspeccion {
   id: string;
   registro_num?: string;
   fecha_hora?: string;
+  tecnico_email?: string; 
+  tecnico_nombre?: string; // Nuevo campo para guardar el nombre del técnico
   punto_id?: string;
   ubicacion?: string;
   switch_port?: string;
@@ -49,6 +51,7 @@ export default function PanelPage() {
   const [usuarios, setUsuarios] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [showUserModal, setShowUserModal] = useState(false);
+  const [newUserName, setNewUserName] = useState(""); // Nuevo estado para el Nombre
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
   const [newUserRole, setNewUserRole] = useState("tecnico");
@@ -110,14 +113,16 @@ export default function PanelPage() {
       await createUserWithEmailAndPassword(secondaryAuth, newUserEmail, newUserPassword);
       await signOut(secondaryAuth); // Deslogueamos la instancia secundaria por seguridad
 
-      // Guardamos su rol en Firestore para darle el acceso en el login
+      // Guardamos su rol y NOMBRE en Firestore para darle el acceso en el login
       await setDoc(doc(db, "usuarios", newUserEmail), {
+        nombre: newUserName, // Guardamos el nombre y apellido
         email: newUserEmail,
         role: newUserRole,
         createdAt: new Date().toISOString()
       });
 
       setShowUserModal(false);
+      setNewUserName(""); // Limpiamos el campo
       setNewUserEmail("");
       setNewUserPassword("");
       alert("✅ Usuario de acceso corporativo creado exitosamente");
@@ -250,6 +255,10 @@ export default function PanelPage() {
 
         drawSectionHeader("1. IDENTIFICACIÓN GENERAL", y); y += 7;
         drawInfoRow("Registro Número", item.registro_num || "N/A", "Fecha / Hora", item.fecha_hora || "N/A", y); y += 9;
+        
+        // Fila actualizada para mostrar solo el Nombre del Auditor Técnico
+        drawInfoRow("Auditor Técnico", item.tecnico_nombre || "No registrado", "", "", y); y += 9; 
+        
         drawInfoRow("ID Punto de Red", item.punto_id || "N/A", "Ubicación Física", item.ubicacion || "N/A", y); y += 15;
 
         drawSectionHeader("2. CONECTIVIDAD Y EQUIPO ACTIVO", y); y += 7;
@@ -303,8 +312,17 @@ export default function PanelPage() {
         doc.setFontSize(9);
         doc.text("Auditor Técnico:", 15, y);
         doc.setDrawColor(grisPizarra.r, grisPizarra.g, grisPizarra.b);
+        
+        // Colocamos el nombre del técnico encima de la línea de firma si está disponible
+        if(item.tecnico_nombre) {
+           doc.setFont("helvetica", "italic");
+           doc.setFontSize(8);
+           doc.text(item.tecnico_nombre, 20, y - 4);
+        }
+        
         doc.line(15, y + 10, 80, y + 10); 
 
+        doc.setFont("helvetica", "bold");
         doc.text("Firma de Recibido (Hospital):", 115, y);
         doc.line(115, y + 10, 180, y + 10);
 
@@ -402,11 +420,12 @@ export default function PanelPage() {
           ) : inspecciones.length === 0 ? (
             <div className="text-center py-20 text-gray-500"><p className="text-xl">No hay registros de inspección todavía.</p></div>
           ) : (
-            <table className="w-full text-left border-collapse min-w-[700px]">
+            <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="border-b border-white/10 text-cyan-400">
                   <th className="py-4 px-4 font-semibold">Reg N°</th>
                   <th className="py-4 px-4 font-semibold">Fecha</th>
+                  <th className="py-4 px-4 font-semibold">Auditor Técnico</th>
                   <th className="py-4 px-4 font-semibold">Punto ID</th>
                   <th className="py-4 px-4 font-semibold">Ubicación</th>
                   <th className="py-4 px-4 font-semibold text-center">Fotos</th>
@@ -418,6 +437,7 @@ export default function PanelPage() {
                   <tr key={inspeccion.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                     <td className="py-4 px-4 font-bold">{inspeccion.registro_num || "-"}</td>
                     <td className="py-4 px-4 text-sm text-gray-400 whitespace-nowrap">{inspeccion.fecha_hora || "-"}</td>
+                    <td className="py-4 px-4 text-sm text-cyan-200">{inspeccion.tecnico_nombre || "No registrado"}</td>
                     <td className="py-4 px-4 font-medium text-cyan-100">{inspeccion.punto_id || "-"}</td>
                     <td className="py-4 px-4 text-sm">{inspeccion.ubicacion || "-"}</td>
                     <td className="py-4 px-4 text-center">{inspeccion.foto_1_base64 || inspeccion.foto_2_base64 ? "📷 Sí" : "❌ No"}</td>
@@ -457,6 +477,7 @@ export default function PanelPage() {
             <table className="w-full text-left border-collapse min-w-[600px]">
               <thead>
                 <tr className="border-b border-white/10 text-purple-400">
+                  <th className="py-4 px-4 font-semibold">Nombre y Apellido</th>
                   <th className="py-4 px-4 font-semibold">Correo Electrónico</th>
                   <th className="py-4 px-4 font-semibold">Rol de Acceso</th>
                   <th className="py-4 px-4 font-semibold">Fecha de Creación</th>
@@ -466,7 +487,8 @@ export default function PanelPage() {
               <tbody>
                 {usuarios.map((u) => (
                   <tr key={u.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="py-4 px-4 font-medium text-white">{u.email}</td>
+                    <td className="py-4 px-4 font-medium text-white">{u.nombre || "Sin nombre"}</td>
+                    <td className="py-4 px-4 text-gray-400">{u.email}</td>
                     <td className="py-4 px-4">
                       <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${u.role === 'ingeniero' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'}`}>
                         {u.role === 'ingeniero' ? 'Ingeniero / Admin' : 'Técnico Operativo'}
@@ -501,6 +523,10 @@ export default function PanelPage() {
             
             <form onSubmit={handleCreateUser} className="space-y-5">
               <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">Nombre y Apellido:</label>
+                <input type="text" value={newUserName} onChange={e=>setNewUserName(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-purple-500 outline-none transition-colors" placeholder="Ej. Juan Pérez"/>
+              </div>
+              <div>
                 <label className="text-sm font-semibold text-gray-300 block mb-1">Correo Electrónico:</label>
                 <input type="email" value={newUserEmail} onChange={e=>setNewUserEmail(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-purple-500 outline-none transition-colors" placeholder="tecnico@dctelematica.com"/>
               </div>
@@ -530,7 +556,7 @@ export default function PanelPage() {
       )}
 
       {/* =========================================================
-          MODALES DE AUDITORÍA (VER Y EDITAR - SE MANTIENEN IGUAL)
+          MODALES DE AUDITORÍA (VER Y EDITAR)
          ========================================================= */}
       {viewDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
@@ -542,7 +568,7 @@ export default function PanelPage() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4 text-sm">
-                <div className="bg-white/5 p-4 rounded-lg"><h3 className="text-cyan-500 font-bold mb-2">📍 Datos Principales</h3><p><span className="text-gray-400">Registro N°:</span> {viewDoc.registro_num}</p><p><span className="text-gray-400">Fecha:</span> {viewDoc.fecha_hora}</p><p><span className="text-gray-400">Punto ID:</span> {viewDoc.punto_id}</p><p><span className="text-gray-400">Ubicación:</span> {viewDoc.ubicacion}</p></div>
+                <div className="bg-white/5 p-4 rounded-lg"><h3 className="text-cyan-500 font-bold mb-2">📍 Datos Principales</h3><p><span className="text-gray-400">Registro N°:</span> {viewDoc.registro_num}</p><p><span className="text-gray-400">Fecha:</span> {viewDoc.fecha_hora}</p><p><span className="text-gray-400">Auditor Técnico:</span> {viewDoc.tecnico_nombre || "No registrado"}</p><p><span className="text-gray-400">Punto ID:</span> {viewDoc.punto_id}</p><p><span className="text-gray-400">Ubicación:</span> {viewDoc.ubicacion}</p></div>
                 <div className="bg-white/5 p-4 rounded-lg"><h3 className="text-cyan-500 font-bold mb-2">🔌 Red y Conectividad</h3><p><span className="text-gray-400">Puerto Switch:</span> {viewDoc.switch_port || "N/A"}</p><p><span className="text-gray-400">Estado Switch:</span> {viewDoc.switch_estado || "N/A"}</p><p><span className="text-gray-400">Enlace:</span> {viewDoc.enlace || "N/A"}</p><p><span className="text-gray-400">Prueba DHCP:</span> {viewDoc.dhcp || "N/A"}</p></div>
                 <div className="bg-white/5 p-4 rounded-lg"><h3 className="text-cyan-500 font-bold mb-2">🏗️ Infraestructura Física</h3><p><span className="text-gray-400">Canalización:</span> {viewDoc.tipo_canalizacion || "N/A"}</p><p><span className="text-gray-400">Estado Canalización:</span> {viewDoc.est_canalizacion || "N/A"}</p><p><span className="text-gray-400">Patch Cord:</span> {viewDoc.patch_estado || "N/A"} - {viewDoc.patch_cat}</p></div>
               </div>
