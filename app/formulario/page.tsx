@@ -111,39 +111,63 @@ export default function FormularioPage() {
         const timeStr = now.toLocaleTimeString('es-CO');
         const coordsStr = location 
           ? `Lat: ${location.lat.toFixed(6)}, Lng: ${location.lng.toFixed(6)}` 
-          // Coordenadas GPS (Gris claro)
-          ctx.fillStyle = "#e2e8f0";
-          ctx.fillText(`UBICACIÓN: ${coordsStr}`, padding, canvas.height - boxHeight + padding + fontSize + (lineSpacing * 2));
+          : "GPS: Buscando satélites...";
+        
+        // 3. Configurar tipografía adaptable al tamaño de la foto
+        const fontSize = Math.floor(canvas.width * 0.025); // Tamaño dinámico
+        const padding = fontSize;
+        const lineSpacing = fontSize * 1.5;
+        const boxHeight = (lineSpacing * 3.5) + padding;
 
-          // 6. Estampar el logo corporativo de forma sutil
-          const logoImg = new globalThis.Image();
-          logoImg.src = "/logo.png";
+        // 4. Dibujar fondo oscuro semitransparente para que las letras se lean siempre
+        ctx.fillStyle = "rgba(0, 0, 0, 0.65)"; // Negro al 65%
+        ctx.fillRect(0, canvas.height - boxHeight, canvas.width, boxHeight);
+
+        // 5. Estampar los textos (Marca de agua)
+        ctx.textAlign = "left";
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        
+        // Proyecto (Blanco)
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText("PROYECTO: HOSPITAL SAN VICENTE DE ARAUCA - DC TELEMÁTICA", padding, canvas.height - boxHeight + padding + fontSize);
+        
+        // Fecha y Hora (Cian Corporativo)
+        ctx.fillStyle = "#06b6d4";
+        ctx.fillText(`FECHA: ${dateStr} - HORA: ${timeStr}`, padding, canvas.height - boxHeight + padding + fontSize + lineSpacing);
+        
+        // Coordenadas GPS (Gris claro)
+        ctx.fillStyle = "#e2e8f0";
+        ctx.fillText(`UBICACIÓN: ${coordsStr}`, padding, canvas.height - boxHeight + padding + fontSize + (lineSpacing * 2));
+
+        // 6. Estampar el logo corporativo de forma sutil
+        const logoImg = new globalThis.Image();
+        logoImg.src = "/logo.png";
+        
+        logoImg.onload = () => {
+          // Calcular tamaño: ocupará el 70% de la altura de la franja oscura
+          const logoHeight = boxHeight * 0.7;
+          const logoWidth = logoImg.width * (logoHeight / logoImg.height);
           
-          logoImg.onload = () => {
-            // Calcular tamaño: ocupará el 70% de la altura de la franja oscura
-            const logoHeight = boxHeight * 0.7;
-            const logoWidth = logoImg.width * (logoHeight / logoImg.height);
-            
-            // Posicionar a la derecha de la franja
-            const logoX = canvas.width - logoWidth - padding;
-            const logoY = canvas.height - boxHeight + (boxHeight - logoHeight) / 2;
+          // Posicionar a la derecha de la franja
+          const logoX = canvas.width - logoWidth - padding;
+          const logoY = canvas.height - boxHeight + (boxHeight - logoHeight) / 2;
 
-            // Hacerlo sutil (semitransparente)
-            ctx.globalAlpha = 0.7; 
-            ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
-            ctx.globalAlpha = 1.0; // Restaurar opacidad normal
+          // Hacerlo sutil (semitransparente al 70%)
+          ctx.globalAlpha = 0.7; 
+          ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
+          ctx.globalAlpha = 1.0; // Restaurar opacidad normal
 
-            // Devolver imagen procesada en formato JPEG
-            resolve(canvas.toDataURL("image/jpeg", 0.75));
-          };
-
-          logoImg.onerror = () => {
-            // Fallback: Si el logo no carga, devuelve la imagen solo con el texto
-            resolve(canvas.toDataURL("image/jpeg", 0.75));
-          };
+          // Devolver imagen procesada en formato JPEG
+          resolve(canvas.toDataURL("image/jpeg", 0.75));
         };
-      });
-    };
+
+        logoImg.onerror = () => {
+          // Fallback: Si el logo no carga, devuelve la imagen solo con el texto
+          resolve(canvas.toDataURL("image/jpeg", 0.75));
+        };
+      };
+    });
+  };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
