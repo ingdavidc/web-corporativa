@@ -32,24 +32,23 @@ export function CorporateLogin() {
     setError("");
 
     try {
-      // 1. Verificamos que las credenciales existan en Firebase Auth
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email, password);
       const db = getFirestore(app);
       
-      // 2. Buscamos el rol de este usuario en la base de datos
       const userDocRef = doc(db, "usuarios", email);
       const userDoc = await getDoc(userDocRef);
 
       if (!userDoc.exists()) {
-        // SOLUCIÓN A CUENTAS ANTIGUAS: Si el usuario ya existía en Firebase pero no tiene un rol asignado,
-        // le otorgamos automáticamente el rol con el que está intentando entrar ahora mismo.
+        // Administrador Fundador o Usuario Antiguo
         await setDoc(userDocRef, {
+          nombre: "Administrador Principal", // Nombre por defecto si no existía
           email: email,
           role: role,
           createdAt: new Date().toISOString()
         });
+        // Guardamos el nombre en la memoria del celular
+        localStorage.setItem("dc_tecnico_nombre", "Administrador Principal");
       } else {
-        // 3. Si el usuario ya tiene rol asignado, validamos que entre por la puerta correcta
         const userData = userDoc.data();
         if (userData.role !== role) {
           await auth.signOut();
@@ -57,11 +56,12 @@ export function CorporateLogin() {
           setLoading(false);
           return;
         }
+        // Guardamos el nombre real del técnico en la memoria del celular
+        localStorage.setItem("dc_tecnico_nombre", userData.nombre || "Técnico");
       }
 
       setIsOpen(false);
       
-      // ✅ Redirección a la ruta correspondiente
       if (role === "tecnico") {
         router.push("/formulario");
       } else {
