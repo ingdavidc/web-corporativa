@@ -7,7 +7,7 @@ import { initializeApp, getApps } from "firebase/app";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "firebase/firestore";
 
-// Configuración de Firebase (Se inicializa solo si no existe)
+// Configuración de Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAuJtE7VKOm1wG5BEd_pde8_9aDaq33j8E",
   authDomain: "dc-telematica-auditoria.firebaseapp.com",
@@ -29,72 +29,121 @@ export default function FormularioPage() {
   const [photos, setPhotos] = useState<{ [key: number]: string | null }>({ 1: null, 2: null, 3: null });
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  
+  // Estado para las coordenadas GPS
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     setIsClient(true);
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        router.push("/");
-      }
+      if (!user) router.push("/");
     });
 
-    // Leer siempre el último número desde la base de datos de Firebase
+    // Sincronizar número de registro con Firebase
     const fetchUltimoRegistro = async () => {
       try {
         const q = query(collection(db, "inspecciones"), orderBy("timestamp", "desc"), limit(1));
         const querySnapshot = await getDocs(q);
-        
         if (!querySnapshot.empty) {
           const ultimoDoc = querySnapshot.docs[0].data();
           const ultimoNum = parseInt(ultimoDoc.registro_num || "0");
-          // Setea el próximo número sumándole 1 al último que encontró en Firebase
           setRegistroNum(ultimoNum + 1);
         } else {
-          // Si no hay registros, empieza en 1
           setRegistroNum(1);
         }
       } catch (error) {
-        console.error("Error obteniendo el último registro:", error);
-        // Fallback: si falla el internet, usa el contador local por seguridad
         const contadorLocal = parseInt(localStorage.getItem("dc_telematica_contador") || "1");
         setRegistroNum(contadorLocal);
       }
     };
-
     fetchUltimoRegistro();
 
+    // Actualizar reloj
     const now = new Date();
-    setFechaHora(
-      now.toLocaleString("es-CO", {
-        year: "numeric", month: "2-digit", day: "2-digit",
-        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true,
-      })
-    );
+    setFechaHora(now.toLocaleString("es-CO", {
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true,
+    }));
+
+    // --- INICIAR RASTREO GPS ---
+    if ("geolocation" in navigator) {
+      navigator.geolocation.watchPosition(
+        (position) => {
+          setLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.warn("No se pudo obtener la ubicación GPS:", error.message);
+        },
+        { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+      );
+    }
+
     return () => unsubscribe();
   }, [router]);
 
-  // --- FUNCIÓN PARA COMPRIMIR FOTOS Y AHORRAR ESPACIO EN FIRESTORE ---
-  const compressImage = (base64Str: string, maxWidth = 800): Promise<string> => {
+  // --- MOTOR DE COMPRESIÓN Y MARCA DE AGUA TIPO "TIMEMARK" ---
+  const processAndWatermarkImage = (base64Str: string, maxWidth = 1000): Promise<string> => {
     return new Promise((resolve) => {
       const img = new globalThis.Image();
       img.src = base64Str;
       img.onload = () => {
         const canvas = document.createElement("canvas");
         const ratio = maxWidth / img.width;
-        if (ratio < 1) {
-          canvas.width = maxWidth;
-          canvas.height = img.height * ratio;
-        } else {
-          canvas.width = img.width;
-          canvas.height = img.height;
-        }
+        
+        // Mantener proporciones
+        canvas.width = ratio < 1 ? maxWidth : img.width;
+        canvas.height = ratio < 1 ? img.height * ratio : img.height;
+
         const ctx = canvas.getContext("2d");
-        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.6));
-      };
-    });
-  };
+        if (!ctx) return resolve(base64Str); // Fallback de seguridad
+
+        // 1. Dibujar la foto original
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // 2. Preparar los datos para la marca de agua
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('es-CO');
+        const timeStr = now.toLocaleTimeString('es-CO');
+        const coordsStr = location 
+          ? `Lat: ${location.lat.toFixed(6)}, Lng: ${location.lng.toFixed(6)}` 
+          // Coordenadas GPS (Gris claro)
+          ctx.fillStyle = "#e2e8f0";
+          ctx.fillText(`UBICACIÓN: ${coordsStr}`, padding, canvas.height - boxHeight + padding + fontSize + (lineSpacing * 2));
+
+          // 6. Estampar el logo corporativo de forma sutil
+          const logoImg = new globalThis.Image();
+          logoImg.src = "/logo.png";
+          
+          logoImg.onload = () => {
+            // Calcular tamaño: ocupará el 70% de la altura de la franja oscura
+            const logoHeight = boxHeight * 0.7;
+            const logoWidth = logoImg.width * (logoHeight / logoImg.height);
+            
+            // Posicionar a la derecha de la franja
+            const logoX = canvas.width - logoWidth - padding;
+            const logoY = canvas.height - boxHeight + (boxHeight - logoHeight) / 2;
+
+            // Hacerlo sutil (semitransparente)
+            ctx.globalAlpha = 0.7; 
+            ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
+            ctx.globalAlpha = 1.0; // Restaurar opacidad normal
+
+            // Devolver imagen procesada en formato JPEG
+            resolve(canvas.toDataURL("image/jpeg", 0.75));
+          };
+
+          logoImg.onerror = () => {
+            // Fallback: Si el logo no carga, devuelve la imagen solo con el texto
+            resolve(canvas.toDataURL("image/jpeg", 0.75));
+          };
+        };
+      });
+    };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
@@ -102,8 +151,9 @@ export default function FormularioPage() {
       const reader = new FileReader();
       reader.onload = async () => {
         const originalBase64 = reader.result as string;
-        const compressedBase64 = await compressImage(originalBase64);
-        setPhotos((prev) => ({ ...prev, [index]: compressedBase64 }));
+        // Pasa la foto por el motor de marca de agua antes de guardarla en el estado
+        const watermarkedBase64 = await processAndWatermarkImage(originalBase64);
+        setPhotos((prev) => ({ ...prev, [index]: watermarkedBase64 }));
       };
       reader.readAsDataURL(file);
     }
@@ -129,37 +179,28 @@ export default function FormularioPage() {
       delete data.foto_2;
       delete data.foto_3;
 
+      // Las fotos ya traen la marca de agua incrustada desde el handlePhotoChange
       data.foto_1_base64 = photos[1] || "";
       data.foto_2_base64 = photos[2] || "";
       data.foto_3_base64 = photos[3] || "";
 
       await addDoc(collection(db, "inspecciones"), data);
       
-      // Mantenemos el contador local actualizado por si en el futuro se quedan sin internet
       localStorage.setItem("dc_telematica_contador", (registroNum + 1).toString());
 
       setIsSaving(false);
 
       if (accion === "continuar_punto") {
         setSaveSuccess("¡Punto de red guardado correctamente!");
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
+        setTimeout(() => window.location.reload(), 2000);
       } else {
-        setSaveSuccess("¡Muchas gracias por su dedicación y responsabilidad! Cada vez más cerca de la excelencia.");
-        setTimeout(() => {
-          router.push("/");
-        }, 3500); 
+        setSaveSuccess("¡Muchas gracias por su dedicación y responsabilidad!");
+        setTimeout(() => router.push("/"), 3500); 
       }
 
     } catch (error: unknown) {
       console.error("Error al guardar en Firebase:", error);
-      const errorMessage = error instanceof Error ? error.message : "Revisa la conexión.";
-      if (errorMessage.includes("exceeds the maximum")) {
-          alert("Error: Las fotos son demasiado pesadas. Intenta tomar fotos de menor resolución.");
-      } else {
-          alert("Error de Firebase: " + errorMessage);
-      }
+      alert("Error al guardar: Las fotos pueden ser muy pesadas o hay falla de red.");
       setIsSaving(false);
     }
   };
@@ -168,20 +209,36 @@ export default function FormularioPage() {
 
   return (
     <main className="relative z-10 min-h-screen p-4 md:p-8 flex justify-center pb-24 text-gray-200">
+      
+      {/* Estilos para animación 3D de logotipo */}
+      <style>{`
+        .perspective-1000 { perspective: 1000px; }
+        @keyframes subtleOrbit {
+          0% { transform: rotateY(-6deg) rotateX(4deg) translateY(0px); }
+          50% { transform: rotateY(6deg) rotateX(-4deg) translateY(-5px); }
+          100% { transform: rotateY(-6deg) rotateX(4deg) translateY(0px); }
+        }
+        .animate-3d-tilt {
+          animation: subtleOrbit 6s ease-in-out infinite;
+          transform-style: preserve-3d;
+        }
+      `}</style>
+
       <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl w-full max-w-3xl p-6 md:p-10 shadow-[0_0_40px_rgba(0,0,0,0.5)]">
         
-        {/* Cabecera con Logotipo Animado */}
+        {/* Cabecera con Logotipo Animado en 3D */}
         <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-8 border border-cyan-500/30 bg-cyan-900/10 p-6 rounded-lg shadow-[0_0_20px_rgba(6,182,212,0.15)]">
-          {/* Contenedor del Logo 3D */}
-          <div className="relative w-24 h-24 md:w-28 md:h-28 transition-transform duration-700 hover:scale-110 hover:rotate-y-12 hover:rotate-x-12 perspective-1000 shrink-0">
+          <div className="relative w-24 h-24 md:w-28 md:h-28 perspective-1000 shrink-0">
             <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-xl animate-pulse"></div>
-            <Image
-              src="/logo.png" 
-              alt="Logo DC Telemática"
-              fill
-              className="object-contain drop-shadow-[0_0_15px_rgba(6,182,212,0.8)]"
-              priority
-            />
+            <div className="relative w-full h-full animate-3d-tilt">
+              <Image
+                src="/logo.png" 
+                alt="Logo DC Telemática"
+                fill
+                className="object-contain drop-shadow-[0_0_15px_rgba(6,182,212,0.8)]"
+                priority
+              />
+            </div>
           </div>
           <div className="text-center md:text-left">
             <h1 className="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase tracking-wider">
@@ -189,6 +246,10 @@ export default function FormularioPage() {
             </h1>
             <p className="text-cyan-100/70 text-sm mt-2 font-medium tracking-wide">
               MÓDULO DE AUDITORÍA TÉCNICA E INSPECCIÓN FÍSICA
+            </p>
+            {/* Indicador de GPS */}
+            <p className={`text-xs mt-2 font-bold ${location ? 'text-green-400' : 'text-yellow-400 animate-pulse'}`}>
+              {location ? `📍 GPS Activo: ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}` : "📍 Buscando señal GPS..."}
             </p>
           </div>
         </div>
@@ -382,8 +443,11 @@ export default function FormularioPage() {
           {/* 5. Fotos */}
           <section>
             <h2 className="text-xl font-bold text-cyan-400 border-b border-white/10 pb-2 mb-4 relative after:content-[''] after:absolute after:left-0 after:-bottom-[1px] after:w-16 after:h-[2px] after:bg-red-500">
-              5. Registro Fotográfico
+              5. Registro Fotográfico (Con GPS e Info)
             </h2>
+            <p className="text-sm text-yellow-400 mb-4 bg-yellow-500/10 p-3 rounded-lg border border-yellow-500/20">
+              ⚠️ Al tomar la foto, el sistema incrustará automáticamente la ubicación GPS, fecha, hora y proyecto sobre la imagen.
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[1, 2, 3].map((num) => (
                 <div key={num} className="flex flex-col">
@@ -395,7 +459,7 @@ export default function FormularioPage() {
                     className="h-48 border-2 border-dashed border-cyan-500/50 rounded-xl flex items-center justify-center cursor-pointer hover:bg-cyan-500/10 transition-colors bg-cover bg-center overflow-hidden"
                     style={{ backgroundImage: photos[num] ? `url(${photos[num]})` : "none", borderStyle: photos[num] ? 'solid' : 'dashed' }}
                   >
-                    <span className="bg-white/90 text-black px-4 py-2 rounded-full font-bold shadow-lg text-sm pointer-events-none">
+                    <span className="bg-black/70 text-white px-4 py-2 rounded-full font-bold shadow-lg text-sm pointer-events-none backdrop-blur-sm">
                       {photos[num] ? "🔄 Cambiar Foto" : "📷 Tomar Foto"}
                     </span>
                   </label>
