@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { UserCircle, Wrench, ShieldCheck, X } from "lucide-react";
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs, limit, query } from "firebase/firestore";
 
 // Configuración de Firebase
 const firebaseConfig = {
@@ -31,10 +32,45 @@ export function CorporateLogin() {
     setError("");
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      // 1. Verificamos que las credenciales existan en Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const db = getFirestore(app);
+      
+      // 2. Buscamos el rol de este usuario en la base de datos de permisos
+      const userDoc = await getDoc(doc(db, "usuarios", email));
+
+      if (!userDoc.exists()) {
+        // Lógica de "Administrador Fundador": Si la colección está vacía, te auto-registra a ti como el primer usuario para que no pierdas acceso.
+        const qUsers = query(collection(db, "usuarios"), limit(1));
+        const usersSnap = await getDocs(qUsers);
+        
+        if (usersSnap.empty) {
+          await setDoc(doc(db, "usuarios", email), {
+            email: email,
+            role: role,
+            createdAt: new Date().toISOString()
+          });
+        } else {
+          // Si ya hay usuarios y tú no estás, te rechaza (Acceso Revocado)
+          await auth.signOut();
+          setError("Acceso denegado: Tu cuenta no tiene permisos asignados o fue revocada.");
+          setLoading(false);
+          return;
+        }
+      } else {
+        // 3. Si el usuario existe, validamos que esté entrando al panel que le corresponde
+        const userData = userDoc.data();
+        if (userData.role !== role) {
+          await auth.signOut();
+          setError(`Acceso denegado: El perfil asignado a este correo es "${userData.role === 'tecnico' ? 'Técnico Operativo' : 'Ingeniero Administrador'}".`);
+          setLoading(false);
+          return;
+        }
+      }
+
       setIsOpen(false);
       
-      // ✅ AQUÍ ESTÁN LAS RUTAS LIMPIAS ARREGLADAS
+      // ✅ Redirección limpia
       if (role === "tecnico") {
         router.push("/formulario");
       } else {
