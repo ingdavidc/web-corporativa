@@ -8,11 +8,40 @@ import { WebContentProvider } from "@/components/web-content-provider";
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'DC Telemática - Soluciones en Telecomunicaciones',
-  description: 'Expertos en telecomunicaciones, redes, infraestructura tecnológica y soluciones digitales innovadoras',
+  metadataBase: new URL('https://dctelematica.com'), // Base URL oficial
+  title: 'DC Telemática - Soluciones en Telecomunicaciones y Redes',
+  description: 'Expertos en telecomunicaciones, redes, fibra óptica, infraestructura tecnológica y soluciones digitales innovadoras en Colombia.',
+  keywords: ["telecomunicaciones", "redes", "fibra óptica", "infraestructura tecnológica", "ingeniería", "hospital", "Arauca", "Colombia", "sistemas", "cableado estructurado"],
+  authors: [{ name: "DC Telemática" }],
   generator: 'v0.app',
+  openGraph: {
+    title: 'DC Telemática - Expertos en Telecomunicaciones',
+    description: 'Conectamos tu futuro digital. Soluciones integrales en infraestructura tecnológica.',
+    url: 'https://dctelematica.com', // Ajusta este dominio cuando lo tengas oficial
+    siteName: 'DC Telemática',
+    images: [
+      {
+        url: '/logo.png',
+        width: 800,
+        height: 600,
+        alt: 'DC Telemática Logo',
+      },
+    ],
+    locale: 'es_CO',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'DC Telemática',
+    description: 'Conectamos tu futuro digital. Expertos en redes y telecomunicaciones.',
+    images: ['/logo.png'],
+  },
   icons: {
-    icon: '/logo.png',
+    icon: [
+      { url: '/logo.png', sizes: '32x32', type: 'image/png' },
+      { url: '/logo.png', sizes: '16x16', type: 'image/png' },
+    ],
+    shortcut: '/logo.png',
     apple: '/logo.png',
   },
 }

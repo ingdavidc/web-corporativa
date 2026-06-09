@@ -1,0 +1,5 @@
+User-Agent: *
+Allow: /
+Disallow: /panel/
+
+Sitemap: https://dctelematica.com/sitemap.xml
