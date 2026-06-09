@@ -50,15 +50,21 @@ export function Hero() {
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24">
         <div className="text-center">
           {/* Animated Logo */}
-          <div className="flex justify-center mb-8 animate-fade-in-up">
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full animate-pulse-glow" />
+          <div className="flex justify-center mb-12 animate-fade-in-up">
+            <div className="relative group perspective-1000">
+              {/* Outer Glow Ring */}
+              <div className="absolute -inset-8 rounded-full bg-gradient-to-r from-cyan-500 via-primary to-blue-500 opacity-20 blur-2xl group-hover:opacity-60 transition-opacity duration-1000 animate-pulse" style={{ animationDuration: '4s' }} />
+              
+              {/* Tight Silhouette Glow */}
+              <div className="absolute -inset-1 rounded-full bg-cyan-400/30 blur-md group-hover:bg-cyan-400/50 transition-colors duration-700 animate-pulse-glow" />
+              
+              {/* Core Image with Drop Shadow */}
               <Image
                 src="/logo.png"
                 alt="DC Telemática"
                 width={280}
                 height={140}
-                className="relative z-10 h-28 w-auto object-contain"
+                className="relative z-10 h-28 w-auto object-contain drop-shadow-[0_0_15px_rgba(6,182,212,0.6)] group-hover:drop-shadow-[0_0_35px_rgba(6,182,212,0.9)] transition-all duration-700 hover:scale-105"
                 priority
               />
             </div>
