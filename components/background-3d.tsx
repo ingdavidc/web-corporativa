@@ -12,7 +12,6 @@ export function Background3D() {
     if (!ctx) return;
 
     let particlesArray: Particle[] = [];
-    const numberOfParticles = Math.floor(window.innerWidth / 15); // Adjust for density
     let animationFrameId: number;
 
     const resize = () => {
@@ -39,8 +38,8 @@ export function Background3D() {
         this.size = Math.random() * 2 + 0.5;
         this.speedX = (Math.random() - 0.5) * 0.8;
         this.speedY = (Math.random() - 0.5) * 0.8;
-        // Mezclamos cian y acentos para dar el look corporativo
-        this.color = Math.random() > 0.5 ? "rgba(6, 182, 212, 0.8)" : "rgba(59, 130, 246, 0.8)";
+        // Colores corporativos: Rojo primario y un azul muy sutil
+        this.color = Math.random() > 0.5 ? "rgba(239, 68, 68, 0.8)" : "rgba(59, 130, 246, 0.6)";
       }
       
       update() {
@@ -79,8 +78,8 @@ export function Background3D() {
           if (distance < (canvas.width / 10) * (canvas.height / 10)) {
             opacityValue = 1 - (distance / 15000);
             if (!ctx) return;
-            // Fibra óptica cyan glow
-            ctx.strokeStyle = `rgba(6, 182, 212, ${opacityValue * 0.4})`;
+            // Líneas de conexión rojas (fibra óptica)
+            ctx.strokeStyle = `rgba(239, 68, 68, ${opacityValue * 0.3})`;
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
@@ -112,16 +111,16 @@ export function Background3D() {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[-1] overflow-hidden bg-[#03060f] pointer-events-none">
+    <div className="fixed inset-0 z-[0] overflow-hidden bg-[#03060f] pointer-events-none">
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-60" />
       
       {/* Orbes de plasma sutiles para profundidad ambiental */}
       <div 
-        className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-blue-600 opacity-[0.05] blur-[120px] animate-pulse" 
+        className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-red-600 opacity-[0.05] blur-[120px] animate-pulse" 
         style={{ animationDuration: '8s' }} 
       />
       <div 
-        className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-cyan-400 opacity-[0.05] blur-[120px] animate-pulse" 
+        className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-blue-600 opacity-[0.05] blur-[120px] animate-pulse" 
         style={{ animationDuration: '12s', animationDelay: '2s' }} 
       />
     </div>

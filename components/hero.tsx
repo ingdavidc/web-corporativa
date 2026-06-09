@@ -49,24 +49,27 @@ export function Hero() {
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24">
         <div className="text-center">
-          {/* Animated Logo */}
+          {/* Animated Logo with Switch Lights */}
           <div className="flex justify-center mb-12 animate-fade-in-up">
-            <div className="relative group perspective-1000">
-              {/* Outer Glow Ring */}
-              <div className="absolute -inset-8 rounded-full bg-gradient-to-r from-cyan-500 via-primary to-blue-500 opacity-20 blur-2xl group-hover:opacity-60 transition-opacity duration-1000 animate-pulse" style={{ animationDuration: '4s' }} />
-              
-              {/* Tight Silhouette Glow */}
-              <div className="absolute -inset-1 rounded-full bg-cyan-400/30 blur-md group-hover:bg-cyan-400/50 transition-colors duration-700 animate-pulse-glow" />
-              
-              {/* Core Image with Drop Shadow */}
+            <div className="relative inline-block">
+              {/* Core Image */}
               <Image
                 src="/logo.png"
                 alt="DC Telemática"
                 width={280}
                 height={140}
-                className="relative z-10 h-28 w-auto object-contain drop-shadow-[0_0_15px_rgba(6,182,212,0.6)] group-hover:drop-shadow-[0_0_35px_rgba(6,182,212,0.9)] transition-all duration-700 hover:scale-105"
+                className="relative z-10 h-28 w-auto object-contain"
                 priority
               />
+              
+              {/* Communication Switch LED Lights Simulation */}
+              <div className="absolute bottom-2 right-[-10px] flex gap-1.5 z-20">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" style={{ animationDuration: '0.8s' }} />
+                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" style={{ animationDuration: '1.2s' }} />
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" style={{ animationDuration: '0.5s' }} />
+                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" style={{ animationDuration: '1.5s' }} />
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" style={{ animationDuration: '2s' }} />
+              </div>
             </div>
           </div>
 
