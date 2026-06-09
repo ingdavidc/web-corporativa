@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { initializeApp, getApps } from "firebase/app";
 import { onAuthStateChanged, signOut, createUserWithEmailAndPassword, getAuth } from "firebase/auth";
-import { collection, onSnapshot, doc, deleteDoc, updateDoc, query, orderBy, setDoc } from "firebase/firestore";
+import { collection, onSnapshot, doc, deleteDoc, updateDoc, query, orderBy, setDoc, addDoc } from "firebase/firestore";
 import { auth, db, firebaseConfig } from "@/lib/firebase";
 
 interface Inspeccion {
@@ -28,7 +28,7 @@ export default function PanelPage() {
   const [isClient, setIsClient] = useState(false);
   
   // Tabs Navigation
-  const [activeTab, setActiveTab] = useState<"auditorias" | "usuarios">("auditorias");
+  const [activeTab, setActiveTab] = useState<"auditorias" | "usuarios" | "cms">("auditorias");
 
   // State Auditorias
   const [inspecciones, setInspecciones] = useState<Inspeccion[]>([]);
@@ -46,6 +46,13 @@ export default function PanelPage() {
   const [newUserPassword, setNewUserPassword] = useState("");
   const [newUserRole, setNewUserRole] = useState("tecnico");
   const [isCreatingUser, setIsCreatingUser] = useState(false);
+
+  // State CMS Web
+  const [webServices, setWebServices] = useState<any[]>([]);
+  const [webProjects, setWebProjects] = useState<any[]>([]);
+  const [cmsSubTab, setCmsSubTab] = useState<"servicios" | "proyectos">("servicios");
+  const [showCmsModal, setShowCmsModal] = useState(false);
+  const [cmsEditDoc, setCmsEditDoc] = useState<any>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -72,10 +79,28 @@ export default function PanelPage() {
       setLoadingUsers(false);
     });
 
+    // Cargar Servicios Web
+    const qServices = query(collection(db, "web_services"));
+    const unsubscribeServices = onSnapshot(qServices, (snapshot) => {
+      const docs: any[] = [];
+      snapshot.forEach((doc) => { docs.push({ id: doc.id, ...doc.data() }); });
+      setWebServices(docs);
+    });
+
+    // Cargar Proyectos Web
+    const qProjects = query(collection(db, "web_projects"));
+    const unsubscribeProjects = onSnapshot(qProjects, (snapshot) => {
+      const docs: any[] = [];
+      snapshot.forEach((doc) => { docs.push({ id: doc.id, ...doc.data() }); });
+      setWebProjects(docs);
+    });
+
     return () => {
       unsubscribeAuth();
       unsubscribeDb();
       unsubscribeUsers();
+      unsubscribeServices();
+      unsubscribeProjects();
     };
   }, [router]);
 
@@ -161,6 +186,50 @@ export default function PanelPage() {
     } catch (error) {
       console.error("Error actualizando:", error);
     }
+  };
+
+  // ========================================================
+  // CONTROL DE CMS WEB
+  // ========================================================
+  const handleSaveCmsDoc = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const data: any = Object.fromEntries(formData.entries());
+    
+    if (cmsSubTab === "servicios" && typeof data.features === "string") {
+      data.features = data.features.split(",").map((s: string) => s.trim()).filter((s: string) => s);
+    }
+    if (cmsSubTab === "proyectos" && typeof data.tech === "string") {
+      data.tech = data.tech.split(",").map((s: string) => s.trim()).filter((s: string) => s);
+    }
+
+    try {
+      const collectionName = cmsSubTab === "servicios" ? "web_services" : "web_projects";
+      if (cmsEditDoc) {
+        await updateDoc(doc(db, collectionName, cmsEditDoc.id), data);
+        alert("✅ Registro actualizado");
+      } else {
+        await addDoc(collection(db, collectionName), { ...data, createdAt: new Date().toISOString() });
+        alert("✅ Registro creado");
+      }
+      setShowCmsModal(false);
+      setCmsEditDoc(null);
+    } catch (error) {
+      console.error("Error guardando documento CMS:", error);
+      alert("Error al guardar en el CMS");
+    }
+  };
+
+  const handleDeleteCmsDoc = async (id: string) => {
+    if (window.confirm("⚠️ ¿Eliminar este registro de la web pública?")) {
+      const collectionName = cmsSubTab === "servicios" ? "web_services" : "web_projects";
+      await deleteDoc(doc(db, collectionName, id));
+    }
+  };
+
+  const openCmsModal = (doc: any = null) => {
+    setCmsEditDoc(doc);
+    setShowCmsModal(true);
   };
 
   // ========================================================
@@ -398,6 +467,9 @@ export default function PanelPage() {
         <button onClick={() => setActiveTab("usuarios")} className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'usuarios' ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(147,51,234,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
           👥 Gestión de Usuarios
         </button>
+        <button onClick={() => setActiveTab("cms")} className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'cms' ? 'bg-green-600 text-white shadow-[0_0_15px_rgba(22,163,74,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+          🌐 CMS Web Corporativa
+        </button>
       </div>
 
       {/* ==============================================
@@ -500,6 +572,53 @@ export default function PanelPage() {
         </div>
       )}
 
+      {/* ==============================================
+          VISTA 3: CMS WEB
+          ============================================== */}
+      {activeTab === "cms" && (
+        <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl w-full p-4 md:p-8 shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-x-auto animate-in fade-in duration-300">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-6 border-b border-white/10 pb-4 gap-4">
+            <h2 className="text-2xl font-bold text-green-400">Gestor de Contenidos (CMS)</h2>
+            <div className="flex gap-2">
+              <button onClick={() => setCmsSubTab("servicios")} className={`px-4 py-2 rounded-lg font-bold transition-all ${cmsSubTab === 'servicios' ? 'bg-green-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>Servicios</button>
+              <button onClick={() => setCmsSubTab("proyectos")} className={`px-4 py-2 rounded-lg font-bold transition-all ${cmsSubTab === 'proyectos' ? 'bg-green-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>Proyectos</button>
+              <button onClick={() => openCmsModal()} className="px-5 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors flex items-center gap-2 ml-4">
+                <span className="text-xl leading-none">+</span> Nuevo
+              </button>
+            </div>
+          </div>
+          
+          <table className="w-full text-left border-collapse min-w-[600px]">
+            <thead>
+              <tr className="border-b border-white/10 text-green-400">
+                <th className="py-4 px-4 font-semibold">Título</th>
+                <th className="py-4 px-4 font-semibold">{cmsSubTab === "servicios" ? "Ícono" : "Categoría"}</th>
+                <th className="py-4 px-4 font-semibold">Descripción</th>
+                <th className="py-4 px-4 font-semibold text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(cmsSubTab === "servicios" ? webServices : webProjects).map((item) => (
+                <tr key={item.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                  <td className="py-4 px-4 font-medium text-white">{item.title}</td>
+                  <td className="py-4 px-4 text-gray-400">{cmsSubTab === "servicios" ? item.icon : item.category}</td>
+                  <td className="py-4 px-4 text-sm text-gray-400 max-w-xs truncate">{item.description}</td>
+                  <td className="py-4 px-4 text-center">
+                    <button onClick={() => openCmsModal(item)} className="p-2 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500 hover:text-black rounded transition-colors mx-1" title="Editar">✏️</button>
+                    <button onClick={() => handleDeleteCmsDoc(item.id)} className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded transition-colors mx-1" title="Eliminar">🗑️</button>
+                  </td>
+                </tr>
+              ))}
+              {(cmsSubTab === "servicios" ? webServices : webProjects).length === 0 && (
+                <tr>
+                  <td colSpan={4} className="py-8 text-center text-gray-500">No hay registros guardados.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {/* =========================================================
           MODAL: CREAR NUEVO USUARIO
          ========================================================= */}
@@ -539,6 +658,56 @@ export default function PanelPage() {
                 <button type="submit" disabled={isCreatingUser} className="w-1/2 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg transition-colors disabled:opacity-50">
                   {isCreatingUser ? "Creando..." : "Crear Acceso"}
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+          MODAL: CMS WEB
+         ========================================================= */}
+      {showCmsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
+          <div className="bg-[#0a0a0a] border border-green-500/30 p-6 md:p-8 rounded-2xl w-full max-w-lg shadow-[0_0_50px_rgba(22,163,74,0.15)] my-8">
+            <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+              <h2 className="text-2xl font-bold text-green-400">{cmsEditDoc ? "Editar Registro" : "Nuevo Registro"}</h2>
+              <button onClick={() => setShowCmsModal(false)} className="text-gray-500 hover:text-white font-bold text-xl">✕</button>
+            </div>
+            
+            <form onSubmit={handleSaveCmsDoc} className="space-y-4">
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">Título:</label>
+                <input type="text" name="title" defaultValue={cmsEditDoc?.title} required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-green-500 outline-none" />
+              </div>
+              
+              {cmsSubTab === "servicios" ? (
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Nombre Ícono (ej. Network, Wifi, Server):</label>
+                  <input type="text" name="icon" defaultValue={cmsEditDoc?.icon} required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-green-500 outline-none" />
+                </div>
+              ) : (
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Categoría:</label>
+                  <input type="text" name="category" defaultValue={cmsEditDoc?.category} required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-green-500 outline-none" />
+                </div>
+              )}
+
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">Descripción breve:</label>
+                <textarea name="description" defaultValue={cmsEditDoc?.description} required rows={3} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-green-500 outline-none resize-none"></textarea>
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">
+                  {cmsSubTab === "servicios" ? "Características (separadas por coma):" : "Tecnologías (separadas por coma):"}
+                </label>
+                <input type="text" name={cmsSubTab === "servicios" ? "features" : "tech"} defaultValue={cmsSubTab === "servicios" ? cmsEditDoc?.features?.join(", ") : cmsEditDoc?.tech?.join(", ")} required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-green-500 outline-none" placeholder="Ej. Elemento 1, Elemento 2, Elemento 3" />
+              </div>
+
+              <div className="pt-6 border-t border-white/10 flex gap-4">
+                <button type="button" onClick={() => setShowCmsModal(false)} className="w-1/2 py-3 bg-transparent border border-gray-600 text-gray-400 hover:bg-white/5 rounded-lg transition-colors font-bold">Cancelar</button>
+                <button type="submit" className="w-1/2 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors">Guardar</button>
               </div>
             </form>
           </div>
