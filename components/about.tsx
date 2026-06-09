@@ -1,6 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { CheckCircle, Lightbulb, Target, Users } from "lucide-react";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const values = [
   {
@@ -54,6 +57,20 @@ const certifications = [
 ];
 
 export function About() {
+  const [content, setContent] = useState<any>(null);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, "web_content", "about"), (docSnap) => {
+      if (docSnap.exists()) {
+        setContent(docSnap.data());
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const dynamicTech = content?.tech || technologies;
+  const dynamicCerts = content?.certs || certifications;
+
   return (
     <section id="nosotros" className="py-24 relative overflow-hidden">
       <div className="absolute inset-0 bg-grid-pattern opacity-20" />
@@ -70,18 +87,17 @@ export function About() {
               Sobre Nosotros
             </span>
             <h2 className="text-3xl md:text-5xl font-bold text-foreground text-balance">
-              Expertos en
-              <span className="text-gradient"> Telecomunicaciones</span>
+              {content?.title || "Expertos en"}
+              <span className="text-gradient"> {content?.highlight || "Telecomunicaciones"}</span>
             </h2>
-            <p className="mt-6 text-muted-foreground leading-relaxed">
-              DC Telemática es una empresa especializada en soluciones de
+            <p className="mt-6 text-muted-foreground leading-relaxed whitespace-pre-line">
+              {content?.p1 || `DC Telemática es una empresa especializada en soluciones de
               telecomunicaciones e infraestructura tecnológica con más de 10 años
               de experiencia en el mercado.
-            </p>
-            <p className="mt-4 text-muted-foreground leading-relaxed">
+
               Nuestro equipo de ingenieros certificados diseña e implementa
               soluciones robustas que garantizan la conectividad y seguridad
-              de su organización.
+              de su organización.`}
             </p>
 
             {/* Values */}
@@ -117,7 +133,7 @@ export function About() {
                 Tecnologías y Marcas
               </h3>
               <div className="flex flex-wrap gap-3 mb-8">
-                {technologies.map((tech) => (
+                {dynamicTech.map((tech: string) => (
                   <span
                     key={tech}
                     className="px-4 py-2 rounded-lg bg-secondary/50 text-secondary-foreground text-sm font-medium border border-border/50 hover:border-primary/30 hover:bg-primary/10 hover:text-primary transition-all duration-300 cursor-default"
@@ -133,7 +149,7 @@ export function About() {
                 Certificaciones
               </h3>
               <div className="flex flex-wrap gap-2 mb-8">
-                {certifications.map((cert) => (
+                {dynamicCerts.map((cert: string) => (
                   <span
                     key={cert}
                     className="px-3 py-1.5 rounded-full bg-accent/10 text-accent-foreground text-xs font-medium border border-accent/30"

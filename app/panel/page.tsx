@@ -50,7 +50,9 @@ export default function PanelPage() {
   // State CMS Web
   const [webServices, setWebServices] = useState<any[]>([]);
   const [webProjects, setWebProjects] = useState<any[]>([]);
-  const [cmsSubTab, setCmsSubTab] = useState<"servicios" | "proyectos">("servicios");
+  const [cmsContent, setCmsContent] = useState<any>({});
+  type CmsTabType = "servicios" | "proyectos" | "hero" | "about" | "contact" | "global";
+  const [cmsSubTab, setCmsSubTab] = useState<CmsTabType>("servicios");
   const [showCmsModal, setShowCmsModal] = useState(false);
   const [cmsEditDoc, setCmsEditDoc] = useState<any>(null);
 
@@ -95,12 +97,21 @@ export default function PanelPage() {
       setWebProjects(docs);
     });
 
+    // Cargar Web Content Modular
+    const qContent = query(collection(db, "web_content"));
+    const unsubscribeContent = onSnapshot(qContent, (snapshot) => {
+      const contentData: any = {};
+      snapshot.forEach((doc) => { contentData[doc.id] = doc.data(); });
+      setCmsContent(contentData);
+    });
+
     return () => {
       unsubscribeAuth();
       unsubscribeDb();
       unsubscribeUsers();
       unsubscribeServices();
       unsubscribeProjects();
+      unsubscribeContent();
     };
   }, [router]);
 
@@ -230,6 +241,29 @@ export default function PanelPage() {
   const openCmsModal = (doc: any = null) => {
     setCmsEditDoc(doc);
     setShowCmsModal(true);
+  };
+
+  const handleSaveWebContent = async (docId: string, e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const data: any = Object.fromEntries(formData.entries());
+    
+    // Parse arrays
+    Object.keys(data).forEach(key => {
+      if (key.startsWith("array_")) {
+         const newKey = key.replace("array_", "");
+         data[newKey] = data[key].split(",").map((s: string) => s.trim()).filter((s: string) => s);
+         delete data[key];
+      }
+    });
+
+    try {
+      await setDoc(doc(db, "web_content", docId), data, { merge: true });
+      alert("✅ Sección actualizada exitosamente.");
+    } catch (error) {
+      console.error("Error guardando:", error);
+      alert("Hubo un error al guardar los cambios.");
+    }
   };
 
   // ========================================================
@@ -579,43 +613,115 @@ export default function PanelPage() {
         <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl w-full p-4 md:p-8 shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-x-auto animate-in fade-in duration-300">
           <div className="flex flex-col md:flex-row justify-between items-center mb-6 border-b border-white/10 pb-4 gap-4">
             <h2 className="text-2xl font-bold text-green-400">Gestor de Contenidos (CMS)</h2>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button onClick={() => setCmsSubTab("servicios")} className={`px-4 py-2 rounded-lg font-bold transition-all ${cmsSubTab === 'servicios' ? 'bg-green-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>Servicios</button>
               <button onClick={() => setCmsSubTab("proyectos")} className={`px-4 py-2 rounded-lg font-bold transition-all ${cmsSubTab === 'proyectos' ? 'bg-green-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>Proyectos</button>
-              <button onClick={() => openCmsModal()} className="px-5 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors flex items-center gap-2 ml-4">
-                <span className="text-xl leading-none">+</span> Nuevo
-              </button>
+              <button onClick={() => setCmsSubTab("hero")} className={`px-4 py-2 rounded-lg font-bold transition-all ${cmsSubTab === 'hero' ? 'bg-green-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>Sección: Inicio</button>
+              <button onClick={() => setCmsSubTab("about")} className={`px-4 py-2 rounded-lg font-bold transition-all ${cmsSubTab === 'about' ? 'bg-green-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>Sección: Nosotros</button>
+              <button onClick={() => setCmsSubTab("contact")} className={`px-4 py-2 rounded-lg font-bold transition-all ${cmsSubTab === 'contact' ? 'bg-green-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>Sección: Contacto</button>
+              <button onClick={() => setCmsSubTab("global")} className={`px-4 py-2 rounded-lg font-bold transition-all ${cmsSubTab === 'global' ? 'bg-green-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>Enlaces Globales</button>
+              
+              {(cmsSubTab === "servicios" || cmsSubTab === "proyectos") && (
+                <button onClick={() => openCmsModal()} className="px-5 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors flex items-center gap-2 ml-4">
+                  <span className="text-xl leading-none">+</span> Nuevo
+                </button>
+              )}
             </div>
           </div>
           
-          <table className="w-full text-left border-collapse min-w-[600px]">
-            <thead>
-              <tr className="border-b border-white/10 text-green-400">
-                <th className="py-4 px-4 font-semibold">Título</th>
-                <th className="py-4 px-4 font-semibold">{cmsSubTab === "servicios" ? "Ícono" : "Categoría"}</th>
-                <th className="py-4 px-4 font-semibold">Descripción</th>
-                <th className="py-4 px-4 font-semibold text-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(cmsSubTab === "servicios" ? webServices : webProjects).map((item) => (
-                <tr key={item.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                  <td className="py-4 px-4 font-medium text-white">{item.title}</td>
-                  <td className="py-4 px-4 text-gray-400">{cmsSubTab === "servicios" ? item.icon : item.category}</td>
-                  <td className="py-4 px-4 text-sm text-gray-400 max-w-xs truncate">{item.description}</td>
-                  <td className="py-4 px-4 text-center">
-                    <button onClick={() => openCmsModal(item)} className="p-2 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500 hover:text-black rounded transition-colors mx-1" title="Editar">✏️</button>
-                    <button onClick={() => handleDeleteCmsDoc(item.id)} className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded transition-colors mx-1" title="Eliminar">🗑️</button>
-                  </td>
+          {(cmsSubTab === "servicios" || cmsSubTab === "proyectos") && (
+            <table className="w-full text-left border-collapse min-w-[600px]">
+              <thead>
+                <tr className="border-b border-white/10 text-green-400">
+                  <th className="py-4 px-4 font-semibold">Título</th>
+                  <th className="py-4 px-4 font-semibold">{cmsSubTab === "servicios" ? "Ícono" : "Categoría"}</th>
+                  <th className="py-4 px-4 font-semibold">Descripción</th>
+                  <th className="py-4 px-4 font-semibold text-center">Acciones</th>
                 </tr>
-              ))}
-              {(cmsSubTab === "servicios" ? webServices : webProjects).length === 0 && (
-                <tr>
-                  <td colSpan={4} className="py-8 text-center text-gray-500">No hay registros guardados.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {(cmsSubTab === "servicios" ? webServices : webProjects).map((item) => (
+                  <tr key={item.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                    <td className="py-4 px-4 font-medium text-white">{item.title}</td>
+                    <td className="py-4 px-4 text-gray-400">{cmsSubTab === "servicios" ? item.icon : item.category}</td>
+                    <td className="py-4 px-4 text-sm text-gray-400 max-w-xs truncate">{item.description}</td>
+                    <td className="py-4 px-4 text-center">
+                      <button onClick={() => openCmsModal(item)} className="p-2 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500 hover:text-black rounded transition-colors mx-1" title="Editar">✏️</button>
+                      <button onClick={() => handleDeleteCmsDoc(item.id)} className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded transition-colors mx-1" title="Eliminar">🗑️</button>
+                    </td>
+                  </tr>
+                ))}
+                {(cmsSubTab === "servicios" ? webServices : webProjects).length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="py-8 text-center text-gray-500">No hay registros guardados.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
+
+          {/* Formulario CMS - HERO */}
+          {cmsSubTab === "hero" && (
+            <form onSubmit={(e) => handleSaveWebContent("hero", e)} className="max-w-2xl space-y-6">
+              <div className="bg-white/5 p-6 rounded-xl border border-white/10">
+                <h3 className="text-lg font-bold text-white mb-4">Textos Principales</h3>
+                <div className="space-y-4">
+                  <div><label className="text-sm font-semibold text-gray-400 block mb-1">Título Superior:</label><input type="text" name="title1" defaultValue={cmsContent?.hero?.title1 || "Conectamos tu"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white outline-none" /></div>
+                  <div><label className="text-sm font-semibold text-gray-400 block mb-1">Palabra Resaltada:</label><input type="text" name="title2" defaultValue={cmsContent?.hero?.title2 || "Futuro Digital"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white outline-none" /></div>
+                  <div><label className="text-sm font-semibold text-gray-400 block mb-1">Descripción:</label><textarea name="description" defaultValue={cmsContent?.hero?.description || "Soluciones integrales en telecomunicaciones, redes e infraestructura tecnológica..."} rows={3} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white outline-none resize-none"></textarea></div>
+                </div>
+              </div>
+              <button type="submit" className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors">Guardar Sección Inicio</button>
+            </form>
+          )}
+
+          {/* Formulario CMS - ABOUT */}
+          {cmsSubTab === "about" && (
+            <form onSubmit={(e) => handleSaveWebContent("about", e)} className="max-w-2xl space-y-6">
+              <div className="bg-white/5 p-6 rounded-xl border border-white/10">
+                <h3 className="text-lg font-bold text-white mb-4">Textos de Sobre Nosotros</h3>
+                <div className="space-y-4">
+                  <div><label className="text-sm font-semibold text-gray-400 block mb-1">Título:</label><input type="text" name="title" defaultValue={cmsContent?.about?.title || "Expertos en"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white outline-none" /></div>
+                  <div><label className="text-sm font-semibold text-gray-400 block mb-1">Palabra Resaltada:</label><input type="text" name="highlight" defaultValue={cmsContent?.about?.highlight || "Telecomunicaciones"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white outline-none" /></div>
+                  <div><label className="text-sm font-semibold text-gray-400 block mb-1">Párrafo 1:</label><textarea name="p1" defaultValue={cmsContent?.about?.p1 || "DC Telemática es una empresa especializada en soluciones de telecomunicaciones..."} rows={3} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white outline-none resize-none"></textarea></div>
+                  <div><label className="text-sm font-semibold text-gray-400 block mb-1">Tecnologías (separadas por coma):</label><input type="text" name="array_tech" defaultValue={cmsContent?.about?.tech?.join(", ") || "Cisco, Juniper, Aruba, Fortinet"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white outline-none" /></div>
+                  <div><label className="text-sm font-semibold text-gray-400 block mb-1">Certificaciones (separadas por coma):</label><input type="text" name="array_certs" defaultValue={cmsContent?.about?.certs?.join(", ") || "CCNA/CCNP, JNCIA/JNCIS, ISO 27001"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white outline-none" /></div>
+                </div>
+              </div>
+              <button type="submit" className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors">Guardar Sección Nosotros</button>
+            </form>
+          )}
+
+          {/* Formulario CMS - CONTACT */}
+          {cmsSubTab === "contact" && (
+            <form onSubmit={(e) => handleSaveWebContent("contact", e)} className="max-w-2xl space-y-6">
+              <div className="bg-white/5 p-6 rounded-xl border border-white/10">
+                <h3 className="text-lg font-bold text-white mb-4">Información de Contacto</h3>
+                <div className="space-y-4">
+                  <div><label className="text-sm font-semibold text-gray-400 block mb-1">Correo Electrónico:</label><input type="email" name="email" defaultValue={cmsContent?.contact?.email || "contacto@dctelematica.com"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white outline-none" /></div>
+                  <div><label className="text-sm font-semibold text-gray-400 block mb-1">Número WhatsApp:</label><input type="text" name="whatsapp" defaultValue={cmsContent?.contact?.whatsapp || "+57 317 425 1419"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white outline-none" /></div>
+                  <div><label className="text-sm font-semibold text-gray-400 block mb-1">Ubicación Física:</label><input type="text" name="location" defaultValue={cmsContent?.contact?.location || "Bogotá, Colombia"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white outline-none" /></div>
+                </div>
+              </div>
+              <button type="submit" className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors">Guardar Sección Contacto</button>
+            </form>
+          )}
+
+          {/* Formulario CMS - GLOBAL */}
+          {cmsSubTab === "global" && (
+            <form onSubmit={(e) => handleSaveWebContent("global", e)} className="max-w-2xl space-y-6">
+              <div className="bg-white/5 p-6 rounded-xl border border-white/10">
+                <h3 className="text-lg font-bold text-white mb-4">Redes Sociales (Footer)</h3>
+                <div className="space-y-4">
+                  <div><label className="text-sm font-semibold text-gray-400 block mb-1">URL de LinkedIn:</label><input type="text" name="linkedin" defaultValue={cmsContent?.global?.linkedin || "#"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white outline-none" /></div>
+                  <div><label className="text-sm font-semibold text-gray-400 block mb-1">URL de Instagram:</label><input type="text" name="instagram" defaultValue={cmsContent?.global?.instagram || "#"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white outline-none" /></div>
+                  <div><label className="text-sm font-semibold text-gray-400 block mb-1">URL de Facebook:</label><input type="text" name="facebook" defaultValue={cmsContent?.global?.facebook || "#"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white outline-none" /></div>
+                </div>
+              </div>
+              <button type="submit" className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors">Guardar Enlaces Globales</button>
+            </form>
+          )}
+
         </div>
       )}
 

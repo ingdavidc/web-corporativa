@@ -1,10 +1,24 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { ArrowRight, Network, Server, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export function Hero() {
+  const [content, setContent] = useState<any>(null);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, "web_content", "hero"), (docSnap) => {
+      if (docSnap.exists()) {
+        setContent(docSnap.data());
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   return (
     <section
       id="inicio"
@@ -92,9 +106,9 @@ export function Hero() {
             className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-foreground mb-6 text-balance animate-fade-in-up"
             style={{ animationDelay: "0.2s" }}
           >
-            Conectamos tu
+            {content?.title1 || "Conectamos tu"}
             <br />
-            <span className="text-gradient">Futuro Digital</span>
+            <span className="text-gradient">{content?.title2 || "Futuro Digital"}</span>
           </h1>
 
           {/* Subtitle */}
@@ -102,8 +116,7 @@ export function Hero() {
             className="mx-auto max-w-2xl text-lg text-muted-foreground mb-10 leading-relaxed text-pretty animate-fade-in-up"
             style={{ animationDelay: "0.3s" }}
           >
-            Soluciones integrales en telecomunicaciones, redes e infraestructura
-            tecnológica para impulsar la transformación digital de tu empresa.
+            {content?.description || "Soluciones integrales en telecomunicaciones, redes e infraestructura tecnológica para impulsar la transformación digital de tu empresa."}
           </p>
 
           {/* CTA Buttons */}

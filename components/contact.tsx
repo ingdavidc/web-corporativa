@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Mail, MapPin, MessageCircle, Send } from "lucide-react";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -27,6 +29,17 @@ const contactInfo = [
 ];
 
 export function Contact() {
+  const [content, setContent] = useState<any>(null);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, "web_content", "contact"), (docSnap) => {
+      if (docSnap.exists()) {
+        setContent(docSnap.data());
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -166,27 +179,52 @@ export function Contact() {
                 Información de contacto
               </h3>
               <div className="space-y-4">
-                {contactInfo.map((item) => (
                   <a
-                    key={item.label}
-                    href={item.href}
-                    target={item.href.startsWith("https://") ? "_blank" : undefined}
-                    rel={item.href.startsWith("https://") ? "noopener noreferrer" : undefined}
+                    href={`mailto:${content?.email || "contacto@dctelematica.com"}`}
                     className="flex items-center gap-4 p-4 rounded-xl bg-card/50 border border-border hover:border-primary/50 transition-all duration-300 group backdrop-blur-sm"
                   >
                     <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
-                      <item.icon className="h-5 w-5 text-primary" />
+                      <Mail className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <div className="text-sm text-muted-foreground">
-                        {item.label}
-                      </div>
+                      <div className="text-sm text-muted-foreground">Email</div>
                       <div className="font-medium text-foreground group-hover:text-primary transition-colors">
-                        {item.value}
+                        {content?.email || "contacto@dctelematica.com"}
                       </div>
                     </div>
                   </a>
-                ))}
+
+                  <a
+                    href={`https://wa.me/${(content?.whatsapp || "573174251419").replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-4 p-4 rounded-xl bg-card/50 border border-border hover:border-primary/50 transition-all duration-300 group backdrop-blur-sm"
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+                      <MessageCircle className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">WhatsApp</div>
+                      <div className="font-medium text-foreground group-hover:text-primary transition-colors">
+                        {content?.whatsapp || "+57 317 425 1419"}
+                      </div>
+                    </div>
+                  </a>
+
+                  <a
+                    href="#"
+                    className="flex items-center gap-4 p-4 rounded-xl bg-card/50 border border-border hover:border-primary/50 transition-all duration-300 group backdrop-blur-sm"
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+                      <MapPin className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Ubicación</div>
+                      <div className="font-medium text-foreground group-hover:text-primary transition-colors">
+                        {content?.location || "Bogotá, Colombia"}
+                      </div>
+                    </div>
+                  </a>
               </div>
             </div>
 
