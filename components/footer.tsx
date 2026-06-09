@@ -4,8 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { Linkedin, Instagram, Facebook } from "lucide-react";
-import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useWebContent } from "@/components/web-content-provider";
 
 const footerLinks = {
   services: [
@@ -34,16 +33,7 @@ const socialLinks = [
 ];
 
 export function Footer() {
-  const [content, setContent] = useState<any>(null);
-
-  useEffect(() => {
-    const unsubscribe = onSnapshot(doc(db, "web_content", "global"), (docSnap) => {
-      if (docSnap.exists()) {
-        setContent(docSnap.data());
-      }
-    });
-    return () => unsubscribe();
-  }, []);
+  const { data: content } = useWebContent("global");
 
   const dynamicSocialLinks = [
     { icon: Linkedin, href: content?.linkedin || "#", label: "LinkedIn" },

@@ -13,16 +13,19 @@ export function Background3D() {
 
     let particlesArray: Particle[] = [];
     let animationFrameId: number;
+    let maxDistance = 0;
 
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      maxDistance = (canvas.width / 10) * (canvas.height / 10);
       init();
     };
     
     window.addEventListener("resize", resize);
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    maxDistance = (canvas.width / 10) * (canvas.height / 10);
 
     class Particle {
       x: number;
@@ -68,16 +71,17 @@ export function Background3D() {
     };
 
     const connect = () => {
+      if (!ctx) return;
       let opacityValue = 1;
-      for (let a = 0; a < particlesArray.length; a++) {
-        for (let b = a; b < particlesArray.length; b++) {
-          let distance = 
-            ((particlesArray[a].x - particlesArray[b].x) * (particlesArray[a].x - particlesArray[b].x)) +
-            ((particlesArray[a].y - particlesArray[b].y) * (particlesArray[a].y - particlesArray[b].y));
+      const len = particlesArray.length;
+      for (let a = 0; a < len; a++) {
+        for (let b = a + 1; b < len; b++) {
+          const dx = particlesArray[a].x - particlesArray[b].x;
+          const dy = particlesArray[a].y - particlesArray[b].y;
+          const distance = dx * dx + dy * dy;
           
-          if (distance < (canvas.width / 10) * (canvas.height / 10)) {
-            opacityValue = 1 - (distance / 15000);
-            if (!ctx) return;
+          if (distance < maxDistance) {
+            opacityValue = Math.max(0, 1 - (distance / 15000));
             // Líneas de conexión rojas (fibra óptica)
             ctx.strokeStyle = `rgba(239, 68, 68, ${opacityValue * 0.3})`;
             ctx.lineWidth = 1;

@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { CheckCircle, Lightbulb, Target, Users } from "lucide-react";
-import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useWebContent } from "@/components/web-content-provider";
 
 const values = [
   {
@@ -57,16 +56,7 @@ const certifications = [
 ];
 
 export function About() {
-  const [content, setContent] = useState<any>(null);
-
-  useEffect(() => {
-    const unsubscribe = onSnapshot(doc(db, "web_content", "about"), (docSnap) => {
-      if (docSnap.exists()) {
-        setContent(docSnap.data());
-      }
-    });
-    return () => unsubscribe();
-  }, []);
+  const { data: content } = useWebContent("about");
 
   const dynamicTech = content?.tech || technologies;
   const dynamicCerts = content?.certs || certifications;

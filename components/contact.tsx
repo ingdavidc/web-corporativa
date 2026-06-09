@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Mail, MapPin, MessageCircle, Send } from "lucide-react";
-import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useWebContent } from "@/components/web-content-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -29,16 +28,7 @@ const contactInfo = [
 ];
 
 export function Contact() {
-  const [content, setContent] = useState<any>(null);
-
-  useEffect(() => {
-    const unsubscribe = onSnapshot(doc(db, "web_content", "contact"), (docSnap) => {
-      if (docSnap.exists()) {
-        setContent(docSnap.data());
-      }
-    });
-    return () => unsubscribe();
-  }, []);
+  const { data: content } = useWebContent("contact");
 
   const [formData, setFormData] = useState({
     name: "",

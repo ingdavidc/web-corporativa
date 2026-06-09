@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Background3D } from "@/components/background-3d";
+import { WebContentProvider } from "@/components/web-content-provider";
 
 // Cargamos la fuente moderna
 const inter = Inter({ subsets: ['latin'] })
@@ -25,11 +26,13 @@ export default function RootLayout({
     <html lang="es" className="bg-background">
       {/* Aplicamos la fuente a todo el cuerpo de la página */}
       <body className={`${inter.className} antialiased`}>
-        {/* Tu fondo 3D global */}
-        <Background3D />
-        
-        {/* El contenido de tu página */}
-        {children}
+        <WebContentProvider>
+          {/* Tu fondo 3D global */}
+          <Background3D />
+          
+          {/* El contenido de tu página */}
+          {children}
+        </WebContentProvider>
       </body>
     </html>
   )

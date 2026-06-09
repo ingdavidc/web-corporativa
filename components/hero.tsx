@@ -4,20 +4,10 @@ import { useState, useEffect } from "react";
 import { ArrowRight, Network, Server, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useWebContent } from "@/components/web-content-provider";
 
 export function Hero() {
-  const [content, setContent] = useState<any>(null);
-
-  useEffect(() => {
-    const unsubscribe = onSnapshot(doc(db, "web_content", "hero"), (docSnap) => {
-      if (docSnap.exists()) {
-        setContent(docSnap.data());
-      }
-    });
-    return () => unsubscribe();
-  }, []);
+  const { data: content } = useWebContent("hero");
 
   return (
     <section
