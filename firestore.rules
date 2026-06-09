@@ -1,0 +1,52 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Función: Verifica si el usuario inició sesión
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Función de Doble Validación: Verifica si el email del usuario logueado EXISTE en nuestra colección 'usuarios'.
+    // Esto evita que un hacker cree una cuenta anónima por fuera y gane acceso.
+    function isRegisteredEmployee() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/usuarios/$(request.auth.token.email));
+    }
+
+    // ==========================================
+    // SECCIONES PÚBLICAS (Lectura para todo el mundo, Escritura solo admins)
+    // ==========================================
+    match /web_content/{document=**} {
+      allow read: if true;
+      allow write, delete: if isRegisteredEmployee();
+    }
+    
+    match /web_services/{document=**} {
+      allow read: if true;
+      allow write, delete: if isRegisteredEmployee();
+    }
+    
+    match /web_projects/{document=**} {
+      allow read: if true;
+      allow write, delete: if isRegisteredEmployee();
+    }
+
+    // ==========================================
+    // SECCIONES PRIVADAS (Bloqueo Total a Externos)
+    // ==========================================
+    match /inspecciones/{document=**} {
+      allow read, write, delete: if isRegisteredEmployee();
+    }
+
+    match /usuarios/{email} {
+      // Un usuario solo puede leer la colección de usuarios si es un empleado registrado
+      allow read: if isRegisteredEmployee();
+      
+      // Permitir escritura si es empleado. 
+      // (En sistemas ultra estrictos, aquí se verificaría que el rol del creador sea 'ingeniero')
+      allow write, delete: if isRegisteredEmployee();
+    }
+
+  }
+}

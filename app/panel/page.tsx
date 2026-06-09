@@ -23,6 +23,12 @@ interface Inspeccion {
   [key: string]: any; 
 }
 
+// Función de sanitización para prevenir inyección XSS básica
+const sanitizeInput = (str: string) => {
+  if (typeof str !== 'string') return str;
+  return str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+};
+
 export default function PanelPage() {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
@@ -208,11 +214,18 @@ export default function PanelPage() {
     const data: any = Object.fromEntries(formData.entries());
     
     if (cmsSubTab === "servicios" && typeof data.features === "string") {
-      data.features = data.features.split(",").map((s: string) => s.trim()).filter((s: string) => s);
+      data.features = data.features.split(",").map((s: string) => sanitizeInput(s.trim())).filter((s: string) => s);
     }
     if (cmsSubTab === "proyectos" && typeof data.tech === "string") {
-      data.tech = data.tech.split(",").map((s: string) => s.trim()).filter((s: string) => s);
+      data.tech = data.tech.split(",").map((s: string) => sanitizeInput(s.trim())).filter((s: string) => s);
     }
+
+    // Sanitizar todos los campos de texto
+    Object.keys(data).forEach(key => {
+      if (typeof data[key] === "string") {
+        data[key] = sanitizeInput(data[key]);
+      }
+    });
 
     try {
       const collectionName = cmsSubTab === "servicios" ? "web_services" : "web_projects";
@@ -252,8 +265,10 @@ export default function PanelPage() {
     Object.keys(data).forEach(key => {
       if (key.startsWith("array_")) {
          const newKey = key.replace("array_", "");
-         data[newKey] = data[key].split(",").map((s: string) => s.trim()).filter((s: string) => s);
+         data[newKey] = data[key].split(",").map((s: string) => sanitizeInput(s.trim())).filter((s: string) => s);
          delete data[key];
+      } else if (typeof data[key] === "string") {
+         data[key] = sanitizeInput(data[key]);
       }
     });
 
