@@ -51,7 +51,7 @@ export function Hero() {
         <div className="text-center">
           {/* Animated Logo with Switch Lights */}
           <div className="flex justify-center mb-12 animate-fade-in-up">
-            <div className="relative inline-block">
+            <div className="flex flex-col items-center gap-3">
               {/* Core Image */}
               <Image
                 src="/logo.png"
@@ -63,7 +63,7 @@ export function Hero() {
               />
               
               {/* Communication Switch LED Lights Simulation */}
-              <div className="absolute bottom-2 right-[-10px] flex gap-1.5 z-20">
+              <div className="flex gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" style={{ animationDuration: '0.8s' }} />
                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" style={{ animationDuration: '1.2s' }} />
                 <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" style={{ animationDuration: '0.5s' }} />
