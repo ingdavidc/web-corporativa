@@ -53,7 +53,10 @@ export function Contact() {
   };
 
   return (
-    <section id="contacto" className="py-24 bg-card/30 relative overflow-hidden">
+    <section id="contacto" className="py-24 relative overflow-hidden">
+      {/* Elegant Divider */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
+      
       {/* Background effects */}
       <div className="absolute inset-0 bg-grid-pattern opacity-10" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-[100px]" />

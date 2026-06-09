@@ -73,6 +73,9 @@ export function About() {
 
   return (
     <section id="nosotros" className="py-24 relative overflow-hidden">
+      {/* Elegant Divider */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
+      
       <div className="absolute inset-0 bg-grid-pattern opacity-20" />
       
       {/* Decorative orbs */}
