@@ -3,19 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserCircle, Wrench, ShieldCheck, X } from "lucide-react";
-import { initializeApp, getApps } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
-
-// Configuración de Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyAuJtE7VKOm1wG5BEd_pde8_9aDaq33j8E",
-  authDomain: "dc-telematica-auditoria.firebaseapp.com",
-  projectId: "dc-telematica-auditoria",
-};
-
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const auth = getAuth(app);
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 
 export function CorporateLogin() {
   const router = useRouter();
@@ -33,7 +23,6 @@ export function CorporateLogin() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      const db = getFirestore(app);
       
       const userDocRef = doc(db, "usuarios", email);
       const userDoc = await getDoc(userDocRef);

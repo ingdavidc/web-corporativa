@@ -3,20 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { initializeApp, getApps } from "firebase/app";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "firebase/firestore";
-
-// Configuración de Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyAuJtE7VKOm1wG5BEd_pde8_9aDaq33j8E",
-  authDomain: "dc-telematica-auditoria.firebaseapp.com",
-  projectId: "dc-telematica-auditoria",
-};
-
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const auth = getAuth(app);
-const db = getFirestore(app);
+import { onAuthStateChanged } from "firebase/auth";
+import { collection, addDoc, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 
 export default function FormularioPage() {
   const router = useRouter();

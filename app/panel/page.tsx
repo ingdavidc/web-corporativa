@@ -4,19 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, collection, onSnapshot, doc, deleteDoc, updateDoc, query, orderBy, setDoc } from "firebase/firestore";
-
-// Configuración de Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyAuJtE7VKOm1wG5BEd_pde8_9aDaq33j8E",
-  authDomain: "dc-telematica-auditoria.firebaseapp.com",
-  projectId: "dc-telematica-auditoria",
-};
-
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const auth = getAuth(app);
-const db = getFirestore(app);
+import { onAuthStateChanged, signOut, createUserWithEmailAndPassword, getAuth } from "firebase/auth";
+import { collection, onSnapshot, doc, deleteDoc, updateDoc, query, orderBy, setDoc } from "firebase/firestore";
+import { auth, db, firebaseConfig } from "@/lib/firebase";
 
 interface Inspeccion {
   id: string;
