@@ -322,7 +322,7 @@ export default function PanelPage() {
         doc.setFont("helvetica", "bold");
         doc.setTextColor(azulCorp.r, azulCorp.g, azulCorp.b);
         doc.setFontSize(15);
-        doc.text("INFORME DE AUDITORÍA TÉCNICA", 200, y + 6, { align: "right" });
+        doc.text("INFORME DE AUDITORÍA PROFESIONAL", 200, y + 6, { align: "right" });
 
         doc.setFont("helvetica", "normal");
         doc.setTextColor(grisPizarra.r, grisPizarra.g, grisPizarra.b);
@@ -368,8 +368,8 @@ export default function PanelPage() {
         drawSectionHeader("1. IDENTIFICACIÓN GENERAL", y); y += 7;
         drawInfoRow("Registro Número", item.registro_num || "N/A", "Fecha / Hora", item.fecha_hora || "N/A", y); y += 9;
         
-        // Fila actualizada para mostrar solo el Nombre del Auditor Técnico
-        drawInfoRow("Auditor Técnico", item.tecnico_nombre || "No registrado", "", "", y); y += 9; 
+        // Fila actualizada para mostrar el Nombre del Auditor Profesional
+        drawInfoRow("Auditor Profesional", item.auditor_profesional || item.tecnico_nombre || "Ing. David Carreño", "", "", y); y += 9; 
         
         drawInfoRow("ID Punto de Red", item.punto_id || "N/A", "Ubicación Física", item.ubicacion || "N/A", y); y += 15;
 
@@ -422,15 +422,14 @@ export default function PanelPage() {
         doc.setFont("helvetica", "bold");
         doc.setTextColor(azulCorp.r, azulCorp.g, azulCorp.b);
         doc.setFontSize(9);
-        doc.text("Auditor Técnico:", 15, y);
+        doc.text("Auditor Profesional:", 15, y);
         doc.setDrawColor(grisPizarra.r, grisPizarra.g, grisPizarra.b);
         
         // Colocamos el nombre del técnico encima de la línea de firma si está disponible
-        if(item.tecnico_nombre) {
-           doc.setFont("helvetica", "italic");
-           doc.setFontSize(8);
-           doc.text(item.tecnico_nombre, 20, y - 4);
-        }
+        const nombreFirma = item.auditor_profesional || item.tecnico_nombre || "Ing. David Carreño";
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(8);
+        doc.text(nombreFirma, 20, y - 4);
         
         doc.line(15, y + 10, 80, y + 10); 
 
@@ -540,7 +539,7 @@ export default function PanelPage() {
                 <tr className="border-b border-white/10 text-cyan-400">
                   <th className="py-4 px-4 font-semibold">Reg N°</th>
                   <th className="py-4 px-4 font-semibold">Fecha</th>
-                  <th className="py-4 px-4 font-semibold">Auditor Técnico</th>
+                  <th className="py-4 px-4 font-semibold">Auditor Profesional</th>
                   <th className="py-4 px-4 font-semibold">Punto ID</th>
                   <th className="py-4 px-4 font-semibold">Ubicación</th>
                   <th className="py-4 px-4 font-semibold text-center">Fotos</th>
@@ -552,7 +551,7 @@ export default function PanelPage() {
                   <tr key={inspeccion.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                     <td className="py-4 px-4 font-bold">{inspeccion.registro_num || "-"}</td>
                     <td className="py-4 px-4 text-sm text-gray-400 whitespace-nowrap">{inspeccion.fecha_hora || "-"}</td>
-                    <td className="py-4 px-4 text-sm text-cyan-200">{inspeccion.tecnico_nombre || "No registrado"}</td>
+                    <td className="py-4 px-4 text-sm text-cyan-200">{inspeccion.auditor_profesional || inspeccion.tecnico_nombre || "Ing. David Carreño"}</td>
                     <td className="py-4 px-4 font-medium text-cyan-100">{inspeccion.punto_id || "-"}</td>
                     <td className="py-4 px-4 text-sm">{inspeccion.ubicacion || "-"}</td>
                     <td className="py-4 px-4 text-center">{inspeccion.foto_1_base64 || inspeccion.foto_2_base64 ? "📷 Sí" : "❌ No"}</td>
