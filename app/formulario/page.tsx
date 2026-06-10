@@ -22,6 +22,10 @@ export default function FormularioPage() {
   // Estado para las coordenadas GPS
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   
+  // Datos del auditor
+  const [auditorName, setAuditorName] = useState("Ing. David Carreño");
+  const [auditorEmail, setAuditorEmail] = useState("");
+
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -54,6 +58,12 @@ export default function FormularioPage() {
       if (!user) {
         router.push("/");
       } else {
+        setAuditorEmail(user.email || "");
+        if (user.displayName) {
+          setAuditorName(user.displayName);
+        } else {
+          setAuditorName("Ing. David Carreño");
+        }
         fetchUltimoRegistro();
       }
     });
@@ -196,6 +206,7 @@ export default function FormularioPage() {
       const data = Object.fromEntries(formData.entries());
       data.accion_post_guardado = accion;
       data.timestamp = new Date().toISOString();
+      data.auditor_email = auditorEmail;
 
       delete data.foto_1;
       delete data.foto_2;
@@ -267,7 +278,7 @@ export default function FormularioPage() {
               Consultoría Hospital San Vicente de Arauca
             </h1>
             <p className="text-cyan-100/70 text-sm mt-2 font-medium tracking-wide">
-              MÓDULO DE AUDITORÍA TÉCNICA E INSPECCIÓN FÍSICA
+              MÓDULO DE AUDITORÍA PROFESIONAL E INSPECCIÓN FÍSICA
             </p>
             {/* Indicador de GPS */}
             <p className={`text-xs mt-2 font-bold ${location ? 'text-green-400' : 'text-yellow-400 animate-pulse'}`}>
@@ -279,14 +290,18 @@ export default function FormularioPage() {
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-8">
           
           {/* Metadatos */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white/5 p-4 rounded-xl border border-white/10">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white/5 p-4 rounded-xl border border-white/10">
             <div className="col-span-1">
               <label className="text-xs text-gray-400 uppercase font-semibold">Registro N°:</label>
               <input type="text" name="registro_num" value={registroNum} readOnly className="w-full bg-black/50 border border-white/10 rounded p-3 text-cyan-400 font-bold text-center mt-1 outline-none" />
             </div>
-            <div className="col-span-1 md:col-span-2">
+            <div className="col-span-1 md:col-span-1">
               <label className="text-xs text-gray-400 uppercase font-semibold">Fecha y Hora:</label>
-              <input type="text" name="fecha_hora" value={fechaHora} readOnly className="w-full bg-black/50 border border-white/10 rounded p-3 text-gray-300 font-bold mt-1 outline-none" />
+              <input type="text" name="fecha_hora" value={fechaHora} readOnly className="w-full bg-black/50 border border-white/10 rounded p-3 text-gray-300 font-bold mt-1 outline-none text-center" />
+            </div>
+            <div className="col-span-1 md:col-span-2">
+              <label className="text-xs text-gray-400 uppercase font-semibold">Auditor Profesional:</label>
+              <input type="text" name="auditor_profesional" value={auditorName} readOnly className="w-full bg-black/50 border border-white/10 rounded p-3 text-cyan-100 font-bold mt-1 outline-none" />
             </div>
           </div>
 
