@@ -12,7 +12,7 @@ export default function FormularioPage() {
   const [isClient, setIsClient] = useState(false);
   const [registroNum, setRegistroNum] = useState(1);
   const [fechaHora, setFechaHora] = useState("");
-  const [numSwitches, setNumSwitches] = useState(1);
+  const [numSwitches, setNumSwitches] = useState<number | string>(1);
   const [showOtros, setShowOtros] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [photos, setPhotos] = useState<{ [key: number]: string | null }>({ 1: null, 2: null, 3: null });
@@ -413,11 +413,24 @@ export default function FormularioPage() {
             </h2>
             <div className="mb-4">
               <label className="text-sm font-semibold mb-1 block">Cantidad Total de Switches en la ruta:</label>
-              <input type="number" min="1" value={numSwitches} onChange={(e) => setNumSwitches(parseInt(e.target.value) || 1)} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 outline-none focus:border-cyan-500" />
+              <input 
+                type="number" 
+                min="1" 
+                value={numSwitches} 
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "") {
+                    setNumSwitches("");
+                  } else {
+                    setNumSwitches(parseInt(val, 10) || 1);
+                  }
+                }} 
+                className="w-full bg-black/40 border border-white/10 rounded-lg p-3 outline-none focus:border-cyan-500" 
+              />
             </div>
 
             <div className="space-y-4">
-              {Array.from({ length: numSwitches }).map((_, i) => (
+              {Array.from({ length: numSwitches === "" ? 0 : (numSwitches as number) }).map((_, i) => (
                 <div key={i} className="bg-black/30 border-l-4 border-cyan-500 p-4 rounded-r-xl border border-white/5">
                   <h3 className="font-bold text-cyan-400 mb-3">{i === 0 ? "Switch 1 (Acceso / Borde)" : `Switch ${i + 1} (Intermedio / Core)`}</h3>
                   {i === 0 && (
