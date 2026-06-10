@@ -1,132 +1,61 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 
 export function Background3D() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    let particlesArray: Particle[] = [];
-    let animationFrameId: number;
-    let maxDistance = 0;
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      maxDistance = (canvas.width / 10) * (canvas.height / 10);
-      init();
-    };
-    
-    window.addEventListener("resize", resize);
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    maxDistance = (canvas.width / 10) * (canvas.height / 10);
-
-    class Particle {
-      x: number;
-      y: number;
-      size: number;
-      speedX: number;
-      speedY: number;
-      color: string;
-      
-      constructor() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 2 + 0.5;
-        this.speedX = (Math.random() - 0.5) * 0.8;
-        this.speedY = (Math.random() - 0.5) * 0.8;
-        // Colores corporativos: Rojo primario y un azul muy sutil
-        this.color = Math.random() > 0.5 ? "rgba(239, 68, 68, 0.8)" : "rgba(59, 130, 246, 0.6)";
-      }
-      
-      update() {
-        this.x += this.speedX;
-        this.y += this.speedY;
-
-        if (this.x > canvas.width || this.x < 0) this.speedX = -this.speedX;
-        if (this.y > canvas.height || this.y < 0) this.speedY = -this.speedY;
-      }
-      
-      draw() {
-        if (!ctx) return;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
-        ctx.fill();
-      }
-    }
-
-    const init = () => {
-      particlesArray = [];
-      const particleCount = Math.min(Math.floor((canvas.width * canvas.height) / 12000), 120);
-      for (let i = 0; i < particleCount; i++) {
-        particlesArray.push(new Particle());
-      }
-    };
-
-    const connect = () => {
-      if (!ctx) return;
-      let opacityValue = 1;
-      const len = particlesArray.length;
-      for (let a = 0; a < len; a++) {
-        for (let b = a + 1; b < len; b++) {
-          const dx = particlesArray[a].x - particlesArray[b].x;
-          const dy = particlesArray[a].y - particlesArray[b].y;
-          const distance = dx * dx + dy * dy;
-          
-          if (distance < maxDistance) {
-            opacityValue = Math.max(0, 1 - (distance / 15000));
-            // Líneas de conexión rojas (fibra óptica)
-            ctx.strokeStyle = `rgba(239, 68, 68, ${opacityValue * 0.3})`;
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
-            ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
-            ctx.stroke();
-          }
-        }
-      }
-    };
-
-    const animate = () => {
-      if (!ctx) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (let i = 0; i < particlesArray.length; i++) {
-        particlesArray[i].update();
-        particlesArray[i].draw();
-      }
-      connect();
-      animationFrameId = requestAnimationFrame(animate);
-    };
-
-    init();
-    animate();
-
-    return () => {
-      window.removeEventListener("resize", resize);
-      cancelAnimationFrame(animationFrameId);
-    };
+    setIsClient(true);
   }, []);
+
+  if (!isClient) return null;
 
   return (
     <div className="fixed inset-0 z-[0] overflow-hidden bg-[#03060f] pointer-events-none">
-      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-60" />
       
-      {/* Orbes de plasma sutiles para profundidad ambiental */}
+      {/* Estilos para la red (Grid) cibernética */}
+      <style>{`
+        .cyber-grid {
+          position: absolute;
+          width: 200vw;
+          height: 200vh;
+          top: -50vh;
+          left: -50vw;
+          background-image: 
+            linear-gradient(to right, rgba(6, 182, 212, 0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
+          background-size: 50px 50px;
+          transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px);
+          animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+          0% { transform: perspective(500px) rotateX(60deg) translateY(0) translateZ(-200px); }
+          100% { transform: perspective(500px) rotateX(60deg) translateY(50px) translateZ(-200px); }
+        }
+      `}</style>
+
+      {/* Grid Animado (Fibra óptica estilizada) */}
+      <div className="absolute inset-0 overflow-hidden opacity-40">
+         <div className="cyber-grid"></div>
+      </div>
+
+      {/* Gradiente Oscuro de Fondo (Viñeta) para concentrar luz al centro */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_#03060f_80%)]"></div>
+      
+      {/* Orbes de luz fijos impulsados por CSS GPU (Rojo y Cian/Azul corporativo) */}
       <div 
-        className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-red-600 opacity-[0.05] blur-[120px] animate-pulse" 
+        className="absolute top-[-10%] left-[-5%] w-[400px] md:w-[600px] h-[400px] md:h-[600px] rounded-full bg-red-600 opacity-[0.04] blur-[100px] md:blur-[120px] animate-pulse" 
         style={{ animationDuration: '8s' }} 
       />
       <div 
-        className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-blue-600 opacity-[0.05] blur-[120px] animate-pulse" 
+        className="absolute bottom-[-10%] right-[-5%] w-[500px] md:w-[800px] h-[500px] md:h-[800px] rounded-full bg-cyan-600 opacity-[0.04] blur-[100px] md:blur-[150px] animate-pulse" 
         style={{ animationDuration: '12s', animationDelay: '2s' }} 
       />
+      
+      {/* Detalle superior (línea de luz estilo escáner) */}
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent"></div>
     </div>
   );
 }

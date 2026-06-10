@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { initializeApp, getApps } from "firebase/app";
 import { onAuthStateChanged, signOut, createUserWithEmailAndPassword, getAuth } from "firebase/auth";
-import { collection, onSnapshot, doc, deleteDoc, updateDoc, query, orderBy, setDoc, addDoc } from "firebase/firestore";
+import { collection, onSnapshot, doc, deleteDoc, updateDoc, query, orderBy, setDoc, addDoc, limit } from "firebase/firestore";
 import { auth, db, firebaseConfig } from "@/lib/firebase";
 
 interface Inspeccion {
@@ -69,8 +69,12 @@ export default function PanelPage() {
       if (!user) router.push("/");
     });
 
-    // Cargar Auditorías
-    const qAuditorias = query(collection(db, "inspecciones"), orderBy("timestamp", "desc"));
+    // Cargar Auditorías: Límite inteligente anti-colapso de RAM en móviles
+    const isMobile = window.innerWidth < 1024;
+    const qAuditorias = isMobile 
+      ? query(collection(db, "inspecciones"), orderBy("timestamp", "desc"), limit(100))
+      : query(collection(db, "inspecciones"), orderBy("timestamp", "desc"));
+
     const unsubscribeDb = onSnapshot(qAuditorias, (snapshot) => {
       const docs: Inspeccion[] = [];
       snapshot.forEach((doc) => { docs.push({ id: doc.id, ...doc.data() }); });
