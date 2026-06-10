@@ -278,7 +278,7 @@ export default function FormularioPage() {
               Consultoría Hospital San Vicente de Arauca
             </h1>
             <p className="text-cyan-100/70 text-sm mt-2 font-medium tracking-wide">
-              MÓDULO DE AUDITORÍA PROFESIONAL E INSPECCIÓN FÍSICA
+              MÓDULO DE AUDITORÍA TÉCNICA E INSPECCIÓN FÍSICA
             </p>
             {/* Indicador de GPS */}
             <p className={`text-xs mt-2 font-bold ${location ? 'text-green-400' : 'text-yellow-400 animate-pulse'}`}>

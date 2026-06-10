@@ -322,7 +322,7 @@ export default function PanelPage() {
         doc.setFont("helvetica", "bold");
         doc.setTextColor(azulCorp.r, azulCorp.g, azulCorp.b);
         doc.setFontSize(15);
-        doc.text("INFORME DE AUDITORÍA PROFESIONAL", 200, y + 6, { align: "right" });
+        doc.text("INFORME DE AUDITORÍA TÉCNICA", 200, y + 6, { align: "right" });
 
         doc.setFont("helvetica", "normal");
         doc.setTextColor(grisPizarra.r, grisPizarra.g, grisPizarra.b);
