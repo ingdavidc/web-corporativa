@@ -26,28 +26,37 @@ export default function FormularioPage() {
 
   useEffect(() => {
     setIsClient(true);
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) router.push("/");
-    });
-
-    // Sincronizar número de registro con Firebase
     const fetchUltimoRegistro = async () => {
       try {
-        const q = query(collection(db, "inspecciones"), orderBy("timestamp", "desc"), limit(1));
+        const q = query(collection(db, "inspecciones"), orderBy("timestamp", "desc"), limit(5));
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
-          const ultimoDoc = querySnapshot.docs[0].data();
-          const ultimoNum = parseInt(ultimoDoc.registro_num || "0");
-          setRegistroNum(ultimoNum + 1);
+          // Buscar el número más alto en los últimos 5 registros por si alguno se corrompió
+          let maxNum = 0;
+          querySnapshot.forEach(doc => {
+            const num = parseInt(doc.data().registro_num || "0", 10);
+            if (!isNaN(num) && num > maxNum) {
+              maxNum = num;
+            }
+          });
+          setRegistroNum(maxNum > 0 ? maxNum + 1 : 1);
         } else {
           setRegistroNum(1);
         }
       } catch (error) {
-        const contadorLocal = parseInt(localStorage.getItem("dc_telematica_contador") || "1");
-        setRegistroNum(contadorLocal);
+        console.warn("No se pudo obtener último registro (offline o error), usando fallback:", error);
+        const contadorLocal = parseInt(localStorage.getItem("dc_telematica_contador") || "1", 10);
+        setRegistroNum(isNaN(contadorLocal) ? 1 : contadorLocal);
       }
     };
-    fetchUltimoRegistro();
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        router.push("/");
+      } else {
+        fetchUltimoRegistro();
+      }
+    });
 
     // Actualizar reloj
     const now = new Date();
