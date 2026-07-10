@@ -1442,14 +1442,14 @@ export default function PanelPage() {
                           
                           {deviceForm.mapCoords && (
                             <div 
-                              className="absolute flex items-center justify-center pointer-events-none drop-shadow-[0_0_10px_rgba(234,88,12,0.8)] text-3xl md:text-4xl transition-all"
+                              className="absolute flex items-center justify-center pointer-events-none transition-all"
                               style={{ 
-                                left: `calc(${deviceForm.mapCoords.x}% - 16px)`, 
-                                top: `calc(${deviceForm.mapCoords.y}% - 32px)`,
+                                left: `calc(${deviceForm.mapCoords.x}% - 8px)`, 
+                                top: `calc(${deviceForm.mapCoords.y}% - 8px)`,
                                 transform: `scale(${1 / state.scale})`
                               }}
                             >
-                              🟦
+                              <div className="w-4 h-4 bg-orange-500 rounded-full border-2 border-white shadow-[0_0_8px_rgba(249,115,22,1)]"></div>
                             </div>
                           )}
                         </div>
