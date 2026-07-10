@@ -7,6 +7,7 @@ import { initializeApp, getApps } from "firebase/app";
 import { onAuthStateChanged, signOut, createUserWithEmailAndPassword, getAuth, sendPasswordResetEmail } from "firebase/auth";
 import { collection, onSnapshot, doc, deleteDoc, updateDoc, query, orderBy, setDoc, addDoc, limit } from "firebase/firestore";
 import { auth, db, firebaseConfig } from "@/lib/firebase";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 interface Inspeccion {
   id: string;
@@ -89,8 +90,6 @@ export default function PanelPage() {
   
   // Estado para el plano de ubicación del dispositivo
   const [showMapModal, setShowMapModal] = useState(false);
-  const [mapZoom, setMapZoom] = useState(1);
-  const [initialPinchDist, setInitialPinchDist] = useState<number | null>(null);
 
   // State Gabinetes (Rack Builder)
   const [gabinetes, setGabinetes] = useState<any[]>([]);
@@ -1414,74 +1413,69 @@ export default function PanelPage() {
               <button type="button" onClick={() => setShowMapModal(false)} className="text-gray-400 hover:text-white text-2xl leading-none">✕</button>
             </div>
             
-            <div className="flex-1 overflow-auto bg-[#111] rounded-lg border border-white/10 relative flex justify-center items-center scrollbar-hide shadow-inner">
-              <div 
-                className="relative cursor-crosshair inline-block transition-transform duration-75 ease-out origin-center touch-none" 
-                style={{ transform: `scale(${mapZoom})` }}
-                onTouchStart={(e) => {
-                  if (e.touches.length === 2) {
-                    const dist = Math.hypot(
-                      e.touches[0].clientX - e.touches[1].clientX,
-                      e.touches[0].clientY - e.touches[1].clientY
-                    );
-                    setInitialPinchDist(dist);
-                  }
-                }}
-                onTouchMove={(e) => {
-                  if (e.touches.length === 2 && initialPinchDist) {
-                    const dist = Math.hypot(
-                      e.touches[0].clientX - e.touches[1].clientX,
-                      e.touches[0].clientY - e.touches[1].clientY
-                    );
-                    const scaleChange = dist / initialPinchDist;
-                    setMapZoom((prevZoom) => Math.max(0.5, Math.min(5, prevZoom * scaleChange)));
-                    setInitialPinchDist(dist);
-                  }
-                }}
-                onTouchEnd={(e) => {
-                  if (e.touches.length < 2) {
-                    setInitialPinchDist(null);
-                  }
-                }}
-                onClick={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const x = ((e.clientX - rect.left) / rect.width) * 100;
-                  const y = ((e.clientY - rect.top) / rect.height) * 100;
-                  setDeviceForm(prev => ({ ...prev, mapCoords: { x, y } }));
-                }}
+            <div className="flex-1 overflow-hidden bg-[#111] rounded-lg border border-white/10 relative flex justify-center items-center shadow-inner">
+              <TransformWrapper
+                initialScale={1}
+                minScale={0.5}
+                maxScale={5}
+                centerOnInit={true}
+                wheel={{ step: 0.1 }}
+                pinch={{ step: 5 }}
+                doubleClick={{ disabled: true }}
               >
-                <img src="/plano_hospital.png" alt="Plano del Hospital" className="w-full max-w-[800px] h-auto block" />
-                
-                {deviceForm.mapCoords && (
-                  <div 
-                    className="absolute flex items-center justify-center pointer-events-none drop-shadow-[0_0_10px_rgba(234,88,12,0.8)] text-3xl md:text-4xl transition-all"
-                    style={{ 
-                      left: `calc(${deviceForm.mapCoords.x}% - 16px)`, 
-                      top: `calc(${deviceForm.mapCoords.y}% - 32px)`,
-                      transform: `scale(${1 / mapZoom})`
-                    }}
-                  >
-                    🟦
+                {({ zoomIn, zoomOut, state }) => (
+                  <div className="flex flex-col w-full h-full">
+                    <div className="flex-1 overflow-hidden w-full h-full cursor-grab active:cursor-grabbing">
+                      <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center">
+                        <div 
+                          className="relative inline-block touch-none"
+                          onClick={(e) => {
+                            // Si estamos arrastrando, react-zoom-pan-pinch previene la propagación o el click normal,
+                            // pero por si acaso, lo calculamos.
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const x = ((e.clientX - rect.left) / rect.width) * 100;
+                            const y = ((e.clientY - rect.top) / rect.height) * 100;
+                            setDeviceForm(prev => ({ ...prev, mapCoords: { x, y } }));
+                          }}
+                        >
+                          <img src="/plano_hospital.webp" alt="Plano del Hospital" className="w-full max-w-[800px] h-auto block pointer-events-none" />
+                          
+                          {deviceForm.mapCoords && (
+                            <div 
+                              className="absolute flex items-center justify-center pointer-events-none drop-shadow-[0_0_10px_rgba(234,88,12,0.8)] text-3xl md:text-4xl transition-all"
+                              style={{ 
+                                left: `calc(${deviceForm.mapCoords.x}% - 16px)`, 
+                                top: `calc(${deviceForm.mapCoords.y}% - 32px)`,
+                                transform: `scale(${1 / state.scale})`
+                              }}
+                            >
+                              🟦
+                            </div>
+                          )}
+                        </div>
+                      </TransformComponent>
+                    </div>
+
+                    {/* Controles y Botones Inferiores */}
+                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/10 px-2 shrink-0">
+                      <div className="flex items-center gap-2 bg-black/40 rounded-lg p-1 border border-white/10">
+                        <button type="button" onClick={() => zoomOut()} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">-</button>
+                        <span className="text-white text-sm font-bold min-w-[40px] text-center">{Math.round(state.scale * 100)}%</span>
+                        <button type="button" onClick={() => zoomIn()} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">+</button>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <button type="button" onClick={() => setDeviceForm(prev => ({ ...prev, mapCoords: null }))} className="px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors font-semibold text-sm">
+                          Borrar Marca
+                        </button>
+                        <button type="button" onClick={() => setShowMapModal(false)} className="px-6 py-2 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg transition-colors text-sm">
+                          Confirmar
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/10">
-              <div className="flex items-center gap-2 bg-black/40 rounded-lg p-1 border border-white/10">
-                <button type="button" onClick={() => setMapZoom(Math.max(0.5, mapZoom - 0.25))} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">-</button>
-                <span className="text-white text-sm font-bold min-w-[40px] text-center">{Math.round(mapZoom * 100)}%</span>
-                <button type="button" onClick={() => setMapZoom(Math.min(5, mapZoom + 0.25))} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">+</button>
-              </div>
-
-              <div className="flex gap-3">
-                <button type="button" onClick={() => setDeviceForm(prev => ({ ...prev, mapCoords: null }))} className="px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors font-semibold text-sm">
-                  Borrar Marca
-                </button>
-                <button type="button" onClick={() => setShowMapModal(false)} className="px-6 py-2 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg transition-colors text-sm">
-                  Confirmar
-                </button>
-              </div>
+              </TransformWrapper>
             </div>
           </div>
         </div>
