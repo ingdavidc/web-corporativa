@@ -83,11 +83,8 @@ export function CorporateLogin() {
 
     } catch (err: any) {
       console.error(err);
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-        setError("Credenciales incorrectas. Verifique e intente de nuevo.");
-      } else {
-        setError(`Error del sistema: ${err.message}`);
-      }
+      // Mostrar código de error exacto para diagnóstico
+      setError(`Error [${err.code || 'desconocido'}]: ${err.message}`);
     } finally {
       setLoading(false);
     }
