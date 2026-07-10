@@ -126,11 +126,15 @@ export default function PanelPage() {
       setLoading(false);
     });
 
-    // Cargar Usuarios
-    const qUsers = query(collection(db, "usuarios"), orderBy("createdAt", "desc"));
+    // Cargar Usuarios (sin orderBy en Firebase para que no oculte los que no tienen createdAt)
+    const qUsers = query(collection(db, "usuarios"));
     const unsubscribeUsers = onSnapshot(qUsers, async (snapshot) => {
       const usersList: any[] = [];
       snapshot.forEach((doc) => { usersList.push({ id: doc.id, ...doc.data() }); });
+      
+      // Sort client-side
+      usersList.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+      
       setUsuarios(usersList);
       setLoadingUsers(false);
       
