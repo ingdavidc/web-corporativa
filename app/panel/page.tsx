@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { initializeApp, getApps } from "firebase/app";
-import { onAuthStateChanged, signOut, createUserWithEmailAndPassword, getAuth } from "firebase/auth";
+import { onAuthStateChanged, signOut, createUserWithEmailAndPassword, getAuth, sendPasswordResetEmail } from "firebase/auth";
 import { collection, onSnapshot, doc, deleteDoc, updateDoc, query, orderBy, setDoc, addDoc, limit } from "firebase/firestore";
 import { auth, db, firebaseConfig } from "@/lib/firebase";
 
@@ -52,6 +52,12 @@ export default function PanelPage() {
   const [newUserPassword, setNewUserPassword] = useState("");
   const [newUserRole, setNewUserRole] = useState("tecnico");
   const [isCreatingUser, setIsCreatingUser] = useState(false);
+  
+  // Edit User State
+  const [showEditUserModal, setShowEditUserModal] = useState(false);
+  const [editUserDoc, setEditUserDoc] = useState<any>(null);
+  const [editUserName, setEditUserName] = useState("");
+  const [editUserRole, setEditUserRole] = useState("");
 
   // State CMS Web
   const [webServices, setWebServices] = useState<any[]>([]);
@@ -179,6 +185,32 @@ export default function PanelPage() {
         console.error("Error eliminando usuario:", error);
         alert("Hubo un error al eliminar el usuario.");
       }
+    }
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editUserDoc) return;
+    try {
+      await updateDoc(doc(db, "usuarios", editUserDoc.email), {
+        nombre: editUserName,
+        role: editUserRole,
+      });
+      setShowEditUserModal(false);
+      alert("✅ Usuario actualizado correctamente.");
+    } catch (error) {
+      console.error("Error actualizando usuario:", error);
+      alert("Hubo un error al actualizar el usuario.");
+    }
+  };
+
+  const handleSendPasswordReset = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert(`✅ Se ha enviado un enlace de recuperación de contraseña a ${email}`);
+    } catch (error: any) {
+      console.error("Error enviando reset de password:", error);
+      alert("No se pudo enviar el enlace. Posiblemente el usuario ya no existe en el sistema de autenticación.");
     }
   };
 
@@ -612,8 +644,16 @@ export default function PanelPage() {
                       {new Date(u.createdAt).toLocaleDateString('es-CO')}
                     </td>
                     <td className="py-4 px-4 text-center">
+                       <button onClick={() => {
+                          setEditUserDoc(u);
+                          setEditUserName(u.nombre || "");
+                          setEditUserRole(u.role || "tecnico");
+                          setShowEditUserModal(true);
+                       }} className="px-3 py-1 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500 hover:text-black rounded border border-yellow-500/30 transition-colors font-semibold mr-2 mb-2 sm:mb-0" title="Editar Información">
+                          Editar
+                       </button>
                        <button onClick={() => handleDeleteUser(u.email)} className="px-3 py-1 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded border border-red-500/30 transition-colors font-semibold" title="Revocar Acceso">
-                          Revocar Acceso
+                          Revocar
                        </button>
                     </td>
                   </tr>
@@ -881,6 +921,56 @@ export default function PanelPage() {
               <div className="pt-6 border-t border-white/10 flex gap-4">
                 <button type="button" onClick={() => setEditDoc(null)} className="w-1/2 py-3 bg-transparent border border-gray-600 text-gray-400 hover:bg-white/5 rounded-lg transition-colors font-bold">Cancelar</button>
                 <button type="submit" className="w-1/2 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg transition-colors">Guardar Cambios</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+          MODAL: EDITAR USUARIO EXISTENTE
+         ========================================================= */}
+      {showEditUserModal && editUserDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
+          <div className="bg-[#0a0a0a] border border-yellow-500/30 p-6 md:p-8 rounded-2xl w-full max-w-md shadow-[0_0_50px_rgba(234,179,8,0.15)] my-8">
+            <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+              <h2 className="text-2xl font-bold text-yellow-400">Editar Usuario</h2>
+              <button onClick={() => setShowEditUserModal(false)} className="text-gray-500 hover:text-white font-bold text-xl">✕</button>
+            </div>
+            
+            <form onSubmit={handleUpdateUser} className="space-y-5">
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">Nombre y Apellido:</label>
+                <input type="text" value={editUserName} onChange={e=>setEditUserName(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none transition-colors" placeholder="Ej. Juan Pérez"/>
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">Correo Electrónico (No editable):</label>
+                <input type="email" value={editUserDoc.email} disabled className="w-full bg-black/20 border border-white/5 rounded-lg p-3 text-gray-500 outline-none cursor-not-allowed"/>
+              </div>
+              
+              <div className="pt-2">
+                <label className="text-sm font-semibold text-gray-300 block mb-2">Contraseña:</label>
+                <button type="button" onClick={() => handleSendPasswordReset(editUserDoc.email)} className="w-full bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold py-2 px-4 rounded-lg transition-colors text-sm flex items-center justify-center gap-2">
+                  <span>✉️</span> Enviar enlace de reseteo al correo
+                </button>
+                <p className="text-xs text-gray-500 mt-2 text-center">Por seguridad, el usuario debe resetearla desde su correo.</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">Rol de Acceso:</label>
+                <select value={editUserRole} onChange={e=>setEditUserRole(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none cursor-pointer">
+                  <option value="tecnico">Técnico Operativo (Solo App de Inspección)</option>
+                  <option value="ingeniero">Ingeniero Administrador (Acceso Completo)</option>
+                </select>
+              </div>
+              
+              <div className="pt-4 border-t border-white/10 mt-6 flex justify-end gap-3">
+                <button type="button" onClick={() => setShowEditUserModal(false)} className="px-5 py-3 text-gray-400 hover:text-white font-bold transition-colors">
+                  Cancelar
+                </button>
+                <button type="submit" className="px-6 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg transition-colors">
+                  Guardar Cambios
+                </button>
               </div>
             </form>
           </div>
