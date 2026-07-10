@@ -18,7 +18,7 @@ export function CorporateLogin() {
   const [resetMessage, setResetMessage] = useState("");
 
   const handleResetPassword = async () => {
-    const cleanEmail = email.trim();
+    const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail) {
       setError("Por favor, ingresa tu correo electrónico en el campo superior para recuperar la contraseña.");
       setResetMessage("");
@@ -41,32 +41,36 @@ export function CorporateLogin() {
     setResetMessage("");
 
     try {
-      const cleanEmail = email.trim();
+      const cleanEmail = email.trim().toLowerCase();
       await signInWithEmailAndPassword(auth, cleanEmail, password);
       
-      const userDocRef = doc(db, "usuarios", cleanEmail);
-      const userDoc = await getDoc(userDocRef);
+      try {
+        const userDocRef = doc(db, "usuarios", cleanEmail);
+        const userDoc = await getDoc(userDocRef);
 
-      if (!userDoc.exists()) {
-        // Administrador Fundador o Usuario Antiguo
-        await setDoc(userDocRef, {
-          nombre: "Administrador Principal", // Nombre por defecto si no existía
-          email: cleanEmail,
-          role: role,
-          createdAt: new Date().toISOString()
-        });
-        // Guardamos el nombre en la memoria del celular
-        localStorage.setItem("dc_tecnico_nombre", "Administrador Principal");
-      } else {
-        const userData = userDoc.data();
-        if (userData.role !== role) {
-          await auth.signOut();
-          setError(`Acceso denegado: El perfil asignado a este correo es "${userData.role === 'tecnico' ? 'Técnico Operativo' : 'Ingeniero Administrador'}". Por favor elige la opción correcta.`);
-          setLoading(false);
-          return;
+        if (!userDoc.exists()) {
+          // Administrador Fundador o Usuario Antiguo
+          await setDoc(userDocRef, {
+            nombre: "Administrador Principal", // Nombre por defecto si no existía
+            email: cleanEmail,
+            role: role,
+            createdAt: new Date().toISOString()
+          });
+          // Guardamos el nombre en la memoria del celular
+          localStorage.setItem("dc_tecnico_nombre", "Administrador Principal");
+        } else {
+          const userData = userDoc.data();
+          if (userData.role !== role) {
+            await auth.signOut();
+            setError(`Acceso denegado: El perfil asignado a este correo es "${userData.role === 'tecnico' ? 'Técnico Operativo' : 'Ingeniero Administrador'}". Por favor elige la opción correcta.`);
+            setLoading(false);
+            return;
+          }
+          // Guardamos el nombre real del técnico en la memoria del celular
+          localStorage.setItem("dc_tecnico_nombre", userData.nombre || "Técnico");
         }
-        // Guardamos el nombre real del técnico en la memoria del celular
-        localStorage.setItem("dc_tecnico_nombre", userData.nombre || "Técnico");
+      } catch (firestoreError) {
+        console.warn("Fallo lectura de roles en base de datos. Se procede según credenciales.", firestoreError);
       }
 
       setIsOpen(false);
@@ -77,8 +81,13 @@ export function CorporateLogin() {
         router.push("/panel");
       }
 
-    } catch (err) {
-      setError("Credenciales incorrectas. Verifique e intente de nuevo.");
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+        setError("Credenciales incorrectas. Verifique e intente de nuevo.");
+      } else {
+        setError(`Error del sistema: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }
