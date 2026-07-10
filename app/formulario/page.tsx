@@ -26,6 +26,7 @@ export default function FormularioPage() {
   const [showMapModal, setShowMapModal] = useState(false);
   const [mapCoords, setMapCoords] = useState<{x: number, y: number} | null>(null);
   const [mapZoom, setMapZoom] = useState(1);
+  const [initialPinchDist, setInitialPinchDist] = useState<number | null>(null);
   
   // Datos del auditor
   const [auditorName, setAuditorName] = useState("Ing. David Carreño");
@@ -602,8 +603,34 @@ export default function FormularioPage() {
             
             <div className="flex-1 overflow-auto bg-[#111] rounded-lg border border-white/10 relative flex justify-center items-center scrollbar-hide shadow-inner">
               <div 
-                className="relative cursor-crosshair inline-block transition-transform duration-200 ease-out origin-center" 
+                className="relative cursor-crosshair inline-block transition-transform duration-75 ease-out origin-center touch-none" 
                 style={{ transform: `scale(${mapZoom})` }}
+                onTouchStart={(e) => {
+                  if (e.touches.length === 2) {
+                    const dist = Math.hypot(
+                      e.touches[0].clientX - e.touches[1].clientX,
+                      e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    setInitialPinchDist(dist);
+                  }
+                }}
+                onTouchMove={(e) => {
+                  if (e.touches.length === 2 && initialPinchDist) {
+                    // Prevenir el scroll por defecto mientras se hace pinch
+                    const dist = Math.hypot(
+                      e.touches[0].clientX - e.touches[1].clientX,
+                      e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    const scaleChange = dist / initialPinchDist;
+                    setMapZoom((prevZoom) => Math.max(0.5, Math.min(5, prevZoom * scaleChange)));
+                    setInitialPinchDist(dist);
+                  }
+                }}
+                onTouchEnd={(e) => {
+                  if (e.touches.length < 2) {
+                    setInitialPinchDist(null);
+                  }
+                }}
                 onClick={(e) => {
                   const rect = e.currentTarget.getBoundingClientRect();
                   const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -631,7 +658,7 @@ export default function FormularioPage() {
               <div className="flex items-center gap-2 bg-black/40 rounded-lg p-1 border border-white/10">
                 <button type="button" onClick={() => setMapZoom(Math.max(0.5, mapZoom - 0.25))} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">-</button>
                 <span className="text-white text-sm font-bold min-w-[40px] text-center">{Math.round(mapZoom * 100)}%</span>
-                <button type="button" onClick={() => setMapZoom(Math.min(3, mapZoom + 0.25))} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">+</button>
+                <button type="button" onClick={() => setMapZoom(Math.min(5, mapZoom + 0.25))} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">+</button>
               </div>
 
               <div className="flex gap-3">
