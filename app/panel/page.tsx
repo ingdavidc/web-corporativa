@@ -86,6 +86,10 @@ export default function PanelPage() {
       snapshot.forEach((doc) => { docs.push({ id: doc.id, ...doc.data() }); });
       setInspecciones(docs);
       setLoading(false);
+    }, (error) => {
+      console.error("Error cargando inspecciones:", error);
+      alert(`Error cargando auditorías: ${error.message}`);
+      setLoading(false);
     });
 
     // Cargar Usuarios
@@ -94,6 +98,9 @@ export default function PanelPage() {
       const usersList: any[] = [];
       snapshot.forEach((doc) => { usersList.push({ id: doc.id, ...doc.data() }); });
       setUsuarios(usersList);
+      setLoadingUsers(false);
+    }, (error) => {
+      console.error("Error cargando usuarios:", error);
       setLoadingUsers(false);
     });
 
@@ -636,25 +643,37 @@ export default function PanelPage() {
                     <td className="py-4 px-4 font-medium text-white">{u.nombre || "Sin nombre"}</td>
                     <td className="py-4 px-4 text-gray-400">{u.email}</td>
                     <td className="py-4 px-4">
-                      <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${u.role === 'ingeniero' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'}`}>
-                        {u.role === 'ingeniero' ? 'Ingeniero / Admin' : 'Técnico Operativo'}
-                      </span>
+                      {u.email === 'ing.davidc@gmail.com' ? (
+                        <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 flex inline-flex items-center gap-1">
+                          👑 Super Administrador
+                        </span>
+                      ) : (
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${u.role === 'ingeniero' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'}`}>
+                          {u.role === 'ingeniero' ? 'Ingeniero / Admin' : 'Técnico Operativo'}
+                        </span>
+                      )}
                     </td>
                     <td className="py-4 px-4 text-sm text-gray-400">
                       {new Date(u.createdAt).toLocaleDateString('es-CO')}
                     </td>
                     <td className="py-4 px-4 text-center">
-                       <button onClick={() => {
-                          setEditUserDoc(u);
-                          setEditUserName(u.nombre || "");
-                          setEditUserRole(u.role || "tecnico");
-                          setShowEditUserModal(true);
-                       }} className="px-3 py-1 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500 hover:text-black rounded border border-yellow-500/30 transition-colors font-semibold mr-2 mb-2 sm:mb-0" title="Editar Información">
-                          Editar
-                       </button>
-                       <button onClick={() => handleDeleteUser(u.email)} className="px-3 py-1 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded border border-red-500/30 transition-colors font-semibold" title="Revocar Acceso">
-                          Revocar
-                       </button>
+                      {u.email !== 'ing.davidc@gmail.com' ? (
+                        <>
+                           <button onClick={() => {
+                              setEditUserDoc(u);
+                              setEditUserName(u.nombre || "");
+                              setEditUserRole(u.role || "tecnico");
+                              setShowEditUserModal(true);
+                           }} className="px-3 py-1 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500 hover:text-black rounded border border-yellow-500/30 transition-colors font-semibold mr-2 mb-2 sm:mb-0" title="Editar Información">
+                              Editar
+                           </button>
+                           <button onClick={() => handleDeleteUser(u.email)} className="px-3 py-1 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded border border-red-500/30 transition-colors font-semibold" title="Revocar Acceso">
+                              Revocar
+                           </button>
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-500 italic">Protegido por Sistema</span>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -43,9 +43,9 @@ service cloud.firestore {
       // Un usuario solo puede leer la colección de usuarios si es un empleado registrado
       allow read: if isRegisteredEmployee();
       
-      // Permitir escritura si es empleado. 
-      // (En sistemas ultra estrictos, aquí se verificaría que el rol del creador sea 'ingeniero')
-      allow write, delete: if isRegisteredEmployee();
+      // Permitir escritura si es empleado o si el usuario autenticado está intentando crear su propio documento
+      allow write: if isRegisteredEmployee() || (isAuthenticated() && request.auth.token.email == email);
+      allow delete: if isRegisteredEmployee();
     }
 
   }
