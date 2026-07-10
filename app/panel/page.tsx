@@ -150,6 +150,8 @@ export default function PanelPage() {
       const docs: any[] = [];
       snapshot.forEach((doc) => { docs.push({ id: doc.id, ...doc.data() }); });
       setWebServices(docs);
+    }, (error) => {
+      console.error("Error cargando web_services:", error);
     });
 
     // Cargar Proyectos Web
@@ -158,6 +160,8 @@ export default function PanelPage() {
       const docs: any[] = [];
       snapshot.forEach((doc) => { docs.push({ id: doc.id, ...doc.data() }); });
       setWebProjects(docs);
+    }, (error) => {
+      console.error("Error cargando web_projects:", error);
     });
 
     // Cargar Web Content Modular
@@ -166,6 +170,8 @@ export default function PanelPage() {
       const contentData: any = {};
       snapshot.forEach((doc) => { contentData[doc.id] = doc.data(); });
       setCmsContent(contentData);
+    }, (error) => {
+      console.error("Error cargando web_content:", error);
     });
 
     // Cargar Dispositivos de Red
@@ -175,6 +181,8 @@ export default function PanelPage() {
       snapshot.forEach((doc) => { docs.push({ id: doc.id, ...doc.data() }); });
       setDispositivos(docs);
       setLoadingDispositivos(false);
+    }, (error) => {
+      console.error("Error cargando dispositivos_red:", error);
     });
 
     // Cargar Gabinetes
@@ -191,6 +199,9 @@ export default function PanelPage() {
         const updated = docs.find(d => d.id === prev.id);
         return updated || null;
       });
+    }, (error) => {
+      console.error("Error cargando gabinetes:", error);
+      setLoadingGabinetes(false);
     });
 
     return () => {
