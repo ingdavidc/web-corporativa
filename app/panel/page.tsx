@@ -34,7 +34,7 @@ export default function PanelPage() {
   const [isClient, setIsClient] = useState(false);
   
   // Tabs Navigation
-  const [activeTab, setActiveTab] = useState<"auditorias" | "usuarios" | "cms">("auditorias");
+  const [activeTab, setActiveTab] = useState<"auditorias" | "usuarios" | "cms" | "dispositivos">("auditorias");
 
   // State Auditorias
   const [inspecciones, setInspecciones] = useState<Inspeccion[]>([]);
@@ -67,6 +67,28 @@ export default function PanelPage() {
   const [cmsSubTab, setCmsSubTab] = useState<CmsTabType>("servicios");
   const [showCmsModal, setShowCmsModal] = useState(false);
   const [cmsEditDoc, setCmsEditDoc] = useState<any>(null);
+
+  // State Dispositivos de Red
+  const [dispositivos, setDispositivos] = useState<any[]>([]);
+  const [loadingDispositivos, setLoadingDispositivos] = useState(true);
+  const [showDeviceModal, setShowDeviceModal] = useState(false);
+  const [editDeviceDoc, setEditDeviceDoc] = useState<any>(null);
+  
+  const [deviceForm, setDeviceForm] = useState({
+    tipo: "Switch",
+    nombre: "",
+    ip: "",
+    marca: "",
+    modelo: "",
+    mac: "",
+    mapCoords: null as { x: number, y: number } | null
+  });
+  const [isSavingDevice, setIsSavingDevice] = useState(false);
+  
+  // Estado para el plano de ubicación del dispositivo
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [mapZoom, setMapZoom] = useState(1);
+  const [initialPinchDist, setInitialPinchDist] = useState<number | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -128,6 +150,15 @@ export default function PanelPage() {
       setCmsContent(contentData);
     });
 
+    // Cargar Dispositivos de Red
+    const qDispositivos = query(collection(db, "dispositivos_red"), orderBy("nombre", "asc"));
+    const unsubscribeDispositivos = onSnapshot(qDispositivos, (snapshot) => {
+      const docs: any[] = [];
+      snapshot.forEach((doc) => { docs.push({ id: doc.id, ...doc.data() }); });
+      setDispositivos(docs);
+      setLoadingDispositivos(false);
+    });
+
     return () => {
       unsubscribeAuth();
       unsubscribeDb();
@@ -135,6 +166,7 @@ export default function PanelPage() {
       unsubscribeServices();
       unsubscribeProjects();
       unsubscribeContent();
+      unsubscribeDispositivos();
     };
   }, [router]);
 
@@ -560,6 +592,9 @@ export default function PanelPage() {
         </button>
         <button onClick={() => setActiveTab("cms")} className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'cms' ? 'bg-green-600 text-white shadow-[0_0_15px_rgba(22,163,74,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
           🌐 CMS Web Corporativa
+        </button>
+        <button onClick={() => setActiveTab("dispositivos")} className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'dispositivos' ? 'bg-orange-600 text-white shadow-[0_0_15px_rgba(234,88,12,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+          🖥️ Dispositivos de Red
         </button>
       </div>
 
@@ -996,6 +1031,236 @@ export default function PanelPage() {
         </div>
       )}
 
+      {/* ==============================================
+          VISTA 4: DISPOSITIVOS DE RED
+          ============================================== */}
+      {activeTab === "dispositivos" && (
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.3)]">
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-6 border-b border-white/10 pb-4">
+            <h2 className="text-2xl font-bold text-orange-400">Inventario de Dispositivos</h2>
+            <button 
+              onClick={() => {
+                setEditDeviceDoc(null);
+                setDeviceForm({ tipo: "Switch", nombre: "", ip: "", marca: "", modelo: "", mac: "", mapCoords: null });
+                setShowDeviceModal(true);
+              }} 
+              className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-[0_0_15px_rgba(234,88,12,0.3)]"
+            >
+              ➕ Nuevo Dispositivo
+            </button>
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-white/10">
+            <table className="w-full text-left text-sm text-gray-300">
+              <thead className="bg-white/5 text-gray-100 font-bold uppercase">
+                <tr>
+                  <th className="px-4 py-3">Tipo</th>
+                  <th className="px-4 py-3">Nombre</th>
+                  <th className="px-4 py-3">IP / MAC</th>
+                  <th className="px-4 py-3">Marca / Modelo</th>
+                  <th className="px-4 py-3 text-center">Plano</th>
+                  <th className="px-4 py-3 text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loadingDispositivos ? (
+                  <tr><td colSpan={6} className="text-center py-6 text-orange-400">Cargando inventario...</td></tr>
+                ) : dispositivos.length === 0 ? (
+                  <tr><td colSpan={6} className="text-center py-6 text-gray-500">No hay dispositivos registrados.</td></tr>
+                ) : (
+                  dispositivos.map((dev) => (
+                    <tr key={dev.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-1 rounded bg-orange-500/20 text-orange-300 font-bold text-xs">{dev.tipo}</span>
+                      </td>
+                      <td className="px-4 py-3 font-bold text-white">{dev.nombre}</td>
+                      <td className="px-4 py-3 text-xs">
+                        <div>{dev.ip || "-"}</div>
+                        <div className="text-gray-500">{dev.mac || "-"}</div>
+                      </td>
+                      <td className="px-4 py-3 text-xs">
+                        <div>{dev.marca || "-"}</div>
+                        <div className="text-gray-400">{dev.modelo || "-"}</div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {dev.mapCoords ? <span className="text-green-400" title="Ubicación guardada">📍 Sí</span> : <span className="text-gray-600">-</span>}
+                      </td>
+                      <td className="px-4 py-3 text-center space-x-2">
+                        <button 
+                          onClick={() => {
+                            setEditDeviceDoc(dev);
+                            setDeviceForm(dev);
+                            setShowDeviceModal(true);
+                          }}
+                          className="bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 px-3 py-1.5 rounded transition-colors text-xs font-bold"
+                        >
+                          Editar
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteDevice(dev.id)}
+                          className="bg-red-500/20 hover:bg-red-500/40 text-red-300 px-3 py-1.5 rounded transition-colors text-xs font-bold"
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Agregar / Editar Dispositivo */}
+      {showDeviceModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
+          <div className="bg-[#0a0a0a] border border-orange-500/30 p-6 rounded-2xl w-full max-w-lg shadow-[0_0_50px_rgba(234,88,12,0.15)] my-8">
+            <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+              <h2 className="text-2xl font-bold text-orange-400">{editDeviceDoc ? "Editar Equipo" : "Registrar Equipo"}</h2>
+              <button onClick={() => setShowDeviceModal(false)} className="text-gray-500 hover:text-white font-bold text-xl">✕</button>
+            </div>
+            
+            <form onSubmit={handleSaveDevice} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Tipo de Equipo:</label>
+                  <select value={deviceForm.tipo} onChange={e=>setDeviceForm({...deviceForm, tipo: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-orange-500 outline-none">
+                    <option value="Switch">Switch</option>
+                    <option value="Router">Router</option>
+                    <option value="AP">Access Point (AP)</option>
+                    <option value="Firewall">Firewall</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Nombre (Hostname):</label>
+                  <input type="text" required value={deviceForm.nombre} onChange={e=>setDeviceForm({...deviceForm, nombre: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-orange-500 outline-none" placeholder="Ej. SW-PISO-2" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Dirección IP:</label>
+                  <input type="text" value={deviceForm.ip || ""} onChange={e=>setDeviceForm({...deviceForm, ip: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-orange-500 outline-none" placeholder="Ej. 10.0.0.5" />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Dirección MAC:</label>
+                  <input type="text" value={deviceForm.mac || ""} onChange={e=>setDeviceForm({...deviceForm, mac: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-orange-500 outline-none" placeholder="AA:BB:CC..." />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Marca:</label>
+                  <input type="text" required value={deviceForm.marca || ""} onChange={e=>setDeviceForm({...deviceForm, marca: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-orange-500 outline-none" placeholder="Ej. Cisco" />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Modelo / Ref:</label>
+                  <input type="text" required value={deviceForm.modelo || ""} onChange={e=>setDeviceForm({...deviceForm, modelo: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-orange-500 outline-none" placeholder="Ej. C9200L" />
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-2">Ubicación Física:</label>
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setShowMapModal(true)} className={`flex-1 flex items-center justify-center py-3 rounded-lg border font-semibold transition-colors ${deviceForm.mapCoords ? 'bg-orange-600/20 text-orange-300 border-orange-500' : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10'}`}>
+                    {deviceForm.mapCoords ? "📍 Ubicación Guardada" : "📍 Ubicar en el Plano"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-white/10 flex gap-4 mt-2">
+                <button type="button" onClick={() => setShowDeviceModal(false)} className="w-1/2 py-3 bg-transparent border border-gray-600 text-gray-400 hover:bg-white/5 rounded-lg transition-colors font-bold">Cancelar</button>
+                <button type="submit" disabled={isSavingDevice} className="w-1/2 py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg transition-colors disabled:opacity-50">
+                  {isSavingDevice ? "Guardando..." : "Guardar Equipo"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal del Plano Interactivo para Panel */}
+      {showMapModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+          <div className="bg-[#0a0a0a] border border-orange-500/30 p-4 md:p-6 rounded-xl w-full max-w-5xl max-h-[95vh] flex flex-col shadow-[0_0_50px_rgba(234,88,12,0.15)]">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg md:text-xl font-bold text-orange-400">Seleccionar Ubicación en Plano</h3>
+              <button type="button" onClick={() => setShowMapModal(false)} className="text-gray-400 hover:text-white text-2xl leading-none">✕</button>
+            </div>
+            
+            <div className="flex-1 overflow-auto bg-[#111] rounded-lg border border-white/10 relative flex justify-center items-center scrollbar-hide shadow-inner">
+              <div 
+                className="relative cursor-crosshair inline-block transition-transform duration-75 ease-out origin-center touch-none" 
+                style={{ transform: `scale(${mapZoom})` }}
+                onTouchStart={(e) => {
+                  if (e.touches.length === 2) {
+                    const dist = Math.hypot(
+                      e.touches[0].clientX - e.touches[1].clientX,
+                      e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    setInitialPinchDist(dist);
+                  }
+                }}
+                onTouchMove={(e) => {
+                  if (e.touches.length === 2 && initialPinchDist) {
+                    const dist = Math.hypot(
+                      e.touches[0].clientX - e.touches[1].clientX,
+                      e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    const scaleChange = dist / initialPinchDist;
+                    setMapZoom((prevZoom) => Math.max(0.5, Math.min(5, prevZoom * scaleChange)));
+                    setInitialPinchDist(dist);
+                  }
+                }}
+                onTouchEnd={(e) => {
+                  if (e.touches.length < 2) {
+                    setInitialPinchDist(null);
+                  }
+                }}
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = ((e.clientX - rect.left) / rect.width) * 100;
+                  const y = ((e.clientY - rect.top) / rect.height) * 100;
+                  setDeviceForm(prev => ({ ...prev, mapCoords: { x, y } }));
+                }}
+              >
+                <img src="/plano_hospital.png" alt="Plano del Hospital" className="w-full max-w-[800px] h-auto block" />
+                
+                {deviceForm.mapCoords && (
+                  <div 
+                    className="absolute flex items-center justify-center pointer-events-none drop-shadow-[0_0_10px_rgba(234,88,12,0.8)] text-3xl md:text-4xl transition-all"
+                    style={{ 
+                      left: `calc(${deviceForm.mapCoords.x}% - 16px)`, 
+                      top: `calc(${deviceForm.mapCoords.y}% - 32px)`,
+                      transform: `scale(${1 / mapZoom})`
+                    }}
+                  >
+                    🟦
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/10">
+              <div className="flex items-center gap-2 bg-black/40 rounded-lg p-1 border border-white/10">
+                <button type="button" onClick={() => setMapZoom(Math.max(0.5, mapZoom - 0.25))} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">-</button>
+                <span className="text-white text-sm font-bold min-w-[40px] text-center">{Math.round(mapZoom * 100)}%</span>
+                <button type="button" onClick={() => setMapZoom(Math.min(5, mapZoom + 0.25))} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">+</button>
+              </div>
+
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setDeviceForm(prev => ({ ...prev, mapCoords: null }))} className="px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors font-semibold text-sm">
+                  Borrar Marca
+                </button>
+                <button type="button" onClick={() => setShowMapModal(false)} className="px-6 py-2 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg transition-colors text-sm">
+                  Confirmar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

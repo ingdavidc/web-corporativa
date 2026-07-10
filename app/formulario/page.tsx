@@ -4,8 +4,20 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, addDoc, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+
+export interface DispositivoRed {
+  id: string;
+  tipo: string;
+  nombre: string;
+  ip: string;
+  marca: string;
+  modelo: string;
+  mac: string;
+  mapCoords: { x: number, y: number } | null;
+  createdAt: string;
+}
 
 export default function FormularioPage() {
   const router = useRouter();
@@ -27,6 +39,16 @@ export default function FormularioPage() {
   const [mapCoords, setMapCoords] = useState<{x: number, y: number} | null>(null);
   const [mapZoom, setMapZoom] = useState(1);
   const [initialPinchDist, setInitialPinchDist] = useState<number | null>(null);
+  
+  // Estado para Dispositivos de Red
+  const [dispositivos, setDispositivos] = useState<DispositivoRed[]>([]);
+  const [selectedSwitches, setSelectedSwitches] = useState<Record<number, string>>({});
+  const [showDeviceModal, setShowDeviceModal] = useState(false);
+  const [mapTarget, setMapTarget] = useState<"punto" | "dispositivo">("punto");
+  
+  // Datos del nuevo dispositivo
+  const [newDevice, setNewDevice] = useState<Partial<DispositivoRed>>({ tipo: "Switch" });
+  const [isSavingDevice, setIsSavingDevice] = useState(false);
   
   // Datos del auditor
   const [auditorName, setAuditorName] = useState("Ing. David Carreño");
@@ -100,6 +122,17 @@ export default function FormularioPage() {
     return () => unsubscribe();
   }, [router]);
 
+  useEffect(() => {
+    const q = query(collection(db, "dispositivos_red"), orderBy("nombre", "asc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DispositivoRed));
+      setDispositivos(list);
+    }, (error) => {
+      console.error("Error cargando dispositivos:", error);
+    });
+    return () => unsubscribe();
+  }, []);
+
   // --- MOTOR DE COMPRESIÓN Y MARCA DE AGUA TIPO "TIMEMARK" ---
   const processAndWatermarkImage = (base64Str: string, maxWidth = 1000): Promise<string> => {
     return new Promise((resolve) => {
@@ -109,17 +142,14 @@ export default function FormularioPage() {
         const canvas = document.createElement("canvas");
         const ratio = maxWidth / img.width;
         
-        // Mantener proporciones
         canvas.width = ratio < 1 ? maxWidth : img.width;
         canvas.height = ratio < 1 ? img.height * ratio : img.height;
 
         const ctx = canvas.getContext("2d");
-        if (!ctx) return resolve(base64Str); // Fallback de seguridad
+        if (!ctx) return resolve(base64Str); 
 
-        // 1. Dibujar la foto original
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        // 2. Preparar los datos para la marca de agua
         const now = new Date();
         const dateStr = now.toLocaleDateString('es-CO');
         const timeStr = now.toLocaleTimeString('es-CO');
@@ -127,56 +157,43 @@ export default function FormularioPage() {
           ? `Lat: ${location.lat.toFixed(6)}, Lng: ${location.lng.toFixed(6)}` 
           : "GPS: Buscando satélites...";
         
-        // 3. Configurar tipografía adaptable al tamaño de la foto
-        const fontSize = Math.floor(canvas.width * 0.025); // Tamaño dinámico
+        const fontSize = Math.floor(canvas.width * 0.025);
         const padding = fontSize;
         const lineSpacing = fontSize * 1.5;
         const boxHeight = (lineSpacing * 3.5) + padding;
 
-        // 4. Dibujar fondo oscuro semitransparente para que las letras se lean siempre
-        ctx.fillStyle = "rgba(0, 0, 0, 0.65)"; // Negro al 65%
+        ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
         ctx.fillRect(0, canvas.height - boxHeight, canvas.width, boxHeight);
 
-        // 5. Estampar los textos (Marca de agua)
         ctx.textAlign = "left";
         ctx.font = `bold ${fontSize}px sans-serif`;
         
-        // Proyecto (Blanco)
         ctx.fillStyle = "#ffffff";
         ctx.fillText("PROYECTO: HOSPITAL SAN VICENTE DE ARAUCA - DC TELEMÁTICA", padding, canvas.height - boxHeight + padding + fontSize);
         
-        // Fecha y Hora (Cian Corporativo)
         ctx.fillStyle = "#06b6d4";
         ctx.fillText(`FECHA: ${dateStr} - HORA: ${timeStr}`, padding, canvas.height - boxHeight + padding + fontSize + lineSpacing);
         
-        // Coordenadas GPS (Gris claro)
         ctx.fillStyle = "#e2e8f0";
         ctx.fillText(`UBICACIÓN: ${coordsStr}`, padding, canvas.height - boxHeight + padding + fontSize + (lineSpacing * 2));
 
-        // 6. Estampar el logo corporativo de forma sutil
         const logoImg = new globalThis.Image();
         logoImg.src = "/logo.png";
         
         logoImg.onload = () => {
-          // Calcular tamaño: ocupará el 70% de la altura de la franja oscura
           const logoHeight = boxHeight * 0.7;
           const logoWidth = logoImg.width * (logoHeight / logoImg.height);
-          
-          // Posicionar a la derecha de la franja
           const logoX = canvas.width - logoWidth - padding;
           const logoY = canvas.height - boxHeight + (boxHeight - logoHeight) / 2;
 
-          // Hacerlo sutil (semitransparente al 70%)
           ctx.globalAlpha = 0.7; 
           ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
-          ctx.globalAlpha = 1.0; // Restaurar opacidad normal
+          ctx.globalAlpha = 1.0; 
 
-          // Devolver imagen procesada en formato JPEG
           resolve(canvas.toDataURL("image/jpeg", 0.75));
         };
 
         logoImg.onerror = () => {
-          // Fallback: Si el logo no carga, devuelve la imagen solo con el texto
           resolve(canvas.toDataURL("image/jpeg", 0.75));
         };
       };
@@ -189,11 +206,30 @@ export default function FormularioPage() {
       const reader = new FileReader();
       reader.onload = async () => {
         const originalBase64 = reader.result as string;
-        // Pasa la foto por el motor de marca de agua antes de guardarla en el estado
         const watermarkedBase64 = await processAndWatermarkImage(originalBase64);
         setPhotos((prev) => ({ ...prev, [index]: watermarkedBase64 }));
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  // --- GUARDAR DISPOSITIVO DE RED ---
+  const handleSaveDevice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDevice.nombre || !newDevice.tipo) return;
+    setIsSavingDevice(true);
+    try {
+      await addDoc(collection(db, "dispositivos_red"), {
+        ...newDevice,
+        createdAt: new Date().toISOString(),
+      });
+      setShowDeviceModal(false);
+      setNewDevice({ tipo: "Switch" });
+    } catch (error) {
+      console.error("Error guardando dispositivo:", error);
+      alert("Hubo un error al guardar el dispositivo.");
+    } finally {
+      setIsSavingDevice(false);
     }
   };
 
@@ -424,9 +460,19 @@ export default function FormularioPage() {
 
           {/* 3. Trazabilidad a Switch */}
           <section>
-            <h2 className="text-xl font-bold text-cyan-400 border-b border-white/10 pb-2 mb-4 relative after:content-[''] after:absolute after:left-0 after:-bottom-[1px] after:w-16 after:h-[2px] after:bg-red-500">
-              3. Trazabilidad a Cuarto de Equipos
-            </h2>
+            <div className="flex justify-between items-center border-b border-white/10 pb-2 mb-4 relative after:content-[''] after:absolute after:left-0 after:-bottom-[1px] after:w-16 after:h-[2px] after:bg-red-500">
+              <h2 className="text-xl font-bold text-cyan-400">
+                3. Trazabilidad a Cuarto de Equipos
+              </h2>
+              <button 
+                type="button" 
+                onClick={() => setShowDeviceModal(true)}
+                className="bg-cyan-600/20 hover:bg-cyan-600 text-cyan-300 hover:text-white px-3 py-1.5 rounded-lg border border-cyan-500/30 transition-colors text-sm font-bold flex items-center gap-1"
+              >
+                <span>➕</span> Registrar Equipo
+              </button>
+            </div>
+            
             <div className="mb-4">
               <label className="text-sm font-semibold mb-1 block">Cantidad Total de Switches en la ruta:</label>
               <input 
@@ -446,17 +492,33 @@ export default function FormularioPage() {
             </div>
 
             <div className="space-y-4">
-              {Array.from({ length: numSwitches === "" ? 0 : (numSwitches as number) }).map((_, i) => (
-                <div key={i} className="bg-black/30 border-l-4 border-cyan-500 p-4 rounded-r-xl border border-white/5">
-                  <h3 className="font-bold text-cyan-400 mb-3">{i === 0 ? "Switch 1 (Acceso / Borde)" : `Switch ${i + 1} (Intermedio / Core)`}</h3>
-                  {i === 0 && (
-                    <input type="text" name={`switch_nombre_${i + 1}`} placeholder="Nombre/IP (Ej. SW-Piso2 o 192.168.10.5)" className="w-full mb-3 bg-black/50 border border-white/10 rounded p-3 outline-none focus:border-cyan-500" />
-                  )}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                    <input type="text" name={`switch_marca_${i + 1}`} placeholder="Marca (Ej. Cisco)" className="w-full bg-black/50 border border-white/10 rounded p-3 outline-none focus:border-cyan-500" />
-                    <input type="text" name={`switch_ref_${i + 1}`} placeholder="Modelo (Ej. 2960-X)" className="w-full bg-black/50 border border-white/10 rounded p-3 outline-none focus:border-cyan-500" />
-                  </div>
-                  <div className="bg-white/5 p-3 rounded">
+              {Array.from({ length: numSwitches === "" ? 0 : (numSwitches as number) }).map((_, i) => {
+                const deviceId = selectedSwitches[i + 1];
+                const device = dispositivos.find(d => d.id === deviceId);
+                return (
+                  <div key={i} className="bg-black/30 border-l-4 border-cyan-500 p-4 rounded-r-xl border border-white/5">
+                    <h3 className="font-bold text-cyan-400 mb-3">{i === 0 ? "Switch 1 (Acceso / Borde)" : `Switch ${i + 1} (Intermedio / Core)`}</h3>
+                    
+                    {/* Campos ocultos para PDF */}
+                    <input type="hidden" name={`switch_nombre_${i + 1}`} value={device?.nombre || ""} />
+                    <input type="hidden" name={`switch_marca_${i + 1}`} value={device?.marca || ""} />
+                    <input type="hidden" name={`switch_ref_${i + 1}`} value={device?.modelo || ""} />
+
+                    <div className="mb-3">
+                      <select 
+                        value={deviceId || ""} 
+                        onChange={(e) => setSelectedSwitches(prev => ({ ...prev, [i + 1]: e.target.value }))}
+                        className="w-full bg-black/50 border border-white/10 rounded p-3 outline-none focus:border-cyan-500 cursor-pointer"
+                        required
+                      >
+                        <option value="">-- Seleccionar Equipo de Red --</option>
+                        {dispositivos.map(d => (
+                          <option key={d.id} value={d.id}>{d.tipo} - {d.nombre} ({d.ip})</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="bg-white/5 p-3 rounded">
                     <label className="text-xs text-gray-400 uppercase font-semibold mb-2 block">Medio de Enlace:</label>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                       <label className="flex items-center space-x-2 text-sm"><input type="radio" name={`switch_cable_${i + 1}`} value="FO" className="w-4 h-4 accent-cyan-500" /><span>FO</span></label>
@@ -465,8 +527,9 @@ export default function FormularioPage() {
                       <label className="flex items-center space-x-2 text-sm"><input type="radio" name={`switch_cable_${i + 1}`} value="5E" className="w-4 h-4 accent-cyan-500" /><span>Cat 5e</span></label>
                     </div>
                   </div>
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="mt-4">
@@ -593,7 +656,7 @@ export default function FormularioPage() {
 
       {/* Modal del Plano Interactivo */}
       {showMapModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
           <div className="bg-[#0a0a0a] border border-cyan-500/30 p-4 md:p-6 rounded-xl w-full max-w-5xl max-h-[95vh] flex flex-col shadow-[0_0_50px_rgba(6,182,212,0.15)]">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-lg md:text-xl font-bold text-cyan-400">Seleccionar Ubicación en Plano</h3>
@@ -635,20 +698,40 @@ export default function FormularioPage() {
                   const rect = e.currentTarget.getBoundingClientRect();
                   const x = ((e.clientX - rect.left) / rect.width) * 100;
                   const y = ((e.clientY - rect.top) / rect.height) * 100;
-                  setMapCoords({ x, y });
+                  if (mapTarget === "punto") {
+                    setMapCoords({ x, y });
+                  } else {
+                    setNewDevice(prev => ({ ...prev, mapCoords: { x, y } }));
+                  }
                 }}
               >
                 <img src="/plano_hospital.png" alt="Plano del Hospital" className="w-full max-w-[800px] h-auto block" />
-                {mapCoords && (
+                
+                {/* Pin del Formulario */}
+                {mapTarget === "punto" && mapCoords && (
                   <div 
                     className="absolute flex items-center justify-center pointer-events-none drop-shadow-[0_0_10px_rgba(255,0,0,0.8)] text-3xl md:text-4xl transition-all"
                     style={{ 
                       left: `calc(${mapCoords.x}% - 16px)`, 
                       top: `calc(${mapCoords.y}% - 32px)`,
-                      transform: `scale(${1 / mapZoom})` // Mantener tamaño del pin constante
+                      transform: `scale(${1 / mapZoom})`
                     }}
                   >
                     📍
+                  </div>
+                )}
+
+                {/* Pin del Dispositivo */}
+                {mapTarget === "dispositivo" && newDevice.mapCoords && (
+                  <div 
+                    className="absolute flex items-center justify-center pointer-events-none drop-shadow-[0_0_10px_rgba(6,182,212,0.8)] text-3xl md:text-4xl transition-all"
+                    style={{ 
+                      left: `calc(${newDevice.mapCoords.x}% - 16px)`, 
+                      top: `calc(${newDevice.mapCoords.y}% - 32px)`,
+                      transform: `scale(${1 / mapZoom})`
+                    }}
+                  >
+                    🟦
                   </div>
                 )}
               </div>
@@ -662,7 +745,10 @@ export default function FormularioPage() {
               </div>
 
               <div className="flex gap-3">
-                <button type="button" onClick={() => setMapCoords(null)} className="px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors font-semibold text-sm">
+                <button type="button" onClick={() => {
+                  if (mapTarget === "punto") setMapCoords(null);
+                  else setNewDevice(prev => ({ ...prev, mapCoords: null }));
+                }} className="px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors font-semibold text-sm">
                   Borrar Marca
                 </button>
                 <button type="button" onClick={() => setShowMapModal(false)} className="px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg transition-colors text-sm">
@@ -673,6 +759,75 @@ export default function FormularioPage() {
           </div>
         </div>
       )}
+
+      {/* Modal: Agregar Dispositivo */}
+      {showDeviceModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
+          <div className="bg-[#0a0a0a] border border-cyan-500/30 p-6 rounded-2xl w-full max-w-lg shadow-[0_0_50px_rgba(6,182,212,0.15)] my-8">
+            <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+              <h2 className="text-2xl font-bold text-cyan-400">Registrar Equipo Activo</h2>
+              <button onClick={() => setShowDeviceModal(false)} className="text-gray-500 hover:text-white font-bold text-xl">✕</button>
+            </div>
+            
+            <form onSubmit={handleSaveDevice} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Tipo de Equipo:</label>
+                  <select value={newDevice.tipo} onChange={e=>setNewDevice({...newDevice, tipo: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 outline-none">
+                    <option value="Switch">Switch</option>
+                    <option value="Router">Router</option>
+                    <option value="AP">Access Point (AP)</option>
+                    <option value="Firewall">Firewall</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Nombre (Hostname):</label>
+                  <input type="text" required value={newDevice.nombre || ""} onChange={e=>setNewDevice({...newDevice, nombre: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 outline-none" placeholder="Ej. SW-PISO-2" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Dirección IP:</label>
+                  <input type="text" value={newDevice.ip || ""} onChange={e=>setNewDevice({...newDevice, ip: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 outline-none" placeholder="Ej. 10.0.0.5" />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Dirección MAC:</label>
+                  <input type="text" value={newDevice.mac || ""} onChange={e=>setNewDevice({...newDevice, mac: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 outline-none" placeholder="AA:BB:CC..." />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Marca:</label>
+                  <input type="text" required value={newDevice.marca || ""} onChange={e=>setNewDevice({...newDevice, marca: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 outline-none" placeholder="Ej. Cisco" />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Modelo / Ref:</label>
+                  <input type="text" required value={newDevice.modelo || ""} onChange={e=>setNewDevice({...newDevice, modelo: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 outline-none" placeholder="Ej. C9200L" />
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-2">Ubicación Física:</label>
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => { setMapTarget("dispositivo"); setShowMapModal(true); }} className={`flex-1 flex items-center justify-center py-3 rounded-lg border font-semibold transition-colors ${newDevice.mapCoords ? 'bg-cyan-600/20 text-cyan-300 border-cyan-500' : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10'}`}>
+                    {newDevice.mapCoords ? "📍 Ubicación Guardada" : "📍 Ubicar en el Plano"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-white/10 flex gap-4 mt-2">
+                <button type="button" onClick={() => setShowDeviceModal(false)} className="w-1/2 py-3 bg-transparent border border-gray-600 text-gray-400 hover:bg-white/5 rounded-lg transition-colors font-bold">Cancelar</button>
+                <button type="submit" disabled={isSavingDevice} className="w-1/2 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg transition-colors disabled:opacity-50">
+                  {isSavingDevice ? "Guardando..." : "Guardar Equipo"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </main>
   );
 }
