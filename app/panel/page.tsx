@@ -128,7 +128,7 @@ export default function PanelPage() {
 
     // Cargar Usuarios
     const qUsers = query(collection(db, "usuarios"), orderBy("createdAt", "desc"));
-    const unsubscribeUsers = onSnapshot(qUsers, (snapshot) => {
+    const unsubscribeUsers = onSnapshot(qUsers, async (snapshot) => {
       const usersList: any[] = [];
       snapshot.forEach((doc) => { usersList.push({ id: doc.id, ...doc.data() }); });
       setUsuarios(usersList);
@@ -136,8 +136,26 @@ export default function PanelPage() {
       
       // Update current user role
       if (auth.currentUser) {
-        const currentUserDoc = usersList.find(u => u.email === auth.currentUser?.email);
-        if (currentUserDoc) setCurrentUserRole(currentUserDoc.role);
+        const currentUserEmail = auth.currentUser.email;
+        const currentUserDoc = usersList.find(u => u.email === currentUserEmail);
+        
+        if (currentUserDoc) {
+          setCurrentUserRole(currentUserDoc.role);
+        } else if (currentUserEmail === 'ing.davidc@gmail.com') {
+          // Auto-registro del admin principal en Firestore si se borró accidentalmente
+          setCurrentUserRole('ingeniero');
+          try {
+            await setDoc(doc(db, "usuarios", currentUserEmail), {
+              nombre: "David (Admin Principal)",
+              email: currentUserEmail,
+              role: "ingeniero",
+              createdAt: new Date().toISOString()
+            });
+            console.log("Usuario admin principal auto-registrado en Firestore.");
+          } catch (e) {
+            console.error("No se pudo auto-registrar al admin principal", e);
+          }
+        }
       }
     }, (error) => {
       console.error("Error cargando usuarios:", error);

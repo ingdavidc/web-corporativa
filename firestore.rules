@@ -9,9 +9,9 @@ service cloud.firestore {
     }
 
     // Función de Doble Validación: Verifica si el email del usuario logueado EXISTE en nuestra colección 'usuarios'.
-    // Esto evita que un hacker cree una cuenta anónima por fuera y gane acceso.
+    // Excepción: ing.davidc@gmail.com SIEMPRE es considerado empleado (Master Admin)
     function isRegisteredEmployee() {
-      return isAuthenticated() && exists(/databases/$(database)/documents/usuarios/$(request.auth.token.email));
+      return isAuthenticated() && (request.auth.token.email == 'ing.davidc@gmail.com' || exists(/databases/$(database)/documents/usuarios/$(request.auth.token.email)));
     }
 
     // ==========================================
