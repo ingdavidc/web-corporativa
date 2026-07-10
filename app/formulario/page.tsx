@@ -260,8 +260,8 @@ export default function FormularioPage() {
       data.foto_3_base64 = photos[3] || "";
 
       if (mapCoords) {
-        data.plano_x = mapCoords.x;
-        data.plano_y = mapCoords.y;
+        data.plano_x = String(mapCoords.x);
+        data.plano_y = String(mapCoords.y);
       }
 
       await addDoc(collection(db, "inspecciones"), data);
