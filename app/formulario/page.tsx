@@ -25,6 +25,7 @@ export default function FormularioPage() {
   // Estado para el plano de ubicación
   const [showMapModal, setShowMapModal] = useState(false);
   const [mapCoords, setMapCoords] = useState<{x: number, y: number} | null>(null);
+  const [mapZoom, setMapZoom] = useState(1);
   
   // Datos del auditor
   const [auditorName, setAuditorName] = useState("Ing. David Carreño");
@@ -599,9 +600,10 @@ export default function FormularioPage() {
             </div>
             <p className="text-xs md:text-sm text-gray-400 mb-4">Haz clic sobre el plano para marcar el punto exacto de la red.</p>
             
-            <div className="flex-1 overflow-auto bg-white/5 rounded-lg border border-white/10 relative flex justify-center items-start scrollbar-hide">
+            <div className="flex-1 overflow-auto bg-[#111] rounded-lg border border-white/10 relative flex justify-center items-center scrollbar-hide shadow-inner">
               <div 
-                className="relative cursor-crosshair inline-block max-w-full" 
+                className="relative cursor-crosshair inline-block transition-transform duration-200 ease-out origin-center" 
+                style={{ transform: `scale(${mapZoom})` }}
                 onClick={(e) => {
                   const rect = e.currentTarget.getBoundingClientRect();
                   const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -609,11 +611,15 @@ export default function FormularioPage() {
                   setMapCoords({ x, y });
                 }}
               >
-                <img src="/plano_hospital.png" alt="Plano del Hospital" className="w-full max-w-none md:max-w-full h-auto block min-w-[600px] md:min-w-0" />
+                <img src="/plano_hospital.png" alt="Plano del Hospital" className="w-full max-w-[800px] h-auto block" />
                 {mapCoords && (
                   <div 
-                    className="absolute flex items-center justify-center pointer-events-none drop-shadow-[0_0_10px_rgba(255,0,0,0.8)] text-3xl md:text-4xl"
-                    style={{ left: `calc(${mapCoords.x}% - 16px)`, top: `calc(${mapCoords.y}% - 32px)` }}
+                    className="absolute flex items-center justify-center pointer-events-none drop-shadow-[0_0_10px_rgba(255,0,0,0.8)] text-3xl md:text-4xl transition-all"
+                    style={{ 
+                      left: `calc(${mapCoords.x}% - 16px)`, 
+                      top: `calc(${mapCoords.y}% - 32px)`,
+                      transform: `scale(${1 / mapZoom})` // Mantener tamaño del pin constante
+                    }}
                   >
                     📍
                   </div>
@@ -621,13 +627,21 @@ export default function FormularioPage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-white/10">
-              <button type="button" onClick={() => setMapCoords(null)} className="px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors font-semibold text-sm">
-                Borrar Marca
-              </button>
-              <button type="button" onClick={() => setShowMapModal(false)} className="px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg transition-colors text-sm">
-                Confirmar
-              </button>
+            <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/10">
+              <div className="flex items-center gap-2 bg-black/40 rounded-lg p-1 border border-white/10">
+                <button type="button" onClick={() => setMapZoom(Math.max(0.5, mapZoom - 0.25))} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">-</button>
+                <span className="text-white text-sm font-bold min-w-[40px] text-center">{Math.round(mapZoom * 100)}%</span>
+                <button type="button" onClick={() => setMapZoom(Math.min(3, mapZoom + 0.25))} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">+</button>
+              </div>
+
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setMapCoords(null)} className="px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors font-semibold text-sm">
+                  Borrar Marca
+                </button>
+                <button type="button" onClick={() => setShowMapModal(false)} className="px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg transition-colors text-sm">
+                  Confirmar
+                </button>
+              </div>
             </div>
           </div>
         </div>
