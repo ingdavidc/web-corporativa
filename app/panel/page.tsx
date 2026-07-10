@@ -322,6 +322,51 @@ export default function PanelPage() {
   };
 
   // ========================================================
+  // CONTROL DE INVENTARIO DE RED
+  // ========================================================
+  const handleSaveDevice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingDevice(true);
+    try {
+      if (editDeviceDoc) {
+        // Actualizar
+        await updateDoc(doc(db, "dispositivos_red", editDeviceDoc.id), {
+          ...deviceForm
+        });
+        alert("✅ Dispositivo actualizado correctamente.");
+      } else {
+        // Crear nuevo
+        const devId = deviceForm.nombre.toUpperCase().replace(/\s+/g, "_") + "_" + Date.now().toString().slice(-4);
+        await setDoc(doc(db, "dispositivos_red", devId), {
+          ...deviceForm,
+          createdAt: new Date().toISOString()
+        });
+        alert("✅ Dispositivo agregado al inventario.");
+      }
+      setShowDeviceModal(false);
+      setDeviceForm({ tipo: "Switch", nombre: "", ip: "", marca: "", modelo: "", mac: "", mapCoords: null });
+      setEditDeviceDoc(null);
+    } catch (error) {
+      console.error("Error guardando dispositivo:", error);
+      alert("Hubo un error al guardar el dispositivo.");
+    } finally {
+      setIsSavingDevice(false);
+    }
+  };
+
+  const handleDeleteDevice = async (id: string) => {
+    if (window.confirm("⚠️ ¿Estás seguro de eliminar este dispositivo permanentemente?")) {
+      try {
+        await deleteDoc(doc(db, "dispositivos_red", id));
+        alert("✅ Dispositivo eliminado.");
+      } catch (error) {
+        console.error("Error eliminando dispositivo:", error);
+        alert("Hubo un error al eliminar.");
+      }
+    }
+  };
+
+  // ========================================================
   // CONTROL DE GABINETES (RACK BUILDER)
   // ========================================================
   const handleSaveGabinete = async (e: React.FormEvent) => {
