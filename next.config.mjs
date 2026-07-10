@@ -4,12 +4,11 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Le decimos a Next.js que no bloquee la subida por advertencias menores
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  // TypeScript estricto habilitado: cualquier error de tipos falla el build
+  // y evita que código roto llegue a producción.
 };
 
 export default nextConfig;
+
 
 

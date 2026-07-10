@@ -4,8 +4,12 @@ import './globals.css'
 import { Background3D } from "@/components/background-3d";
 import { WebContentProvider } from "@/components/web-content-provider";
 
-// Cargamos la fuente moderna
-const inter = Inter({ subsets: ['latin'] })
+// Fuente optimizada con display swap para eliminar FOUT y mejorar CLS
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',    // Muestra la fuente del sistema mientras carga la web font
+  preload: true,      // La precarga con alta prioridad para un renderizado más rápido
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://dctelematica.com'), // Base URL oficial
@@ -13,7 +17,7 @@ export const metadata: Metadata = {
   description: 'Expertos en telecomunicaciones, redes, fibra óptica, infraestructura tecnológica y soluciones digitales innovadoras en Colombia.',
   keywords: ["telecomunicaciones", "redes", "fibra óptica", "infraestructura tecnológica", "ingeniería", "hospital", "Arauca", "Colombia", "sistemas", "cableado estructurado"],
   authors: [{ name: "DC Telemática" }],
-  generator: 'v0.app',
+  // 'generator' eliminado: publicar la herramienta de creación facilita ataques dirigidos
   openGraph: {
     title: 'DC Telemática - Expertos en Telecomunicaciones',
     description: 'Conectamos tu futuro digital. Soluciones integrales en infraestructura tecnológica.',
