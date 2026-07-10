@@ -18,7 +18,8 @@ export function CorporateLogin() {
   const [resetMessage, setResetMessage] = useState("");
 
   const handleResetPassword = async () => {
-    if (!email) {
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
       setError("Por favor, ingresa tu correo electrónico en el campo superior para recuperar la contraseña.");
       setResetMessage("");
       return;
@@ -26,8 +27,8 @@ export function CorporateLogin() {
     setError("");
     setResetMessage("");
     try {
-      await sendPasswordResetEmail(auth, email);
-      setResetMessage("Te hemos enviado un enlace de recuperación al correo.");
+      await sendPasswordResetEmail(auth, cleanEmail);
+      setResetMessage("Te hemos enviado un enlace de recuperación al correo (Revisa tu bandeja de Spam o No deseado).");
     } catch (err: any) {
       setError("Error al enviar el enlace. Verifica que el correo sea válido o exista.");
     }
@@ -40,16 +41,17 @@ export function CorporateLogin() {
     setResetMessage("");
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const cleanEmail = email.trim();
+      await signInWithEmailAndPassword(auth, cleanEmail, password);
       
-      const userDocRef = doc(db, "usuarios", email);
+      const userDocRef = doc(db, "usuarios", cleanEmail);
       const userDoc = await getDoc(userDocRef);
 
       if (!userDoc.exists()) {
         // Administrador Fundador o Usuario Antiguo
         await setDoc(userDocRef, {
           nombre: "Administrador Principal", // Nombre por defecto si no existía
-          email: email,
+          email: cleanEmail,
           role: role,
           createdAt: new Date().toISOString()
         });
