@@ -82,6 +82,7 @@ export default function PanelPage() {
     marca: "",
     modelo: "",
     mac: "",
+    unidadesU: 1,
     mapCoords: null as { x: number, y: number } | null
   });
   const [isSavingDevice, setIsSavingDevice] = useState(false);
@@ -344,7 +345,7 @@ export default function PanelPage() {
         alert("✅ Dispositivo agregado al inventario.");
       }
       setShowDeviceModal(false);
-      setDeviceForm({ tipo: "Switch", nombre: "", ip: "", marca: "", modelo: "", mac: "", mapCoords: null });
+      setDeviceForm({ tipo: "Switch", nombre: "", ip: "", marca: "", modelo: "", mac: "", unidadesU: 1, mapCoords: null });
       setEditDeviceDoc(null);
     } catch (error) {
       console.error("Error guardando dispositivo:", error);
@@ -409,8 +410,13 @@ export default function PanelPage() {
     }
   };
 
-  const handleAssignDeviceToU = async (deviceId: string, startU: number, sizeU: number = 1, isPassive: boolean = false, passiveData?: any) => {
+  const handleAssignDeviceToU = async (deviceId: string, startU: number) => {
     if (!activeGabinete) return;
+    
+    // Find device in inventory to get its U size
+    const device = dispositivos.find(d => d.id === deviceId);
+    if (!device) return;
+    const sizeU = device.unidadesU || 1;
     
     // Validar si el slot está ocupado
     const isOccupied = activeGabinete.dispositivos?.some((d: any) => {
@@ -420,16 +426,15 @@ export default function PanelPage() {
     });
 
     if (isOccupied) {
-      alert("La Unidad seleccionada ya está ocupada por otro dispositivo.");
+      alert("El espacio seleccionado ya está ocupado o no hay suficientes Unidades libres hacia abajo.");
       return;
     }
 
     const newDeviceAssignment = {
-      id: isPassive ? `pasivo_${Date.now()}` : deviceId,
+      id: deviceId,
       uPos: startU,
       heightU: sizeU,
-      isPassive,
-      data: passiveData || null
+      isPassive: ["Patch Panel", "Organizador"].includes(device.tipo)
     };
 
     try {
@@ -1248,7 +1253,7 @@ export default function PanelPage() {
             <button 
               onClick={() => {
                 setEditDeviceDoc(null);
-                setDeviceForm({ tipo: "Switch", nombre: "", ip: "", marca: "", modelo: "", mac: "", mapCoords: null });
+                setDeviceForm({ tipo: "Switch", nombre: "", ip: "", marca: "", modelo: "", mac: "", unidadesU: 1, mapCoords: null });
                 setShowDeviceModal(true);
               }} 
               className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-[0_0_15px_rgba(234,88,12,0.3)]"
@@ -1280,7 +1285,10 @@ export default function PanelPage() {
                       <td className="px-4 py-3">
                         <span className="px-2 py-1 rounded bg-orange-500/20 text-orange-300 font-bold text-xs">{dev.tipo}</span>
                       </td>
-                      <td className="px-4 py-3 font-bold text-white">{dev.nombre}</td>
+                      <td className="px-4 py-3 font-bold text-white">
+                        <div>{dev.nombre}</div>
+                        {dev.unidadesU && <div className="text-xs text-gray-400">{dev.unidadesU}U</div>}
+                      </td>
                       <td className="px-4 py-3 text-xs">
                         <div>{dev.ip || "-"}</div>
                         <div className="text-gray-500">{dev.mac || "-"}</div>
@@ -1335,8 +1343,13 @@ export default function PanelPage() {
                   <select value={deviceForm.tipo} onChange={e=>setDeviceForm({...deviceForm, tipo: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-orange-500 outline-none">
                     <option value="Switch">Switch</option>
                     <option value="Router">Router</option>
+                    <option value="Servidor">Servidor</option>
                     <option value="AP">Access Point (AP)</option>
                     <option value="Firewall">Firewall</option>
+                    <option value="Patch Panel">Patch Panel (Pasivo)</option>
+                    <option value="Organizador">Organizador (Pasivo)</option>
+                    <option value="UPS">UPS (Eléctrico)</option>
+                    <option value="PDU">PDU / Regleta (Eléctrico)</option>
                   </select>
                 </div>
                 <div>
@@ -1365,6 +1378,11 @@ export default function PanelPage() {
                   <label className="text-sm font-semibold text-gray-300 block mb-1">Modelo / Ref:</label>
                   <input type="text" required value={deviceForm.modelo || ""} onChange={e=>setDeviceForm({...deviceForm, modelo: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-orange-500 outline-none" placeholder="Ej. C9200L" />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">Tamaño en el Rack (Unidades U):</label>
+                <input type="number" min="1" max="42" required value={deviceForm.unidadesU || 1} onChange={e=>setDeviceForm({...deviceForm, unidadesU: Number(e.target.value)})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-orange-500 outline-none" placeholder="Ej. 1" />
               </div>
               
               <div>
@@ -1559,25 +1577,36 @@ export default function PanelPage() {
                       if (isCovered) return null; // No renderizar slot si está cubierto
 
                       return (
-                        <div key={uNumber} className="relative flex w-full border-t border-gray-800" style={{ height: deviceAtU ? `${40 * (deviceAtU.heightU || 1)}px` : '40px' }}>
+                        <div 
+                          key={uNumber} 
+                          className={`relative flex w-full border-t border-gray-800 transition-colors ${!deviceAtU ? 'hover:bg-indigo-900/20' : ''}`} 
+                          style={{ height: deviceAtU ? `${40 * (deviceAtU.heightU || 1)}px` : '40px' }}
+                          onDragOver={(e) => {
+                            if (!deviceAtU) {
+                              e.preventDefault(); // Permitir el drop
+                              e.currentTarget.style.backgroundColor = 'rgba(79, 70, 229, 0.3)';
+                            }
+                          }}
+                          onDragLeave={(e) => {
+                            if (!deviceAtU) e.currentTarget.style.backgroundColor = '';
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            if (!deviceAtU) e.currentTarget.style.backgroundColor = '';
+                            const draggedDeviceId = e.dataTransfer.getData("deviceId");
+                            if (draggedDeviceId) {
+                              handleAssignDeviceToU(draggedDeviceId, uNumber);
+                            }
+                          }}
+                        >
                           {/* Etiqueta U */}
                           <div className="w-8 flex items-center justify-center bg-gray-900 border-r border-gray-800 text-[10px] font-bold text-gray-500">
                             {uNumber}U
                           </div>
                           
                           {/* Contenido del Slot */}
-                          <div 
-                            className={`flex-1 relative flex items-center justify-center group transition-colors ${deviceAtU ? (deviceAtU.isPassive ? 'bg-purple-900/40 border-l-4 border-purple-500' : 'bg-cyan-900/40 border-l-4 border-cyan-500') : 'hover:bg-white/5 cursor-pointer'}`}
-                            onClick={() => {
-                              if (!deviceAtU) {
-                                // Seleccionar equipo por defecto mediante un modal si no lo tenemos en drag & drop
-                                const devId = prompt("Pega el ID del equipo o escribe 'patch' para un patch panel:");
-                                if (devId) {
-                                  handleAssignDeviceToU(devId, uNumber, 1, devId === 'patch', devId === 'patch' ? { tipo: "Patch Panel", nombre: "Patch Panel 24P" } : null);
-                                }
-                              }
-                            }}
-                          >
+                          <div className={`flex-1 relative flex items-center justify-center group ${deviceAtU ? (deviceAtU.isPassive ? 'bg-purple-900/40 border-l-4 border-purple-500' : 'bg-cyan-900/40 border-l-4 border-cyan-500') : ''}`}>
+                            
                             {/* Orificios del Rack */}
                             <div className="absolute left-1 top-0 bottom-0 w-2 flex flex-col justify-between py-1 opacity-20">
                               <div className="w-2 h-2 rounded-full bg-white"></div>
@@ -1590,27 +1619,32 @@ export default function PanelPage() {
 
                             {/* Equipo */}
                             {deviceAtU ? (
-                              <div className="w-full px-8 flex justify-between items-center">
-                                <div className="truncate">
+                              <div className="w-full px-8 flex justify-between items-center h-full">
+                                <div className="truncate h-full flex flex-col justify-center">
                                   {deviceAtU.isPassive ? (
-                                    <span className="text-purple-300 font-bold text-sm">{deviceAtU.data?.nombre || "Elemento Pasivo"}</span>
+                                    <span className="text-purple-300 font-bold text-sm">
+                                      {dispositivos.find(d => d.id === deviceAtU.id)?.nombre || "Elemento Pasivo"}
+                                    </span>
                                   ) : (
                                     <span className="text-cyan-300 font-bold text-sm">
-                                      {dispositivos.find(d => d.id === deviceAtU.id)?.nombre || "Equipo Desconocido"}
+                                      {dispositivos.find(d => d.id === deviceAtU.id)?.nombre || "Equipo"}
                                     </span>
                                   )}
+                                  <span className="text-gray-500 text-[10px] block">
+                                    {dispositivos.find(d => d.id === deviceAtU.id)?.marca} {dispositivos.find(d => d.id === deviceAtU.id)?.modelo}
+                                  </span>
                                 </div>
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); handleRemoveDeviceFromU(deviceAtU.id); }}
-                                  className="text-red-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                                  title="Remover equipo"
+                                  className="text-red-500 hover:text-red-400 bg-black/50 rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  title="Retirar equipo del Gabinete"
                                 >
                                   ✕
                                 </button>
                               </div>
                             ) : (
-                              <span className="text-gray-700 font-bold text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                                Clic para añadir equipo
+                              <span className="text-gray-600 font-bold text-xs pointer-events-none">
+                                Arrastra un equipo aquí
                               </span>
                             )}
                           </div>
@@ -1622,45 +1656,51 @@ export default function PanelPage() {
 
                 {/* Inventario (Derecha) */}
                 <div className="w-1/2 md:w-1/3 bg-black/40 rounded-xl border border-white/10 p-4 flex flex-col">
-                  <h3 className="font-bold text-white mb-4">Equipos Disponibles</h3>
+                  <h3 className="font-bold text-white mb-2">Equipos Libres</h3>
+                  <p className="text-xs text-gray-400 mb-4">Arrastra y suelta (drag & drop) un elemento hacia el rack.</p>
                   
                   <div className="overflow-y-auto flex-1 pr-2 space-y-4">
-                    <div>
-                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Equipos Activos (Inventario)</h4>
-                      <div className="space-y-2">
-                        {dispositivos
-                          .filter(d => !activeGabinete.dispositivos?.some((ad: any) => ad.id === d.id))
-                          .map(dev => (
-                            <div key={dev.id} className="bg-cyan-900/20 border border-cyan-500/30 rounded p-3 flex justify-between items-center">
-                              <div>
-                                <div className="text-cyan-300 font-bold text-sm">{dev.nombre}</div>
-                                <div className="text-gray-400 text-xs">{dev.tipo} • {dev.ip || "Sin IP"}</div>
+                    {/* Filtramos solo los equipos que no están ya asignados en el gabinete actual */}
+                    {[
+                      { title: "Equipos Activos", types: ["Switch", "Router", "Servidor", "AP", "Firewall"], style: { bg: "bg-cyan-900/20", border: "border-cyan-500/30", textTitle: "text-cyan-300", hover: "hover:bg-cyan-900/40", textBtn: "text-cyan-500/50" } },
+                      { title: "Elementos Pasivos", types: ["Patch Panel", "Organizador"], style: { bg: "bg-purple-900/20", border: "border-purple-500/30", textTitle: "text-purple-300", hover: "hover:bg-purple-900/40", textBtn: "text-purple-500/50" } },
+                      { title: "Eléctricos", types: ["UPS", "PDU"], style: { bg: "bg-orange-900/20", border: "border-orange-500/30", textTitle: "text-orange-300", hover: "hover:bg-orange-900/40", textBtn: "text-orange-500/50" } },
+                    ].map((category) => (
+                      <div key={category.title}>
+                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{category.title}</h4>
+                        <div className="space-y-2">
+                          {dispositivos
+                            .filter(d => category.types.includes(d.tipo) && !activeGabinete.dispositivos?.some((ad: any) => ad.id === d.id))
+                            .map(dev => (
+                              <div 
+                                key={dev.id} 
+                                draggable
+                                onDragStart={(e) => {
+                                  e.dataTransfer.setData("deviceId", dev.id);
+                                  e.currentTarget.style.opacity = "0.5";
+                                }}
+                                onDragEnd={(e) => {
+                                  e.currentTarget.style.opacity = "1";
+                                }}
+                                className={`${category.style.bg} border ${category.style.border} rounded p-3 flex justify-between items-center cursor-grab active:cursor-grabbing ${category.style.hover} transition-colors shadow-sm`}
+                              >
+                                <div>
+                                  <div className={`${category.style.textTitle} font-bold text-sm flex items-center gap-2`}>
+                                    ≡ {dev.nombre}
+                                  </div>
+                                  <div className="text-gray-400 text-xs mt-1">{dev.tipo} • {dev.unidadesU || 1}U</div>
+                                </div>
+                                <div className={`text-xs ${category.style.textBtn} font-bold`}>
+                                  ARRASTRAR
+                                </div>
                               </div>
-                              <div className="text-xs text-cyan-500 font-semibold text-right">
-                                Clic en el rack<br/>y usa ID:<br/>
-                                <span className="bg-black/50 px-1 rounded select-all cursor-text">{dev.id}</span>
-                              </div>
-                            </div>
-                        ))}
-                        {dispositivos.filter(d => !activeGabinete.dispositivos?.some((ad: any) => ad.id === d.id)).length === 0 && (
-                          <p className="text-sm text-gray-500">Todos los equipos están asignados.</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t border-white/10">
-                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Elementos Pasivos</h4>
-                      <div className="space-y-2">
-                        <div className="bg-purple-900/20 border border-purple-500/30 rounded p-3 flex justify-between items-center">
-                          <div className="text-purple-300 font-bold text-sm">Patch Panel 24P</div>
-                          <div className="text-xs text-purple-500 font-semibold text-right">Escribe: 'patch'</div>
-                        </div>
-                        <div className="bg-purple-900/20 border border-purple-500/30 rounded p-3 flex justify-between items-center">
-                          <div className="text-purple-300 font-bold text-sm">Organizador Horizontal</div>
-                          <div className="text-xs text-purple-500 font-semibold text-right">Escribe: 'org'</div>
+                          ))}
+                          {dispositivos.filter(d => category.types.includes(d.tipo) && !activeGabinete.dispositivos?.some((ad: any) => ad.id === d.id)).length === 0 && (
+                            <p className="text-xs text-gray-600 italic">No hay elementos libres en esta categoría.</p>
+                          )}
                         </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
