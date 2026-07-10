@@ -22,6 +22,10 @@ export default function FormularioPage() {
   // Estado para las coordenadas GPS
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   
+  // Estado para el plano de ubicación
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [mapCoords, setMapCoords] = useState<{x: number, y: number} | null>(null);
+  
   // Datos del auditor
   const [auditorName, setAuditorName] = useState("Ing. David Carreño");
   const [auditorEmail, setAuditorEmail] = useState("");
@@ -217,6 +221,11 @@ export default function FormularioPage() {
       data.foto_2_base64 = photos[2] || "";
       data.foto_3_base64 = photos[3] || "";
 
+      if (mapCoords) {
+        data.plano_x = mapCoords.x;
+        data.plano_y = mapCoords.y;
+      }
+
       await addDoc(collection(db, "inspecciones"), data);
       
       localStorage.setItem("dc_telematica_contador", (registroNum + 1).toString());
@@ -317,7 +326,12 @@ export default function FormularioPage() {
               </div>
               <div>
                 <label className="text-sm font-semibold mb-1 block">Ubicación Física:</label>
-                <input type="text" name="ubicacion" placeholder="Ej. Piso 2, Oficina Contabilidad..." required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 focus:border-cyan-500 outline-none transition-colors" />
+                <div className="flex gap-2">
+                  <input type="text" name="ubicacion" placeholder="Ej. Piso 2, Oficina Contabilidad..." required className="flex-1 w-full bg-black/40 border border-white/10 rounded-lg p-3 focus:border-cyan-500 outline-none transition-colors" />
+                  <button type="button" onClick={() => setShowMapModal(true)} className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-3 py-3 rounded-lg transition-colors flex items-center justify-center shrink-0" title="Ubicar en plano">
+                    📍 {mapCoords ? "Ubicado" : "Plano"}
+                  </button>
+                </div>
               </div>
             </div>
           </section>
@@ -571,6 +585,50 @@ export default function FormularioPage() {
               </div>
             )}
 
+          </div>
+        </div>
+      )}
+
+      {/* Modal del Plano Interactivo */}
+      {showMapModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+          <div className="bg-[#0a0a0a] border border-cyan-500/30 p-4 md:p-6 rounded-xl w-full max-w-5xl max-h-[95vh] flex flex-col shadow-[0_0_50px_rgba(6,182,212,0.15)]">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg md:text-xl font-bold text-cyan-400">Seleccionar Ubicación en Plano</h3>
+              <button type="button" onClick={() => setShowMapModal(false)} className="text-gray-400 hover:text-white text-2xl leading-none">✕</button>
+            </div>
+            <p className="text-xs md:text-sm text-gray-400 mb-4">Haz clic sobre el plano para marcar el punto exacto de la red.</p>
+            
+            <div className="flex-1 overflow-auto bg-white/5 rounded-lg border border-white/10 relative flex justify-center items-start scrollbar-hide">
+              <div 
+                className="relative cursor-crosshair inline-block max-w-full" 
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = ((e.clientX - rect.left) / rect.width) * 100;
+                  const y = ((e.clientY - rect.top) / rect.height) * 100;
+                  setMapCoords({ x, y });
+                }}
+              >
+                <img src="/plano_hospital.png" alt="Plano del Hospital" className="w-full max-w-none md:max-w-full h-auto block min-w-[600px] md:min-w-0" />
+                {mapCoords && (
+                  <div 
+                    className="absolute flex items-center justify-center pointer-events-none drop-shadow-[0_0_10px_rgba(255,0,0,0.8)] text-3xl md:text-4xl"
+                    style={{ left: `calc(${mapCoords.x}% - 16px)`, top: `calc(${mapCoords.y}% - 32px)` }}
+                  >
+                    📍
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-white/10">
+              <button type="button" onClick={() => setMapCoords(null)} className="px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors font-semibold text-sm">
+                Borrar Marca
+              </button>
+              <button type="button" onClick={() => setShowMapModal(false)} className="px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg transition-colors text-sm">
+                Confirmar
+              </button>
+            </div>
           </div>
         </div>
       )}
