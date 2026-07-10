@@ -22,6 +22,10 @@ service cloud.firestore {
       allow write, delete: if isRegisteredEmployee();
     }
     
+    match /dispositivos_red/{document=**} {
+      allow read, write, delete: if isRegisteredEmployee();
+    }
+    
     match /web_services/{document=**} {
       allow read: if true;
       allow write, delete: if isRegisteredEmployee();

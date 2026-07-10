@@ -34,7 +34,8 @@ export default function PanelPage() {
   const [isClient, setIsClient] = useState(false);
   
   // Tabs Navigation
-  const [activeTab, setActiveTab] = useState<"auditorias" | "usuarios" | "cms" | "dispositivos">("auditorias");
+  const [activeTab, setActiveTab] = useState<"auditorias" | "usuarios" | "cms" | "dispositivos" | "gabinetes">("auditorias");
+  const [currentUserRole, setCurrentUserRole] = useState<string>("tecnico");
 
   // State Auditorias
   const [inspecciones, setInspecciones] = useState<Inspeccion[]>([]);
@@ -90,6 +91,17 @@ export default function PanelPage() {
   const [mapZoom, setMapZoom] = useState(1);
   const [initialPinchDist, setInitialPinchDist] = useState<number | null>(null);
 
+  // State Gabinetes (Rack Builder)
+  const [gabinetes, setGabinetes] = useState<any[]>([]);
+  const [loadingGabinetes, setLoadingGabinetes] = useState(true);
+  const [showGabineteModal, setShowGabineteModal] = useState(false);
+  const [gabineteForm, setGabineteForm] = useState({
+    nombre: "",
+    ubicacion: "",
+    unidades: 42
+  });
+  const [activeGabinete, setActiveGabinete] = useState<any>(null); // Rack en edición visual
+
   useEffect(() => {
     setIsClient(true);
     
@@ -121,6 +133,12 @@ export default function PanelPage() {
       snapshot.forEach((doc) => { usersList.push({ id: doc.id, ...doc.data() }); });
       setUsuarios(usersList);
       setLoadingUsers(false);
+      
+      // Update current user role
+      if (auth.currentUser) {
+        const currentUserDoc = usersList.find(u => u.email === auth.currentUser?.email);
+        if (currentUserDoc) setCurrentUserRole(currentUserDoc.role);
+      }
     }, (error) => {
       console.error("Error cargando usuarios:", error);
       setLoadingUsers(false);
@@ -159,6 +177,22 @@ export default function PanelPage() {
       setLoadingDispositivos(false);
     });
 
+    // Cargar Gabinetes
+    const qGabinetes = query(collection(db, "gabinetes"));
+    const unsubscribeGabinetes = onSnapshot(qGabinetes, (snapshot) => {
+      const docs: any[] = [];
+      snapshot.forEach((doc) => { docs.push({ id: doc.id, ...doc.data() }); });
+      setGabinetes(docs);
+      setLoadingGabinetes(false);
+      
+      // Update active gabinete if it was modified
+      setActiveGabinete((prev: any) => {
+        if (!prev) return prev;
+        const updated = docs.find(d => d.id === prev.id);
+        return updated || null;
+      });
+    });
+
     return () => {
       unsubscribeAuth();
       unsubscribeDb();
@@ -167,6 +201,7 @@ export default function PanelPage() {
       unsubscribeProjects();
       unsubscribeContent();
       unsubscribeDispositivos();
+      unsubscribeGabinetes();
     };
   }, [router]);
 
@@ -250,6 +285,95 @@ export default function PanelPage() {
     } catch (error: any) {
       console.error("Error enviando reset de password:", error);
       alert("No se pudo enviar el enlace. Posiblemente el usuario ya no existe en el sistema de autenticación.");
+    }
+  };
+
+  // ========================================================
+  // CONTROL DE GABINETES (RACK BUILDER)
+  // ========================================================
+  const handleSaveGabinete = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!gabineteForm.nombre) return;
+    try {
+      if (activeGabinete && activeGabinete.id) {
+        await updateDoc(doc(db, "gabinetes", activeGabinete.id), {
+          ...gabineteForm
+        });
+        alert("✅ Gabinete actualizado correctamente.");
+      } else {
+        const docRef = await addDoc(collection(db, "gabinetes"), {
+          ...gabineteForm,
+          dispositivos: [], // Inicialmente vacío
+          createdAt: new Date().toISOString()
+        });
+        alert("✅ Gabinete creado correctamente.");
+      }
+      setShowGabineteModal(false);
+      setGabineteForm({ nombre: "", ubicacion: "", unidades: 42 });
+    } catch (error) {
+      console.error("Error guardando gabinete:", error);
+      alert("Hubo un error al guardar el gabinete.");
+    }
+  };
+
+  const handleDeleteGabinete = async (id: string) => {
+    if (window.confirm("⚠️ ¿Estás seguro de eliminar este Gabinete permanentemente?")) {
+      try {
+        await deleteDoc(doc(db, "gabinetes", id));
+        if (activeGabinete && activeGabinete.id === id) {
+          setActiveGabinete(null);
+        }
+        alert("✅ Gabinete eliminado.");
+      } catch (error) {
+        console.error("Error eliminando gabinete:", error);
+        alert("Hubo un error al eliminar.");
+      }
+    }
+  };
+
+  const handleAssignDeviceToU = async (deviceId: string, startU: number, sizeU: number = 1, isPassive: boolean = false, passiveData?: any) => {
+    if (!activeGabinete) return;
+    
+    // Validar si el slot está ocupado
+    const isOccupied = activeGabinete.dispositivos?.some((d: any) => {
+      const start = d.uPos;
+      const end = d.uPos + (d.heightU || 1) - 1;
+      return (startU >= start && startU <= end) || (startU + sizeU - 1 >= start && startU + sizeU - 1 <= end);
+    });
+
+    if (isOccupied) {
+      alert("La Unidad seleccionada ya está ocupada por otro dispositivo.");
+      return;
+    }
+
+    const newDeviceAssignment = {
+      id: isPassive ? `pasivo_${Date.now()}` : deviceId,
+      uPos: startU,
+      heightU: sizeU,
+      isPassive,
+      data: passiveData || null
+    };
+
+    try {
+      await updateDoc(doc(db, "gabinetes", activeGabinete.id), {
+        dispositivos: [...(activeGabinete.dispositivos || []), newDeviceAssignment]
+      });
+    } catch (error) {
+      console.error("Error asignando equipo:", error);
+      alert("Error al asignar el equipo al gabinete.");
+    }
+  };
+
+  const handleRemoveDeviceFromU = async (assignmentId: string) => {
+    if (!activeGabinete) return;
+    if (window.confirm("¿Retirar dispositivo de este gabinete?")) {
+      try {
+        await updateDoc(doc(db, "gabinetes", activeGabinete.id), {
+          dispositivos: activeGabinete.dispositivos.filter((d: any) => d.id !== assignmentId)
+        });
+      } catch (error) {
+        console.error("Error retirando equipo:", error);
+      }
     }
   };
 
@@ -596,6 +720,11 @@ export default function PanelPage() {
         <button onClick={() => setActiveTab("dispositivos")} className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'dispositivos' ? 'bg-orange-600 text-white shadow-[0_0_15px_rgba(234,88,12,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
           🖥️ Dispositivos de Red
         </button>
+        {currentUserRole === 'ingeniero' && (
+          <button onClick={() => setActiveTab("gabinetes")} className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'gabinetes' ? 'bg-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+            🗄️ Data Center / Gabinetes
+          </button>
+        )}
       </div>
 
       {/* ==============================================
@@ -1258,6 +1387,238 @@ export default function PanelPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      {/* ==============================================
+          VISTA 5: GABINETES (RACK BUILDER) - Solo Ingenieros
+          ============================================== */}
+      {activeTab === "gabinetes" && currentUserRole === 'ingeniero' && (
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.3)]">
+          {!activeGabinete ? (
+            // Lista de Gabinetes
+            <>
+              <div className="flex flex-col sm:flex-row justify-between items-center mb-6 border-b border-white/10 pb-4">
+                <h2 className="text-2xl font-bold text-indigo-400">Gabinetes de Telecomunicaciones</h2>
+                <button 
+                  onClick={() => {
+                    setGabineteForm({ nombre: "", ubicacion: "", unidades: 42 });
+                    setShowGabineteModal(true);
+                  }} 
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-[0_0_15px_rgba(79,70,229,0.3)]"
+                >
+                  ➕ Nuevo Gabinete
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {loadingGabinetes ? (
+                  <p className="text-indigo-400">Cargando gabinetes...</p>
+                ) : gabinetes.length === 0 ? (
+                  <p className="text-gray-500">No hay gabinetes registrados.</p>
+                ) : (
+                  gabinetes.map(gab => (
+                    <div key={gab.id} className="bg-white/5 border border-white/10 rounded-xl p-5 hover:border-indigo-500/50 transition-colors group">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-xl font-bold text-white">{gab.nombre}</h3>
+                          <p className="text-sm text-gray-400">{gab.ubicacion}</p>
+                        </div>
+                        <span className="bg-indigo-500/20 text-indigo-300 text-xs font-bold px-2 py-1 rounded">
+                          {gab.unidades}U
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center mt-6">
+                        <button 
+                          onClick={() => setActiveGabinete(gab)}
+                          className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded font-bold text-sm transition-colors"
+                        >
+                          Abrir Rack Builder
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteGabinete(gab.id)}
+                          className="text-red-400 hover:text-red-300 text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+          ) : (
+            // Rack Builder View
+            <div className="flex flex-col h-[80vh]">
+              <div className="flex justify-between items-center mb-4 pb-4 border-b border-white/10">
+                <div>
+                  <h2 className="text-2xl font-bold text-indigo-400">{activeGabinete.nombre}</h2>
+                  <p className="text-gray-400">{activeGabinete.ubicacion} • {activeGabinete.unidades}U</p>
+                </div>
+                <button 
+                  onClick={() => setActiveGabinete(null)}
+                  className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-bold transition-colors"
+                >
+                  Volver a Gabinetes
+                </button>
+              </div>
+
+              <div className="flex flex-1 gap-6 min-h-0">
+                {/* Rack Visual (Izquierda) */}
+                <div className="w-1/2 md:w-2/3 bg-black/60 rounded-xl border border-gray-700 overflow-y-auto flex justify-center p-4">
+                  <div className="w-full max-w-[400px] border-[8px] border-gray-800 rounded-lg bg-[#0a0a0a] flex flex-col-reverse shadow-[0_0_20px_rgba(0,0,0,0.8)]">
+                    {/* Generar slots U (de 1 a N) */}
+                    {Array.from({ length: activeGabinete.unidades }).map((_, i) => {
+                      const uNumber = i + 1;
+                      
+                      // Buscar si este slot es el inicio de algún equipo
+                      const deviceAtU = activeGabinete.dispositivos?.find((d: any) => d.uPos === uNumber);
+                      
+                      // Buscar si este slot está cubierto por un equipo más grande que empezó más abajo
+                      const isCovered = activeGabinete.dispositivos?.some((d: any) => uNumber > d.uPos && uNumber < d.uPos + (d.heightU || 1));
+
+                      if (isCovered) return null; // No renderizar slot si está cubierto
+
+                      return (
+                        <div key={uNumber} className="relative flex w-full border-t border-gray-800" style={{ height: deviceAtU ? `${40 * (deviceAtU.heightU || 1)}px` : '40px' }}>
+                          {/* Etiqueta U */}
+                          <div className="w-8 flex items-center justify-center bg-gray-900 border-r border-gray-800 text-[10px] font-bold text-gray-500">
+                            {uNumber}U
+                          </div>
+                          
+                          {/* Contenido del Slot */}
+                          <div 
+                            className={`flex-1 relative flex items-center justify-center group transition-colors ${deviceAtU ? (deviceAtU.isPassive ? 'bg-purple-900/40 border-l-4 border-purple-500' : 'bg-cyan-900/40 border-l-4 border-cyan-500') : 'hover:bg-white/5 cursor-pointer'}`}
+                            onClick={() => {
+                              if (!deviceAtU) {
+                                // Seleccionar equipo por defecto mediante un modal si no lo tenemos en drag & drop
+                                const devId = prompt("Pega el ID del equipo o escribe 'patch' para un patch panel:");
+                                if (devId) {
+                                  handleAssignDeviceToU(devId, uNumber, 1, devId === 'patch', devId === 'patch' ? { tipo: "Patch Panel", nombre: "Patch Panel 24P" } : null);
+                                }
+                              }
+                            }}
+                          >
+                            {/* Orificios del Rack */}
+                            <div className="absolute left-1 top-0 bottom-0 w-2 flex flex-col justify-between py-1 opacity-20">
+                              <div className="w-2 h-2 rounded-full bg-white"></div>
+                              <div className="w-2 h-2 rounded-full bg-white"></div>
+                            </div>
+                            <div className="absolute right-1 top-0 bottom-0 w-2 flex flex-col justify-between py-1 opacity-20">
+                              <div className="w-2 h-2 rounded-full bg-white"></div>
+                              <div className="w-2 h-2 rounded-full bg-white"></div>
+                            </div>
+
+                            {/* Equipo */}
+                            {deviceAtU ? (
+                              <div className="w-full px-8 flex justify-between items-center">
+                                <div className="truncate">
+                                  {deviceAtU.isPassive ? (
+                                    <span className="text-purple-300 font-bold text-sm">{deviceAtU.data?.nombre || "Elemento Pasivo"}</span>
+                                  ) : (
+                                    <span className="text-cyan-300 font-bold text-sm">
+                                      {dispositivos.find(d => d.id === deviceAtU.id)?.nombre || "Equipo Desconocido"}
+                                    </span>
+                                  )}
+                                </div>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); handleRemoveDeviceFromU(deviceAtU.id); }}
+                                  className="text-red-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                                  title="Remover equipo"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-gray-700 font-bold text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                                Clic para añadir equipo
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Inventario (Derecha) */}
+                <div className="w-1/2 md:w-1/3 bg-black/40 rounded-xl border border-white/10 p-4 flex flex-col">
+                  <h3 className="font-bold text-white mb-4">Equipos Disponibles</h3>
+                  
+                  <div className="overflow-y-auto flex-1 pr-2 space-y-4">
+                    <div>
+                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Equipos Activos (Inventario)</h4>
+                      <div className="space-y-2">
+                        {dispositivos
+                          .filter(d => !activeGabinete.dispositivos?.some((ad: any) => ad.id === d.id))
+                          .map(dev => (
+                            <div key={dev.id} className="bg-cyan-900/20 border border-cyan-500/30 rounded p-3 flex justify-between items-center">
+                              <div>
+                                <div className="text-cyan-300 font-bold text-sm">{dev.nombre}</div>
+                                <div className="text-gray-400 text-xs">{dev.tipo} • {dev.ip || "Sin IP"}</div>
+                              </div>
+                              <div className="text-xs text-cyan-500 font-semibold text-right">
+                                Clic en el rack<br/>y usa ID:<br/>
+                                <span className="bg-black/50 px-1 rounded select-all cursor-text">{dev.id}</span>
+                              </div>
+                            </div>
+                        ))}
+                        {dispositivos.filter(d => !activeGabinete.dispositivos?.some((ad: any) => ad.id === d.id)).length === 0 && (
+                          <p className="text-sm text-gray-500">Todos los equipos están asignados.</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-white/10">
+                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Elementos Pasivos</h4>
+                      <div className="space-y-2">
+                        <div className="bg-purple-900/20 border border-purple-500/30 rounded p-3 flex justify-between items-center">
+                          <div className="text-purple-300 font-bold text-sm">Patch Panel 24P</div>
+                          <div className="text-xs text-purple-500 font-semibold text-right">Escribe: 'patch'</div>
+                        </div>
+                        <div className="bg-purple-900/20 border border-purple-500/30 rounded p-3 flex justify-between items-center">
+                          <div className="text-purple-300 font-bold text-sm">Organizador Horizontal</div>
+                          <div className="text-xs text-purple-500 font-semibold text-right">Escribe: 'org'</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Modal: Crear Gabinete */}
+      {showGabineteModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="bg-[#0a0a0a] border border-indigo-500/30 p-6 rounded-2xl w-full max-w-sm shadow-[0_0_50px_rgba(79,70,229,0.15)]">
+            <h2 className="text-2xl font-bold text-indigo-400 mb-4">Nuevo Gabinete</h2>
+            <form onSubmit={handleSaveGabinete} className="space-y-4">
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">Nombre Identificador:</label>
+                <input type="text" required value={gabineteForm.nombre} onChange={e=>setGabineteForm({...gabineteForm, nombre: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none" placeholder="Ej. Gabinete P1" />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">Ubicación (Cuarto):</label>
+                <input type="text" value={gabineteForm.ubicacion} onChange={e=>setGabineteForm({...gabineteForm, ubicacion: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none" placeholder="Ej. Data Center Principal" />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">Tamaño en U:</label>
+                <select value={gabineteForm.unidades} onChange={e=>setGabineteForm({...gabineteForm, unidades: Number(e.target.value)})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none">
+                  <option value={12}>12U (Pequeño)</option>
+                  <option value={24}>24U (Mediano)</option>
+                  <option value={42}>42U (Estándar)</option>
+                  <option value={45}>45U (Alto)</option>
+                </select>
+              </div>
+              <div className="pt-4 flex gap-3">
+                <button type="button" onClick={() => setShowGabineteModal(false)} className="w-1/2 py-2 border border-gray-600 text-gray-400 hover:bg-white/5 rounded-lg font-bold">Cancelar</button>
+                <button type="submit" className="w-1/2 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition-colors">Guardar</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
