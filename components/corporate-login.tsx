@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserCircle, Wrench, ShieldCheck, X } from "lucide-react";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
@@ -15,11 +15,29 @@ export function CorporateLogin() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resetMessage, setResetMessage] = useState("");
+
+  const handleResetPassword = async () => {
+    if (!email) {
+      setError("Por favor, ingresa tu correo electrónico en el campo superior para recuperar la contraseña.");
+      setResetMessage("");
+      return;
+    }
+    setError("");
+    setResetMessage("");
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setResetMessage("Te hemos enviado un enlace de recuperación al correo.");
+    } catch (err: any) {
+      setError("Error al enviar el enlace. Verifica que el correo sea válido o exista.");
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setResetMessage("");
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
@@ -80,7 +98,7 @@ export function CorporateLogin() {
             
             <div className="flex justify-between items-center p-6 border-b border-white/10 bg-white/5">
               <h2 className="text-xl font-bold text-cyan-400">Portal Corporativo</h2>
-              <button onClick={() => { setIsOpen(false); setRole(null); setError(""); }} className="text-gray-400 hover:text-white transition-colors">
+              <button onClick={() => { setIsOpen(false); setRole(null); setError(""); setResetMessage(""); }} className="text-gray-400 hover:text-white transition-colors">
                 <X size={24} />
               </button>
             </div>
@@ -123,6 +141,11 @@ export function CorporateLogin() {
                       {error}
                     </div>
                   )}
+                  {resetMessage && (
+                    <div className="bg-green-500/10 border border-green-500/50 text-green-400 p-3 rounded-lg text-sm text-center">
+                      {resetMessage}
+                    </div>
+                  )}
 
                   <div>
                     <label className="text-sm text-gray-400 font-semibold mb-1 block">Correo Electrónico</label>
@@ -130,7 +153,12 @@ export function CorporateLogin() {
                   </div>
 
                   <div>
-                    <label className="text-sm text-gray-400 font-semibold mb-1 block">Contraseña</label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-sm text-gray-400 font-semibold block">Contraseña</label>
+                      <button type="button" onClick={handleResetPassword} className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors underline">
+                        ¿Olvidaste tu contraseña?
+                      </button>
+                    </div>
                     <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 outline-none transition-colors" placeholder="••••••••" />
                   </div>
 
@@ -138,7 +166,7 @@ export function CorporateLogin() {
                     {loading ? "Verificando..." : "Ingresar"}
                   </button>
 
-                  <button type="button" onClick={() => { setRole(null); setError(""); setPassword(""); }} className="text-gray-500 hover:text-white text-sm mt-2 transition-colors underline">
+                  <button type="button" onClick={() => { setRole(null); setError(""); setResetMessage(""); setPassword(""); }} className="text-gray-500 hover:text-white text-sm mt-2 transition-colors underline">
                     Volver atrás
                   </button>
                 </form>
