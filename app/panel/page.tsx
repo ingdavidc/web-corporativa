@@ -1417,7 +1417,7 @@ export default function PanelPage() {
               <TransformWrapper
                 initialScale={1}
                 minScale={0.5}
-                maxScale={5}
+                maxScale={10}
                 centerOnInit={true}
                 wheel={{ step: 0.1 }}
                 pinch={{ step: 5 }}
