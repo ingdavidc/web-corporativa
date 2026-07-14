@@ -35,7 +35,7 @@ export default function PanelPage() {
   const [isClient, setIsClient] = useState(false);
   
   // Tabs Navigation
-  const [activeTab, setActiveTab] = useState<"auditorias" | "usuarios" | "cms" | "dispositivos" | "gabinetes">("auditorias");
+  const [activeTab, setActiveTab] = useState<"auditorias" | "usuarios" | "cms" | "dispositivos" | "gabinetes" | "tareas">("auditorias");
   const [currentUserRole, setCurrentUserRole] = useState<string>("tecnico");
 
   // State Auditorias
@@ -101,6 +101,14 @@ export default function PanelPage() {
     unidades: 42
   });
   const [activeGabinete, setActiveGabinete] = useState<any>(null); // Rack en edición visual
+
+  // State Tareas Diarias
+  const [tareas, setTareas] = useState<any[]>([]);
+  const [loadingTareas, setLoadingTareas] = useState(true);
+  const [showTareaModal, setShowTareaModal] = useState(false);
+  const [tareaForm, setTareaForm] = useState({ titulo: "", descripcion: "", asignado_a: "Todos" });
+  const [isSavingTarea, setIsSavingTarea] = useState(false);
+  const [viewEvidenciaTarea, setViewEvidenciaTarea] = useState<any>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -226,6 +234,18 @@ export default function PanelPage() {
       setLoadingGabinetes(false);
     });
 
+    // Cargar Tareas
+    const qTareas = query(collection(db, "tareas_diarias"), orderBy("fecha_creacion", "desc"));
+    const unsubscribeTareas = onSnapshot(qTareas, (snapshot) => {
+      const docs: any[] = [];
+      snapshot.forEach((doc) => { docs.push({ id: doc.id, ...doc.data() }); });
+      setTareas(docs);
+      setLoadingTareas(false);
+    }, (error) => {
+      console.error("Error cargando tareas:", error);
+      setLoadingTareas(false);
+    });
+
     return () => {
       unsubscribeAuth();
       unsubscribeDb();
@@ -235,12 +255,47 @@ export default function PanelPage() {
       unsubscribeContent();
       unsubscribeDispositivos();
       unsubscribeGabinetes();
+      unsubscribeTareas();
     };
   }, [router]);
 
   const handleLogout = async () => {
     await signOut(auth);
     router.push("/");
+  };
+
+  // ========================================================
+  // CONTROL DE TAREAS DIARIAS
+  // ========================================================
+  const handleSaveTarea = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingTarea(true);
+    try {
+      await addDoc(collection(db, "tareas_diarias"), {
+        ...tareaForm,
+        estado: "Pendiente",
+        fecha_creacion: new Date().toISOString(),
+        creado_por: auth.currentUser?.email || ""
+      });
+      alert("✅ Tarea asignada con éxito.");
+      setShowTareaModal(false);
+      setTareaForm({ titulo: "", descripcion: "", asignado_a: "Todos" });
+    } catch (error) {
+      console.error("Error creando tarea:", error);
+      alert("Error al asignar la tarea.");
+    } finally {
+      setIsSavingTarea(false);
+    }
+  };
+
+  const handleDeleteTarea = async (id: string) => {
+    if (confirm("¿Estás seguro de eliminar esta tarea?")) {
+      try {
+        await deleteDoc(doc(db, "tareas_diarias", id));
+      } catch (error) {
+        console.error("Error eliminando tarea:", error);
+      }
+    }
   };
 
   // ========================================================
@@ -805,6 +860,11 @@ export default function PanelPage() {
         {currentUserRole === 'ingeniero' && (
           <button onClick={() => setActiveTab("gabinetes")} className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'gabinetes' ? 'bg-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
             🗄️ Data Center / Gabinetes
+          </button>
+        )}
+        {currentUserRole === 'ingeniero' && (
+          <button onClick={() => setActiveTab("tareas")} className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'tareas' ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+            🛠️ Gestión de Tareas
           </button>
         )}
       </div>
@@ -1703,6 +1763,81 @@ export default function PanelPage() {
         </div>
       )}
 
+      {/* ================================================== */}
+      {/* PESTAÑA: TAREAS DIARIAS */}
+      {/* ================================================== */}
+      {activeTab === "tareas" && currentUserRole === 'ingeniero' && (
+        <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+          <div className="flex justify-between items-center bg-white/5 border border-white/10 p-6 rounded-2xl backdrop-blur-sm">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-2">Gestión de Tareas Diarias</h2>
+              <p className="text-gray-400 text-sm">Asigna y supervisa las tareas operativas de los técnicos.</p>
+            </div>
+            <button onClick={() => setShowTareaModal(true)} className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)] flex items-center gap-2">
+              + Asignar Nueva Tarea
+            </button>
+          </div>
+
+          {loadingTareas ? (
+            <div className="flex justify-center p-12">
+              <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            <div className="bg-[#111] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-white/5 border-b border-white/10">
+                      <th className="p-4 font-bold text-gray-300">Título</th>
+                      <th className="p-4 font-bold text-gray-300">Asignado a</th>
+                      <th className="p-4 font-bold text-gray-300">Estado</th>
+                      <th className="p-4 font-bold text-gray-300 text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tareas.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="p-8 text-center text-gray-500">No hay tareas asignadas.</td>
+                      </tr>
+                    ) : (
+                      tareas.map(tarea => (
+                        <tr key={tarea.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                          <td className="p-4">
+                            <div className="text-white font-bold">{tarea.titulo}</div>
+                            <div className="text-gray-500 text-xs mt-1 truncate max-w-[250px]">{tarea.descripcion}</div>
+                          </td>
+                          <td className="p-4">
+                            <span className="text-gray-400 text-sm">{tarea.asignado_a}</span>
+                          </td>
+                          <td className="p-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold
+                              ${tarea.estado === 'Completada' ? 'bg-green-500/20 text-green-400' 
+                              : tarea.estado === 'En Progreso' ? 'bg-blue-500/20 text-blue-400' 
+                              : 'bg-yellow-500/20 text-yellow-400'}`}>
+                              {tarea.estado}
+                            </span>
+                          </td>
+                          <td className="p-4 flex gap-2 justify-center">
+                            {tarea.estado === 'Completada' && tarea.evidencia_foto_1 && (
+                              <button onClick={() => setViewEvidenciaTarea(tarea)} className="p-2 bg-green-500/10 text-green-400 hover:bg-green-500/20 rounded-lg transition-colors border border-green-500/20" title="Ver Evidencia">
+                                📸 Ver
+                              </button>
+                            )}
+                            <button onClick={() => handleDeleteTarea(tarea.id)} className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors border border-red-500/20" title="Eliminar">
+                              🗑️
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Modal: Crear Gabinete */}
       {showGabineteModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
@@ -1731,6 +1866,65 @@ export default function PanelPage() {
                 <button type="submit" className="w-1/2 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition-colors">Guardar</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Asignar Tarea */}
+      {showTareaModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="bg-[#0a0a0a] border border-blue-500/30 p-6 rounded-2xl w-full max-w-md shadow-[0_0_50px_rgba(37,99,235,0.15)]">
+            <h2 className="text-2xl font-bold text-blue-400 mb-4">Asignar Nueva Tarea</h2>
+            <form onSubmit={handleSaveTarea} className="space-y-4">
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">Título de la Tarea:</label>
+                <input type="text" required value={tareaForm.titulo} onChange={e=>setTareaForm({...tareaForm, titulo: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-blue-500 outline-none" placeholder="Ej. Revisión de cableado..." />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">Descripción detallada:</label>
+                <textarea required value={tareaForm.descripcion} onChange={e=>setTareaForm({...tareaForm, descripcion: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-blue-500 outline-none min-h-[100px]" placeholder="Instrucciones para el técnico..." />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">Asignar a (Email):</label>
+                <select value={tareaForm.asignado_a} onChange={e=>setTareaForm({...tareaForm, asignado_a: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-blue-500 outline-none">
+                  <option value="Todos">Abierto (Cualquier Técnico)</option>
+                  {usuarios.filter((u: any) => u.role === 'tecnico').map((u: any) => (
+                    <option key={u.email} value={u.email}>{u.nombre} ({u.email})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="pt-4 flex gap-3">
+                <button type="button" onClick={() => setShowTareaModal(false)} className="w-1/2 py-2 border border-gray-600 text-gray-400 hover:bg-white/5 rounded-lg font-bold">Cancelar</button>
+                <button type="submit" disabled={isSavingTarea} className={`w-1/2 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-colors ${isSavingTarea ? 'opacity-50' : ''}`}>{isSavingTarea ? 'Guardando...' : 'Asignar'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Ver Evidencia de Tarea */}
+      {viewEvidenciaTarea && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+          <div className="bg-[#111] border border-green-500/30 p-6 rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-[0_0_50px_rgba(34,197,94,0.15)] relative">
+            <button onClick={() => setViewEvidenciaTarea(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white bg-black/50 p-2 rounded-full">✕</button>
+            
+            <h2 className="text-2xl font-bold text-green-400 mb-2">{viewEvidenciaTarea.titulo}</h2>
+            <div className="flex gap-2 mb-4">
+              <span className="bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded">Por: {viewEvidenciaTarea.ejecutado_por || viewEvidenciaTarea.asignado_a}</span>
+              <span className="bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded">El: {new Date(viewEvidenciaTarea.fecha_completada).toLocaleDateString()}</span>
+            </div>
+
+            <div className="bg-black/50 p-4 rounded-xl border border-white/5 mb-6 text-sm text-gray-300">
+              <strong className="text-white block mb-1">Notas del Técnico:</strong>
+              {viewEvidenciaTarea.notas_tecnico || "Sin comentarios."}
+            </div>
+
+            {viewEvidenciaTarea.evidencia_foto_1 && (
+              <div>
+                <strong className="text-white block mb-2">Evidencia Fotográfica:</strong>
+                <img src={viewEvidenciaTarea.evidencia_foto_1} alt="Evidencia" className="w-full rounded-xl border border-white/10" />
+              </div>
+            )}
           </div>
         </div>
       )}

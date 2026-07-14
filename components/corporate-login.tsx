@@ -76,7 +76,7 @@ export function CorporateLogin() {
       setIsOpen(false);
       
       if (role === "tecnico") {
-        router.push("/formulario");
+        router.push("/portal-tecnico");
       } else {
         router.push("/panel");
       }
