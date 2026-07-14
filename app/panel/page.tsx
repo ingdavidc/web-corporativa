@@ -291,7 +291,11 @@ export default function PanelPage() {
 
   const handleUpdatePagoTarea = async (id: string, nuevoEstadoPago: string) => {
     try {
-      await updateDoc(doc(db, "tareas_diarias", id), { estado_pago: nuevoEstadoPago });
+      const updateData: any = { estado_pago: nuevoEstadoPago };
+      if (nuevoEstadoPago === 'Pago totalmente') {
+        updateData.fecha_pago_total = new Date().toISOString();
+      }
+      await updateDoc(doc(db, "tareas_diarias", id), updateData);
     } catch (error) {
       console.error("Error actualizando estado de pago:", error);
       alert("Error al actualizar el pago.");
@@ -1846,6 +1850,10 @@ export default function PanelPage() {
                               <option value="Abonado" className="bg-[#111] text-blue-400">Abonado</option>
                               <option value="Pago totalmente" className="bg-[#111] text-green-400">Pago totalmente</option>
                             </select>
+                            </select>
+                            {tarea.estado_pago === 'Pago totalmente' && tarea.fecha_pago_total && (
+                              <div className="text-[10px] text-green-400 mt-2 font-medium">Pagado el:<br/>{new Date(tarea.fecha_pago_total).toLocaleString()}</div>
+                            )}
                             {tarea.estado_pago === 'Abonado' && tarea.valor_abono && (
                               <div className="text-xs text-blue-400 mt-2 font-medium">Valor: {tarea.valor_abono}</div>
                             )}
