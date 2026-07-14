@@ -13,7 +13,7 @@ interface Tarea {
   titulo: string;
   descripcion: string;
   asignado_a: string; // email or "Todos"
-  estado: "Pendiente" | "En Progreso" | "Completada";
+  estado: "Pendiente" | "En Progreso" | "Completada" | "Pausada";
   fecha_creacion: string;
   fecha_completada?: string;
   evidencia_foto_1?: string;
@@ -21,6 +21,8 @@ interface Tarea {
   creado_por?: string;
   importancia?: string;
   fecha_programada?: string;
+  materiales_utilizados?: string;
+  estado_pago?: string;
 }
 
 export default function TareasTecnicoPage() {
@@ -33,6 +35,7 @@ export default function TareasTecnicoPage() {
   // Modal de ejecución
   const [activeTask, setActiveTask] = useState<Tarea | null>(null);
   const [notas, setNotas] = useState("");
+  const [materiales, setMateriales] = useState("");
   const [fotoEvidencia, setFotoEvidencia] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -102,12 +105,14 @@ export default function TareasTecnicoPage() {
         estado: "Completada",
         fecha_completada: new Date().toISOString(),
         notas_tecnico: notas,
+        materiales_utilizados: materiales,
         evidencia_foto_1: fotoEvidencia,
         ejecutado_por: userEmail
       });
       alert("✅ Tarea completada con éxito.");
       setActiveTask(null);
       setNotas("");
+      setMateriales("");
       setFotoEvidencia(null);
     } catch (error) {
       console.error("Error al completar la tarea:", error);
@@ -117,8 +122,32 @@ export default function TareasTecnicoPage() {
     }
   };
 
+  const handlePauseTask = async () => {
+    if (!activeTask) return;
+    setIsSubmitting(true);
+    try {
+      await updateDoc(doc(db, "tareas_diarias", activeTask.id), {
+        estado: "Pausada",
+        notas_tecnico: notas,
+        materiales_utilizados: materiales,
+        evidencia_foto_1: fotoEvidencia || null,
+        ejecutado_por: userEmail
+      });
+      alert("⏸️ Tarea pausada.");
+      setActiveTask(null);
+      setNotas("");
+      setMateriales("");
+      setFotoEvidencia(null);
+    } catch (error) {
+      console.error("Error al pausar la tarea:", error);
+      alert("Error al pausar la tarea.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const markInProgress = async (task: Tarea) => {
-    if (task.estado === "Pendiente") {
+    if (task.estado === "Pendiente" || task.estado === "Pausada") {
       try {
         await updateDoc(doc(db, "tareas_diarias", task.id), { estado: "En Progreso" });
       } catch (error) {
@@ -127,6 +156,7 @@ export default function TareasTecnicoPage() {
     }
     setActiveTask(task);
     setNotas(task.notas_tecnico || "");
+    setMateriales(task.materiales_utilizados || "");
     setFotoEvidencia(task.evidencia_foto_1 || null);
   };
 
@@ -183,9 +213,14 @@ export default function TareasTecnicoPage() {
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
                         <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors leading-tight">{task.titulo}</h3>
                         <div className="flex flex-row sm:flex-col items-center sm:items-end gap-1 shrink-0 flex-wrap">
-                          <span className={`px-2 py-1 rounded text-xs font-bold ${task.estado === 'En Progreso' ? 'bg-blue-500/20 text-blue-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${task.estado === 'En Progreso' ? 'bg-blue-500/20 text-blue-400' : task.estado === 'Pausada' ? 'bg-purple-500/20 text-purple-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
                             {task.estado}
                           </span>
+                          {task.estado_pago && task.estado_pago !== 'Se debe' && (
+                            <span className={`px-2 py-1 rounded text-xs font-bold border ${task.estado_pago === 'Pago totalmente' ? 'border-green-500/30 text-green-400' : 'border-blue-500/30 text-blue-400'}`}>
+                              💰 {task.estado_pago}
+                            </span>
+                          )}
                           {task.importancia && (
                             <span className={`px-2 py-1 rounded text-xs font-bold ${task.importancia === 'Urgente' ? 'bg-red-500/20 text-red-400' : task.importancia === 'Alta' ? 'bg-orange-500/20 text-orange-400' : 'bg-gray-500/20 text-gray-300'}`}>
                               {task.importancia}
@@ -263,7 +298,18 @@ export default function TareasTecnicoPage() {
                     value={notas}
                     onChange={(e) => setNotas(e.target.value)}
                     placeholder="Describe el trabajo realizado..."
-                    className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 outline-none transition-colors min-h-[100px]"
+                    className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 outline-none transition-colors min-h-[80px]"
+                  />
+                </div>
+
+                {/* Materiales */}
+                <div>
+                  <label className="text-sm font-bold text-gray-300 mb-2 block">Materiales Utilizados (Opcional)</label>
+                  <textarea 
+                    value={materiales}
+                    onChange={(e) => setMateriales(e.target.value)}
+                    placeholder="Ej. 10m cable UTP, 4 conectores RJ45..."
+                    className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 outline-none transition-colors min-h-[60px]"
                   />
                 </div>
 
@@ -304,15 +350,25 @@ export default function TareasTecnicoPage() {
                 </div>
 
                 {/* Submit */}
-                <button 
-                  type="submit" 
-                  disabled={isSubmitting || !fotoEvidencia}
-                  className={`w-full py-3 md:py-4 rounded-xl font-bold text-white transition-all shadow-lg flex items-center justify-center gap-2 mt-2 md:mt-4
-                    ${(isSubmitting || !fotoEvidencia) ? 'opacity-50 cursor-not-allowed bg-gray-600' : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-cyan-500/25'}`}
-                >
-                  <CheckCircle2 size={20} />
-                  {isSubmitting ? "Guardando..." : "Completar Tarea"}
-                </button>
+                <div className="flex gap-3 mt-2 md:mt-4">
+                  <button 
+                    type="button" 
+                    disabled={isSubmitting}
+                    onClick={handlePauseTask}
+                    className="w-1/3 py-3 md:py-4 rounded-xl font-bold text-white bg-gray-700 hover:bg-gray-600 transition-all flex items-center justify-center gap-2"
+                  >
+                    ⏸️ Pausar
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={isSubmitting || !fotoEvidencia}
+                    className={`w-2/3 py-3 md:py-4 rounded-xl font-bold text-white transition-all shadow-lg flex items-center justify-center gap-1 sm:gap-2
+                      ${(isSubmitting || !fotoEvidencia) ? 'opacity-50 cursor-not-allowed bg-gray-600' : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-cyan-500/25'}`}
+                  >
+                    <CheckCircle2 size={20} />
+                    {isSubmitting ? "Guardando..." : "Completar"}
+                  </button>
+                </div>
               </form>
             </div>
           </div>

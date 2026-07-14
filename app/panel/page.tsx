@@ -274,6 +274,7 @@ export default function PanelPage() {
       await addDoc(collection(db, "tareas_diarias"), {
         ...tareaForm,
         estado: "Pendiente",
+        estado_pago: "Se debe",
         fecha_creacion: new Date().toISOString(),
         creado_por: auth.currentUser?.email || ""
       });
@@ -285,6 +286,15 @@ export default function PanelPage() {
       alert("Error al asignar la tarea.");
     } finally {
       setIsSavingTarea(false);
+    }
+  };
+
+  const handleUpdatePagoTarea = async (id: string, nuevoEstadoPago: string) => {
+    try {
+      await updateDoc(doc(db, "tareas_diarias", id), { estado_pago: nuevoEstadoPago });
+    } catch (error) {
+      console.error("Error actualizando estado de pago:", error);
+      alert("Error al actualizar el pago.");
     }
   };
 
@@ -1791,6 +1801,7 @@ export default function PanelPage() {
                       <th className="p-4 font-bold text-gray-300">Título</th>
                       <th className="p-4 font-bold text-gray-300">Asignado a</th>
                       <th className="p-4 font-bold text-gray-300">Importancia & Fecha</th>
+                      <th className="p-4 font-bold text-gray-300">Estado de Pago</th>
                       <th className="p-4 font-bold text-gray-300">Estado</th>
                       <th className="p-4 font-bold text-gray-300 text-center">Acciones</th>
                     </tr>
@@ -1798,7 +1809,7 @@ export default function PanelPage() {
                   <tbody>
                     {tareas.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="p-8 text-center text-gray-500">No hay tareas asignadas.</td>
+                        <td colSpan={6} className="p-8 text-center text-gray-500">No hay tareas asignadas.</td>
                       </tr>
                     ) : (
                       tareas.map(tarea => (
@@ -1823,9 +1834,24 @@ export default function PanelPage() {
                             )}
                           </td>
                           <td className="p-4">
+                            <select 
+                              value={tarea.estado_pago || 'Se debe'} 
+                              onChange={(e) => handleUpdatePagoTarea(tarea.id, e.target.value)}
+                              className={`px-3 py-1 rounded text-xs font-bold outline-none border border-white/10 cursor-pointer
+                                ${tarea.estado_pago === 'Pago totalmente' ? 'bg-green-500/20 text-green-400' 
+                                : tarea.estado_pago === 'Abonado' ? 'bg-blue-500/20 text-blue-400' 
+                                : 'bg-red-500/20 text-red-400'}`}
+                            >
+                              <option value="Se debe" className="bg-[#111] text-red-400">Se debe</option>
+                              <option value="Abonado" className="bg-[#111] text-blue-400">Abonado</option>
+                              <option value="Pago totalmente" className="bg-[#111] text-green-400">Pago totalmente</option>
+                            </select>
+                          </td>
+                          <td className="p-4">
                             <span className={`px-3 py-1 rounded-full text-xs font-bold
                               ${tarea.estado === 'Completada' ? 'bg-green-500/20 text-green-400' 
                               : tarea.estado === 'En Progreso' ? 'bg-blue-500/20 text-blue-400' 
+                              : tarea.estado === 'Pausada' ? 'bg-purple-500/20 text-purple-400'
                               : 'bg-yellow-500/20 text-yellow-400'}`}>
                               {tarea.estado}
                             </span>
