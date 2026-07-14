@@ -136,11 +136,11 @@ export default function TareasTecnicoPage() {
   const completedTasks = tareas.filter(t => t.estado === "Completada");
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-gray-200 p-4 md:p-8 relative">
+    <main className="min-h-[100dvh] bg-[#0a0a0a] text-gray-200 p-3 sm:p-4 md:p-8 relative">
       <div className="max-w-4xl mx-auto relative z-10">
         
         {/* Header */}
-        <div className="flex items-center justify-between mb-8 bg-white/5 border border-white/10 p-4 rounded-2xl backdrop-blur-md">
+        <div className="flex items-center justify-between mb-6 bg-white/5 border border-white/10 p-4 rounded-2xl backdrop-blur-md">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => router.push("/portal-tecnico")}
@@ -150,10 +150,10 @@ export default function TareasTecnicoPage() {
             </button>
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-cyan-400">Trabajos Diarios</h1>
-              <p className="text-sm text-gray-400">Bandeja de ejecución operativa</p>
+              <p className="text-xs md:text-sm text-gray-400">Bandeja de ejecución operativa</p>
             </div>
           </div>
-          <Image src="/logo.png" alt="Logo" width={50} height={50} className="object-contain" />
+          <Image src="/logo.png" alt="Logo" width={40} height={40} className="object-contain shrink-0 md:w-[50px] md:h-[50px]" />
         </div>
 
         {loading ? (
@@ -178,11 +178,11 @@ export default function TareasTecnicoPage() {
                     <div 
                       key={task.id} 
                       onClick={() => markInProgress(task)}
-                      className="bg-white/5 border border-white/10 p-5 rounded-xl hover:bg-white/10 cursor-pointer transition-all border-l-4 border-l-yellow-500 group"
+                      className="bg-white/5 border border-white/10 p-4 md:p-5 rounded-xl hover:bg-white/10 cursor-pointer transition-all border-l-4 border-l-yellow-500 group"
                     >
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors">{task.titulo}</h3>
-                        <div className="flex flex-col items-end gap-1">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
+                        <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors leading-tight">{task.titulo}</h3>
+                        <div className="flex flex-row sm:flex-col items-center sm:items-end gap-1 shrink-0 flex-wrap">
                           <span className={`px-2 py-1 rounded text-xs font-bold ${task.estado === 'En Progreso' ? 'bg-blue-500/20 text-blue-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
                             {task.estado}
                           </span>
@@ -194,10 +194,10 @@ export default function TareasTecnicoPage() {
                         </div>
                       </div>
                       <p className="text-gray-400 text-sm mb-3 line-clamp-2">{task.descripcion}</p>
-                      <div className="flex justify-between items-end">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2">
                         <div className="text-xs text-gray-500">Asignado: {task.asignado_a}</div>
                         {task.fecha_programada && (
-                          <div className="text-xs text-cyan-400 font-semibold bg-cyan-900/30 px-2 py-1 rounded">
+                          <div className="text-xs text-cyan-400 font-semibold bg-cyan-900/30 px-2 py-1 rounded w-full sm:w-auto text-center sm:text-left">
                             📅 {new Date(task.fecha_programada).toLocaleString()}
                           </div>
                         )}
@@ -237,17 +237,17 @@ export default function TareasTecnicoPage() {
 
       {/* Modal de Ejecución de Tarea */}
       {activeTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-[#111] border border-cyan-500/30 rounded-2xl w-full max-w-lg shadow-[0_0_50px_rgba(6,182,212,0.15)] my-8 relative flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
+          <div className="bg-[#111] border border-cyan-500/30 rounded-2xl w-full max-w-lg shadow-[0_0_50px_rgba(6,182,212,0.15)] my-2 relative flex flex-col max-h-[96dvh]">
             
-            <div className="flex justify-between items-center p-5 border-b border-white/10 bg-white/5 shrink-0">
-              <h2 className="text-lg font-bold text-cyan-400 pr-4">{activeTask.titulo}</h2>
-              <button onClick={() => setActiveTask(null)} className="text-gray-400 hover:text-white transition-colors">
+            <div className="flex justify-between items-center p-4 md:p-5 border-b border-white/10 bg-white/5 shrink-0">
+              <h2 className="text-base md:text-lg font-bold text-cyan-400 pr-4 leading-tight">{activeTask.titulo}</h2>
+              <button onClick={() => setActiveTask(null)} className="text-gray-400 hover:text-white transition-colors p-1">
                 <X size={24} />
               </button>
             </div>
 
-            <div className="p-5 overflow-y-auto flex-1 custom-scrollbar">
+            <div className="p-4 md:p-5 overflow-y-auto flex-1 custom-scrollbar">
               <div className="bg-black/30 p-4 rounded-xl border border-white/5 mb-6 text-sm text-gray-300">
                 <strong className="text-white block mb-1">Instrucciones de la tarea:</strong>
                 {activeTask.descripcion}
@@ -307,7 +307,7 @@ export default function TareasTecnicoPage() {
                 <button 
                   type="submit" 
                   disabled={isSubmitting || !fotoEvidencia}
-                  className={`w-full py-4 rounded-xl font-bold text-white transition-all shadow-lg flex items-center justify-center gap-2 mt-4
+                  className={`w-full py-3 md:py-4 rounded-xl font-bold text-white transition-all shadow-lg flex items-center justify-center gap-2 mt-2 md:mt-4
                     ${(isSubmitting || !fotoEvidencia) ? 'opacity-50 cursor-not-allowed bg-gray-600' : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-cyan-500/25'}`}
                 >
                   <CheckCircle2 size={20} />
