@@ -1846,6 +1846,9 @@ export default function PanelPage() {
                               <option value="Abonado" className="bg-[#111] text-blue-400">Abonado</option>
                               <option value="Pago totalmente" className="bg-[#111] text-green-400">Pago totalmente</option>
                             </select>
+                            {tarea.estado_pago === 'Abonado' && tarea.valor_abono && (
+                              <div className="text-xs text-blue-400 mt-2 font-medium">Valor: {tarea.valor_abono}</div>
+                            )}
                           </td>
                           <td className="p-4">
                             <span className={`px-3 py-1 rounded-full text-xs font-bold

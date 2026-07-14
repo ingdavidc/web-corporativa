@@ -23,6 +23,8 @@ interface Tarea {
   fecha_programada?: string;
   materiales_utilizados?: string;
   estado_pago?: string;
+  valor_abono?: string;
+  fecha_pago_total?: string;
 }
 
 export default function TareasTecnicoPage() {
@@ -37,6 +39,7 @@ export default function TareasTecnicoPage() {
   const [notas, setNotas] = useState("");
   const [materiales, setMateriales] = useState("");
   const [estadoPago, setEstadoPago] = useState("Se debe");
+  const [valorAbono, setValorAbono] = useState("");
   const [fotoEvidencia, setFotoEvidencia] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -177,20 +180,28 @@ export default function TareasTecnicoPage() {
     
     setIsSubmitting(true);
     try {
-      await updateDoc(doc(db, "tareas_diarias", activeTask.id), {
+      const updateData: any = {
         estado: "Completada",
         fecha_completada: new Date().toISOString(),
         notas_tecnico: notas,
         materiales_utilizados: materiales,
         estado_pago: estadoPago,
+        valor_abono: valorAbono,
         evidencia_foto_1: fotoEvidencia,
         ejecutado_por: userEmail
-      });
+      };
+      
+      if (estadoPago === 'Pago totalmente' && activeTask.estado_pago !== 'Pago totalmente') {
+        updateData.fecha_pago_total = new Date().toISOString();
+      }
+
+      await updateDoc(doc(db, "tareas_diarias", activeTask.id), updateData);
       alert("✅ Tarea completada con éxito.");
       setActiveTask(null);
       setNotas("");
       setMateriales("");
       setEstadoPago("Se debe");
+      setValorAbono("");
       setFotoEvidencia(null);
     } catch (error) {
       console.error("Error al completar la tarea:", error);
@@ -204,19 +215,27 @@ export default function TareasTecnicoPage() {
     if (!activeTask) return;
     setIsSubmitting(true);
     try {
-      await updateDoc(doc(db, "tareas_diarias", activeTask.id), {
+      const updateData: any = {
         estado: "Pausada",
         notas_tecnico: notas,
         materiales_utilizados: materiales,
         estado_pago: estadoPago,
+        valor_abono: valorAbono,
         evidencia_foto_1: fotoEvidencia || null,
         ejecutado_por: userEmail
-      });
+      };
+      
+      if (estadoPago === 'Pago totalmente' && activeTask.estado_pago !== 'Pago totalmente') {
+        updateData.fecha_pago_total = new Date().toISOString();
+      }
+
+      await updateDoc(doc(db, "tareas_diarias", activeTask.id), updateData);
       alert("⏸️ Tarea pausada.");
       setActiveTask(null);
       setNotas("");
       setMateriales("");
       setEstadoPago("Se debe");
+      setValorAbono("");
       setFotoEvidencia(null);
     } catch (error) {
       console.error("Error al pausar la tarea:", error);
@@ -238,6 +257,7 @@ export default function TareasTecnicoPage() {
     setNotas(task.notas_tecnico || "");
     setMateriales(task.materiales_utilizados || "");
     setEstadoPago(task.estado_pago || "Se debe");
+    setValorAbono(task.valor_abono || "");
     setFotoEvidencia(task.evidencia_foto_1 || null);
   };
 
@@ -400,16 +420,42 @@ export default function TareasTecnicoPage() {
                   <select
                     value={estadoPago}
                     onChange={(e) => setEstadoPago(e.target.value)}
-                    disabled={activeTask.estado_pago === 'Abonado' || activeTask.estado_pago === 'Pago totalmente'}
+                    disabled={activeTask.estado_pago === 'Pago totalmente'}
                     className={`w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 outline-none transition-colors 
-                      ${(activeTask.estado_pago === 'Abonado' || activeTask.estado_pago === 'Pago totalmente') ? 'opacity-60 cursor-not-allowed text-gray-400' : ''}`}
+                      ${(activeTask.estado_pago === 'Pago totalmente') ? 'opacity-60 cursor-not-allowed text-gray-400' : ''}`}
                   >
-                    <option value="Se debe" className="bg-[#111]">Se debe</option>
+                    {activeTask.estado_pago !== 'Abonado' && activeTask.estado_pago !== 'Pago totalmente' && (
+                      <option value="Se debe" className="bg-[#111]">Se debe</option>
+                    )}
                     <option value="Abonado" className="bg-[#111]">Abonado</option>
                     <option value="Pago totalmente" className="bg-[#111]">Pago totalmente</option>
                   </select>
-                  {(activeTask.estado_pago === 'Abonado' || activeTask.estado_pago === 'Pago totalmente') && (
-                    <p className="text-xs text-orange-400 mt-2">Este pago ya fue registrado y no puede ser modificado por el técnico.</p>
+                  
+                  {activeTask.estado_pago === 'Pago totalmente' && (
+                    <div className="mt-2">
+                      <p className="text-xs text-green-400">El pago total ya fue registrado.</p>
+                      {activeTask.fecha_pago_total && (
+                        <p className="text-[10px] text-gray-400 mt-1">Registrado el: {new Date(activeTask.fecha_pago_total).toLocaleString()}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {estadoPago === 'Abonado' && (
+                    <div className="mt-4">
+                      <label className="text-sm font-bold text-gray-300 mb-2 block">Valor del Abono</label>
+                      <input 
+                        type="text" 
+                        value={valorAbono}
+                        onChange={(e) => setValorAbono(e.target.value)}
+                        disabled={activeTask.estado_pago === 'Abonado'}
+                        placeholder="Ej: $50.000"
+                        className={`w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 outline-none transition-colors
+                          ${activeTask.estado_pago === 'Abonado' ? 'opacity-60 cursor-not-allowed text-gray-400' : ''}`}
+                      />
+                      {activeTask.estado_pago === 'Abonado' && (
+                        <p className="text-xs text-orange-400 mt-2">El valor del abono ya fue registrado y no puede modificarse.</p>
+                      )}
+                    </div>
                   )}
                 </div>
 
