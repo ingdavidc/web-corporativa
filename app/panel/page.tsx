@@ -106,7 +106,7 @@ export default function PanelPage() {
   const [tareas, setTareas] = useState<any[]>([]);
   const [loadingTareas, setLoadingTareas] = useState(true);
   const [showTareaModal, setShowTareaModal] = useState(false);
-  const [tareaForm, setTareaForm] = useState({ titulo: "", descripcion: "", asignado_a: "Todos" });
+  const [tareaForm, setTareaForm] = useState({ titulo: "", descripcion: "", asignado_a: "Todos", importancia: "Media", fecha_programada: "" });
   const [isSavingTarea, setIsSavingTarea] = useState(false);
   const [viewEvidenciaTarea, setViewEvidenciaTarea] = useState<any>(null);
 
@@ -279,7 +279,7 @@ export default function PanelPage() {
       });
       alert("✅ Tarea asignada con éxito.");
       setShowTareaModal(false);
-      setTareaForm({ titulo: "", descripcion: "", asignado_a: "Todos" });
+      setTareaForm({ titulo: "", descripcion: "", asignado_a: "Todos", importancia: "Media", fecha_programada: "" });
     } catch (error) {
       console.error("Error creando tarea:", error);
       alert("Error al asignar la tarea.");
@@ -1790,6 +1790,7 @@ export default function PanelPage() {
                     <tr className="bg-white/5 border-b border-white/10">
                       <th className="p-4 font-bold text-gray-300">Título</th>
                       <th className="p-4 font-bold text-gray-300">Asignado a</th>
+                      <th className="p-4 font-bold text-gray-300">Importancia & Fecha</th>
                       <th className="p-4 font-bold text-gray-300">Estado</th>
                       <th className="p-4 font-bold text-gray-300 text-center">Acciones</th>
                     </tr>
@@ -1797,7 +1798,7 @@ export default function PanelPage() {
                   <tbody>
                     {tareas.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="p-8 text-center text-gray-500">No hay tareas asignadas.</td>
+                        <td colSpan={5} className="p-8 text-center text-gray-500">No hay tareas asignadas.</td>
                       </tr>
                     ) : (
                       tareas.map(tarea => (
@@ -1808,6 +1809,18 @@ export default function PanelPage() {
                           </td>
                           <td className="p-4">
                             <span className="text-gray-400 text-sm">{tarea.asignado_a}</span>
+                          </td>
+                          <td className="p-4 flex flex-col gap-1 items-start">
+                            {tarea.importancia && (
+                              <span className={`px-2 py-1 rounded text-xs font-bold ${tarea.importancia === 'Urgente' ? 'bg-red-500/20 text-red-400' : tarea.importancia === 'Alta' ? 'bg-orange-500/20 text-orange-400' : 'bg-gray-500/20 text-gray-300'}`}>
+                                {tarea.importancia}
+                              </span>
+                            )}
+                            {tarea.fecha_programada && (
+                              <span className="text-xs text-cyan-400 font-semibold bg-cyan-900/30 px-2 py-1 rounded">
+                                📅 {new Date(tarea.fecha_programada).toLocaleString()}
+                              </span>
+                            )}
                           </td>
                           <td className="p-4">
                             <span className={`px-3 py-1 rounded-full text-xs font-bold
@@ -1892,6 +1905,21 @@ export default function PanelPage() {
                     <option key={u.email} value={u.email}>{u.nombre} ({u.email})</option>
                   ))}
                 </select>
+              </div>
+              <div className="flex gap-4">
+                <div className="w-1/2">
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Importancia:</label>
+                  <select value={tareaForm.importancia} onChange={e=>setTareaForm({...tareaForm, importancia: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-blue-500 outline-none">
+                    <option value="Baja">Baja</option>
+                    <option value="Media">Media</option>
+                    <option value="Alta">Alta</option>
+                    <option value="Urgente">Urgente 🚨</option>
+                  </select>
+                </div>
+                <div className="w-1/2">
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Fecha Programada:</label>
+                  <input type="datetime-local" value={tareaForm.fecha_programada} onChange={e=>setTareaForm({...tareaForm, fecha_programada: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-blue-500 outline-none" />
+                </div>
               </div>
               <div className="pt-4 flex gap-3">
                 <button type="button" onClick={() => setShowTareaModal(false)} className="w-1/2 py-2 border border-gray-600 text-gray-400 hover:bg-white/5 rounded-lg font-bold">Cancelar</button>

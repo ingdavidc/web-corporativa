@@ -19,6 +19,8 @@ interface Tarea {
   evidencia_foto_1?: string;
   notas_tecnico?: string;
   creado_por?: string;
+  importancia?: string;
+  fecha_programada?: string;
 }
 
 export default function TareasTecnicoPage() {
@@ -180,12 +182,26 @@ export default function TareasTecnicoPage() {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors">{task.titulo}</h3>
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${task.estado === 'En Progreso' ? 'bg-blue-500/20 text-blue-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                          {task.estado}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${task.estado === 'En Progreso' ? 'bg-blue-500/20 text-blue-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                            {task.estado}
+                          </span>
+                          {task.importancia && (
+                            <span className={`px-2 py-1 rounded text-xs font-bold ${task.importancia === 'Urgente' ? 'bg-red-500/20 text-red-400' : task.importancia === 'Alta' ? 'bg-orange-500/20 text-orange-400' : 'bg-gray-500/20 text-gray-300'}`}>
+                              {task.importancia}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <p className="text-gray-400 text-sm mb-3 line-clamp-2">{task.descripcion}</p>
-                      <div className="text-xs text-gray-500">Asignado: {task.asignado_a}</div>
+                      <div className="flex justify-between items-end">
+                        <div className="text-xs text-gray-500">Asignado: {task.asignado_a}</div>
+                        {task.fecha_programada && (
+                          <div className="text-xs text-cyan-400 font-semibold bg-cyan-900/30 px-2 py-1 rounded">
+                            📅 {new Date(task.fecha_programada).toLocaleString()}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
