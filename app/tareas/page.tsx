@@ -68,23 +68,98 @@ export default function TareasTecnicoPage() {
     return () => unsubscribeAuth();
   }, [router]);
 
-  const handleCapturePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const getCoordinates = (): Promise<{ lat: number; lng: number } | null> => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        resolve(null);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) => resolve({ lat: position.coords.latitude, lng: position.coords.longitude }),
+        (error) => {
+          console.warn("Geolocation error:", error);
+          resolve(null);
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      );
+    });
+  };
+
+  const loadLogo = (): Promise<HTMLImageElement | null> => {
+    return new Promise((resolve) => {
+      const img = document.createElement("img");
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = "/logo.png";
+    });
+  };
+
+  const handleCapturePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Obtenemos coordenadas y logo mientras se lee el archivo
+    const [coords, logoImg] = await Promise.all([getCoordinates(), loadLogo()]);
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      // Compresión básica usando canvas
+      // Compresión y adición de pie de página usando canvas
       const img = document.createElement("img");
       img.src = reader.result as string;
       img.onload = () => {
         const canvas = document.createElement("canvas");
         const MAX_WIDTH = 1024;
         const scaleSize = MAX_WIDTH / img.width;
+        
+        const footerHeight = 80;
+        const imgHeight = img.height * scaleSize;
+        
         canvas.width = MAX_WIDTH;
-        canvas.height = img.height * scaleSize;
+        canvas.height = imgHeight + footerHeight;
         const ctx = canvas.getContext("2d");
-        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        if (!ctx) return;
+
+        // Dibujar foto original
+        ctx.drawImage(img, 0, 0, canvas.width, imgHeight);
+
+        // Dibujar fondo del footer (Blanco para contraste profesional)
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, imgHeight, canvas.width, footerHeight);
+
+        // Dibujar línea separadora superior del footer
+        ctx.strokeStyle = "#e5e7eb"; // gris claro
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, imgHeight);
+        ctx.lineTo(canvas.width, imgHeight);
+        ctx.stroke();
+
+        // Dibujar logo si existe
+        if (logoImg) {
+          const logoRatio = logoImg.width / logoImg.height;
+          const logoH = 50;
+          const logoW = logoH * logoRatio;
+          // Centrado verticalmente en el footer a la izquierda
+          ctx.drawImage(logoImg, 20, imgHeight + (footerHeight - logoH) / 2, logoW, logoH);
+        }
+
+        // Textos del footer
+        ctx.fillStyle = "#111111"; // Texto oscuro
+        ctx.textAlign = "right";
+        ctx.font = "bold 16px sans-serif";
+        
+        const date = new Date();
+        const dateString = date.toLocaleDateString("es-ES") + " " + date.toLocaleTimeString("es-ES");
+        ctx.fillText(`📅 ${dateString}`, canvas.width - 20, imgHeight + 35);
+        
+        ctx.font = "14px sans-serif";
+        ctx.fillStyle = "#4b5563"; // Texto gris
+        if (coords) {
+          ctx.fillText(`📍 Lat: ${coords.lat.toFixed(6)}, Lng: ${coords.lng.toFixed(6)}`, canvas.width - 20, imgHeight + 60);
+        } else {
+          ctx.fillText(`📍 Ubicación no disponible`, canvas.width - 20, imgHeight + 60);
+        }
+
         const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
         setFotoEvidencia(dataUrl);
       };
