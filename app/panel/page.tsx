@@ -273,6 +273,7 @@ export default function PanelPage() {
     try {
       await addDoc(collection(db, "tareas_diarias"), {
         ...tareaForm,
+        fecha_programada: new Date().toISOString(),
         estado: "Pendiente",
         estado_pago: "Se debe",
         fecha_creacion: new Date().toISOString(),
@@ -1943,7 +1944,7 @@ export default function PanelPage() {
                 </select>
               </div>
               <div className="flex gap-4">
-                <div className="w-1/2">
+                <div className="w-full">
                   <label className="text-sm font-semibold text-gray-300 block mb-1">Importancia:</label>
                   <select value={tareaForm.importancia} onChange={e=>setTareaForm({...tareaForm, importancia: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-blue-500 outline-none">
                     <option value="Baja">Baja</option>
@@ -1951,10 +1952,6 @@ export default function PanelPage() {
                     <option value="Alta">Alta</option>
                     <option value="Urgente">Urgente 🚨</option>
                   </select>
-                </div>
-                <div className="w-1/2">
-                  <label className="text-sm font-semibold text-gray-300 block mb-1">Fecha Programada:</label>
-                  <input type="datetime-local" value={tareaForm.fecha_programada} onChange={e=>setTareaForm({...tareaForm, fecha_programada: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-blue-500 outline-none" />
                 </div>
               </div>
               <div className="pt-4 flex gap-3">
