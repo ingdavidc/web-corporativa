@@ -36,6 +36,7 @@ export default function TareasTecnicoPage() {
   const [activeTask, setActiveTask] = useState<Tarea | null>(null);
   const [notas, setNotas] = useState("");
   const [materiales, setMateriales] = useState("");
+  const [estadoPago, setEstadoPago] = useState("Se debe");
   const [fotoEvidencia, setFotoEvidencia] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -181,6 +182,7 @@ export default function TareasTecnicoPage() {
         fecha_completada: new Date().toISOString(),
         notas_tecnico: notas,
         materiales_utilizados: materiales,
+        estado_pago: estadoPago,
         evidencia_foto_1: fotoEvidencia,
         ejecutado_por: userEmail
       });
@@ -188,6 +190,7 @@ export default function TareasTecnicoPage() {
       setActiveTask(null);
       setNotas("");
       setMateriales("");
+      setEstadoPago("Se debe");
       setFotoEvidencia(null);
     } catch (error) {
       console.error("Error al completar la tarea:", error);
@@ -205,6 +208,7 @@ export default function TareasTecnicoPage() {
         estado: "Pausada",
         notas_tecnico: notas,
         materiales_utilizados: materiales,
+        estado_pago: estadoPago,
         evidencia_foto_1: fotoEvidencia || null,
         ejecutado_por: userEmail
       });
@@ -212,6 +216,7 @@ export default function TareasTecnicoPage() {
       setActiveTask(null);
       setNotas("");
       setMateriales("");
+      setEstadoPago("Se debe");
       setFotoEvidencia(null);
     } catch (error) {
       console.error("Error al pausar la tarea:", error);
@@ -232,6 +237,7 @@ export default function TareasTecnicoPage() {
     setActiveTask(task);
     setNotas(task.notas_tecnico || "");
     setMateriales(task.materiales_utilizados || "");
+    setEstadoPago(task.estado_pago || "Se debe");
     setFotoEvidencia(task.evidencia_foto_1 || null);
   };
 
@@ -386,6 +392,25 @@ export default function TareasTecnicoPage() {
                     placeholder="Ej. 10m cable UTP, 4 conectores RJ45..."
                     className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 outline-none transition-colors min-h-[60px]"
                   />
+                </div>
+
+                {/* Estado de Pago */}
+                <div>
+                  <label className="text-sm font-bold text-gray-300 mb-2 block">Estado del Pago</label>
+                  <select
+                    value={estadoPago}
+                    onChange={(e) => setEstadoPago(e.target.value)}
+                    disabled={activeTask.estado_pago === 'Abonado' || activeTask.estado_pago === 'Pago totalmente'}
+                    className={`w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 outline-none transition-colors 
+                      ${(activeTask.estado_pago === 'Abonado' || activeTask.estado_pago === 'Pago totalmente') ? 'opacity-60 cursor-not-allowed text-gray-400' : ''}`}
+                  >
+                    <option value="Se debe" className="bg-[#111]">Se debe</option>
+                    <option value="Abonado" className="bg-[#111]">Abonado</option>
+                    <option value="Pago totalmente" className="bg-[#111]">Pago totalmente</option>
+                  </select>
+                  {(activeTask.estado_pago === 'Abonado' || activeTask.estado_pago === 'Pago totalmente') && (
+                    <p className="text-xs text-orange-400 mt-2">Este pago ya fue registrado y no puede ser modificado por el técnico.</p>
+                  )}
                 </div>
 
                 {/* Evidencia Fotográfica (Obligatoria) */}
