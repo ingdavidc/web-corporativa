@@ -17,6 +17,7 @@ interface Tarea {
   fecha_creacion: string;
   fecha_completada?: string;
   evidencia_foto_1?: string;
+  evidencias_fotos?: string[];
   notas_tecnico?: string;
   creado_por?: string;
   importancia?: string;
@@ -40,7 +41,7 @@ export default function TareasTecnicoPage() {
   const [materiales, setMateriales] = useState("");
   const [estadoPago, setEstadoPago] = useState("Se debe");
   const [valorAbono, setValorAbono] = useState("");
-  const [fotoEvidencia, setFotoEvidencia] = useState<string | null>(null);
+  const [fotosEvidencia, setFotosEvidencia] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -165,7 +166,7 @@ export default function TareasTecnicoPage() {
         }
 
         const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
-        setFotoEvidencia(dataUrl);
+        setFotosEvidencia(prev => [...prev, dataUrl]);
       };
     };
     reader.readAsDataURL(file);
@@ -173,7 +174,7 @@ export default function TareasTecnicoPage() {
 
   const handleCompleteTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeTask || !fotoEvidencia) {
+    if (!activeTask || fotosEvidencia.length === 0) {
       alert("La evidencia fotográfica es obligatoria para completar la tarea.");
       return;
     }
@@ -187,7 +188,8 @@ export default function TareasTecnicoPage() {
         materiales_utilizados: materiales,
         estado_pago: estadoPago,
         valor_abono: valorAbono,
-        evidencia_foto_1: fotoEvidencia,
+        evidencia_foto_1: fotosEvidencia[0] || null,
+        evidencias_fotos: fotosEvidencia,
         ejecutado_por: userEmail
       };
       
@@ -202,7 +204,7 @@ export default function TareasTecnicoPage() {
       setMateriales("");
       setEstadoPago("Se debe");
       setValorAbono("");
-      setFotoEvidencia(null);
+      setFotosEvidencia([]);
     } catch (error) {
       console.error("Error al completar la tarea:", error);
       alert("Error al completar la tarea.");
@@ -221,7 +223,8 @@ export default function TareasTecnicoPage() {
         materiales_utilizados: materiales,
         estado_pago: estadoPago,
         valor_abono: valorAbono,
-        evidencia_foto_1: fotoEvidencia || null,
+        evidencia_foto_1: fotosEvidencia.length > 0 ? fotosEvidencia[0] : null,
+        evidencias_fotos: fotosEvidencia,
         ejecutado_por: userEmail
       };
       
@@ -236,7 +239,7 @@ export default function TareasTecnicoPage() {
       setMateriales("");
       setEstadoPago("Se debe");
       setValorAbono("");
-      setFotoEvidencia(null);
+      setFotosEvidencia([]);
     } catch (error) {
       console.error("Error al pausar la tarea:", error);
       alert("Error al pausar la tarea.");
@@ -258,7 +261,7 @@ export default function TareasTecnicoPage() {
     setMateriales(task.materiales_utilizados || "");
     setEstadoPago(task.estado_pago || "Se debe");
     setValorAbono(task.valor_abono || "");
-    setFotoEvidencia(task.evidencia_foto_1 || null);
+    setFotosEvidencia(task.evidencias_fotos || (task.evidencia_foto_1 ? [task.evidencia_foto_1] : []));
   };
 
   if (!isClient) return null;
@@ -465,25 +468,32 @@ export default function TareasTecnicoPage() {
                     Evidencia Fotográfica <span className="text-red-400 text-xs">(Obligatorio)</span>
                   </label>
                   
-                  {fotoEvidencia ? (
-                    <div className="relative group rounded-xl overflow-hidden border border-white/20">
-                      <img src={fotoEvidencia} alt="Evidencia" className="w-full h-48 object-cover" />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <button type="button" onClick={() => fileInputRef.current?.click()} className="bg-cyan-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2">
-                          <Camera size={18} /> Reemplazar Foto
-                        </button>
-                      </div>
+                  {fotosEvidencia.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      {fotosEvidencia.map((foto, index) => (
+                        <div key={index} className="relative group rounded-xl overflow-hidden border border-white/20">
+                          <img src={foto} alt={`Evidencia ${index + 1}`} className="w-full h-32 object-cover" />
+                          <button 
+                            type="button" 
+                            onClick={() => setFotosEvidencia(prev => prev.filter((_, i) => i !== index))} 
+                            className="absolute top-1 right-1 bg-red-600/80 hover:bg-red-500 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Eliminar Foto"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ) : (
-                    <button 
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full h-48 border-2 border-dashed border-cyan-500/50 bg-cyan-500/5 hover:bg-cyan-500/10 rounded-xl flex flex-col items-center justify-center text-cyan-400 transition-colors"
-                    >
-                      <Camera size={40} className="mb-2 opacity-80" />
-                      <span className="font-bold">Tomar Foto / Subir Archivo</span>
-                    </button>
                   )}
+
+                  <button 
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full h-16 border-2 border-dashed border-cyan-500/50 bg-cyan-500/5 hover:bg-cyan-500/10 rounded-xl flex items-center justify-center text-cyan-400 transition-colors gap-2"
+                  >
+                    <Camera size={24} className="opacity-80" />
+                    <span className="font-bold">{fotosEvidencia.length > 0 ? "Agregar otra Foto" : "Tomar Foto / Subir Archivo"}</span>
+                  </button>
                   
                   <input 
                     type="file" 

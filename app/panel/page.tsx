@@ -1868,7 +1868,7 @@ export default function PanelPage() {
                             </span>
                           </td>
                           <td className="p-4 flex gap-2 justify-center">
-                            {tarea.estado === 'Completada' && tarea.evidencia_foto_1 && (
+                            {(tarea.evidencias_fotos?.length > 0 || tarea.evidencia_foto_1) && (
                               <button onClick={() => setViewEvidenciaTarea(tarea)} className="p-2 bg-green-500/10 text-green-400 hover:bg-green-500/20 rounded-lg transition-colors border border-green-500/20" title="Ver Evidencia">
                                 📸 Ver
                               </button>
@@ -1972,7 +1972,9 @@ export default function PanelPage() {
             <h2 className="text-2xl font-bold text-green-400 mb-2">{viewEvidenciaTarea.titulo}</h2>
             <div className="flex gap-2 mb-4">
               <span className="bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded">Por: {viewEvidenciaTarea.ejecutado_por || viewEvidenciaTarea.asignado_a}</span>
-              <span className="bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded">El: {new Date(viewEvidenciaTarea.fecha_completada).toLocaleDateString()}</span>
+              {viewEvidenciaTarea.fecha_completada && (
+                <span className="bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded">El: {new Date(viewEvidenciaTarea.fecha_completada).toLocaleDateString()}</span>
+              )}
             </div>
 
             <div className="bg-black/50 p-4 rounded-xl border border-white/5 mb-6 text-sm text-gray-300">
@@ -1980,10 +1982,17 @@ export default function PanelPage() {
               {viewEvidenciaTarea.notas_tecnico || "Sin comentarios."}
             </div>
 
-            {viewEvidenciaTarea.evidencia_foto_1 && (
+            {(viewEvidenciaTarea.evidencias_fotos?.length > 0 || viewEvidenciaTarea.evidencia_foto_1) && (
               <div>
                 <strong className="text-white block mb-2">Evidencia Fotográfica:</strong>
-                <img src={viewEvidenciaTarea.evidencia_foto_1} alt="Evidencia" className="w-full rounded-xl border border-white/10" />
+                <div className="flex flex-col gap-4">
+                  {viewEvidenciaTarea.evidencias_fotos?.length > 0 
+                    ? viewEvidenciaTarea.evidencias_fotos.map((foto: string, idx: number) => (
+                        <img key={idx} src={foto} alt={`Evidencia ${idx + 1}`} className="w-full rounded-xl border border-white/10" />
+                      ))
+                    : <img src={viewEvidenciaTarea.evidencia_foto_1} alt="Evidencia" className="w-full rounded-xl border border-white/10" />
+                  }
+                </div>
               </div>
             )}
           </div>
