@@ -705,7 +705,7 @@ export default function FormularioPage() {
                   }
                 }}
               >
-                <img src="/plano_hospital.png" alt="Plano del Hospital" className="w-full max-w-[800px] h-auto block" />
+                <img src="/plano_hospital.webp" alt="Plano del Hospital" className="w-full max-w-[800px] h-auto block" />
                 
                 {/* Pin del Formulario */}
                 {mapTarget === "punto" && mapCoords && (

@@ -25,6 +25,7 @@ interface Tarea {
   materiales_utilizados?: string;
   estado_pago?: string;
   valor_abono?: string;
+  valor_total?: string;
   fecha_pago_total?: string;
 }
 
@@ -41,6 +42,7 @@ export default function TareasTecnicoPage() {
   const [materiales, setMateriales] = useState("");
   const [estadoPago, setEstadoPago] = useState("Se debe");
   const [valorAbono, setValorAbono] = useState("");
+  const [valorTotal, setValorTotal] = useState("");
   const [fotosEvidencia, setFotosEvidencia] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -178,6 +180,10 @@ export default function TareasTecnicoPage() {
       alert("La evidencia fotográfica es obligatoria para completar la tarea.");
       return;
     }
+    if (!valorTotal || isNaN(Number(valorTotal.replace(/\D/g, '')))) {
+      alert("Debes ingresar un Valor Total numérico válido.");
+      return;
+    }
     
     setIsSubmitting(true);
     try {
@@ -188,6 +194,7 @@ export default function TareasTecnicoPage() {
         materiales_utilizados: materiales,
         estado_pago: estadoPago,
         valor_abono: valorAbono,
+        valor_total: valorTotal,
         evidencia_foto_1: fotosEvidencia[0] || null,
         evidencias_fotos: fotosEvidencia,
         ejecutado_por: userEmail
@@ -204,6 +211,7 @@ export default function TareasTecnicoPage() {
       setMateriales("");
       setEstadoPago("Se debe");
       setValorAbono("");
+      setValorTotal("");
       setFotosEvidencia([]);
     } catch (error) {
       console.error("Error al completar la tarea:", error);
@@ -215,6 +223,10 @@ export default function TareasTecnicoPage() {
 
   const handlePauseTask = async () => {
     if (!activeTask) return;
+    if (!valorTotal || isNaN(Number(valorTotal.replace(/\D/g, '')))) {
+      alert("Debes ingresar un Valor Total numérico válido.");
+      return;
+    }
     setIsSubmitting(true);
     try {
       const updateData: any = {
@@ -223,6 +235,7 @@ export default function TareasTecnicoPage() {
         materiales_utilizados: materiales,
         estado_pago: estadoPago,
         valor_abono: valorAbono,
+        valor_total: valorTotal,
         evidencia_foto_1: fotosEvidencia.length > 0 ? fotosEvidencia[0] : null,
         evidencias_fotos: fotosEvidencia,
         ejecutado_por: userEmail
@@ -239,6 +252,7 @@ export default function TareasTecnicoPage() {
       setMateriales("");
       setEstadoPago("Se debe");
       setValorAbono("");
+      setValorTotal("");
       setFotosEvidencia([]);
     } catch (error) {
       console.error("Error al pausar la tarea:", error);
@@ -261,6 +275,7 @@ export default function TareasTecnicoPage() {
     setMateriales(task.materiales_utilizados || "");
     setEstadoPago(task.estado_pago || "Se debe");
     setValorAbono(task.valor_abono || "");
+    setValorTotal(task.valor_total || "");
     setFotosEvidencia(task.evidencias_fotos || (task.evidencia_foto_1 ? [task.evidencia_foto_1] : []));
   };
 
@@ -418,8 +433,23 @@ export default function TareasTecnicoPage() {
                 </div>
 
                 {/* Estado de Pago */}
-                <div>
-                  <label className="text-sm font-bold text-gray-300 mb-2 block">Estado del Pago</label>
+                <div className="bg-white/5 border border-white/10 p-4 rounded-xl">
+                  <h3 className="font-bold text-white mb-4 border-b border-white/10 pb-2">Estado del Pago</h3>
+                  
+                  <div className="mb-4">
+                    <label className="text-sm font-bold text-gray-300 mb-2 block">Valor Total de la Tarea <span className="text-red-400">*</span></label>
+                    <input 
+                      type="text" 
+                      value={valorTotal}
+                      onChange={(e) => setValorTotal(e.target.value)}
+                      disabled={activeTask.valor_total !== undefined && activeTask.valor_total !== ""}
+                      placeholder="Ej: 150000"
+                      className={`w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 outline-none transition-colors
+                        ${activeTask.valor_total ? 'opacity-60 cursor-not-allowed text-gray-400' : ''}`}
+                    />
+                  </div>
+
+                  <label className="text-sm font-bold text-gray-300 mb-2 block">Estado</label>
                   <select
                     value={estadoPago}
                     onChange={(e) => setEstadoPago(e.target.value)}

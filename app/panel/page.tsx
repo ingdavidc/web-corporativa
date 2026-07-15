@@ -109,6 +109,9 @@ export default function PanelPage() {
   const [tareaForm, setTareaForm] = useState({ titulo: "", descripcion: "", asignado_a: "Todos", importancia: "Media", fecha_programada: "" });
   const [isSavingTarea, setIsSavingTarea] = useState(false);
   const [viewEvidenciaTarea, setViewEvidenciaTarea] = useState<any>(null);
+  const [showAbonoMasivoModal, setShowAbonoMasivoModal] = useState(false);
+  const [abonoMasivoAmount, setAbonoMasivoAmount] = useState("");
+  const [isProcessingAbono, setIsProcessingAbono] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -287,6 +290,61 @@ export default function PanelPage() {
       alert("Error al asignar la tarea.");
     } finally {
       setIsSavingTarea(false);
+    }
+  };
+
+  const handleAbonoMasivo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!abonoMasivoAmount || isNaN(Number(abonoMasivoAmount.replace(/\D/g, '')))) {
+      alert("Ingrese un monto válido.");
+      return;
+    }
+
+    setIsProcessingAbono(true);
+    try {
+      let remainingAbono = Number(abonoMasivoAmount.replace(/\D/g, ''));
+      
+      // Filter tasks that have pending balances and sort by oldest first
+      const pendingTasks = tareas
+        .filter(t => t.estado_pago === 'Se debe' || t.estado_pago === 'Abonado')
+        .sort((a, b) => new Date(a.fecha_creacion).getTime() - new Date(b.fecha_creacion).getTime());
+
+      for (const t of pendingTasks) {
+        if (remainingAbono <= 0) break;
+
+        const valorTotal = Number(String(t.valor_total || '0').replace(/\D/g, ''));
+        const valorAbonadoAnteriormente = Number(String(t.valor_abono || '0').replace(/\D/g, ''));
+        
+        const deuda = valorTotal - valorAbonadoAnteriormente;
+        if (deuda <= 0) continue; // Should not happen, but just in case
+
+        if (remainingAbono >= deuda) {
+          // Pay completely
+          remainingAbono -= deuda;
+          await updateDoc(doc(db, "tareas_diarias", t.id), {
+            estado_pago: 'Pago totalmente',
+            valor_abono: String(valorTotal),
+            fecha_pago_total: new Date().toISOString()
+          });
+        } else {
+          // Partial payment (abono)
+          const nuevoAbono = valorAbonadoAnteriormente + remainingAbono;
+          await updateDoc(doc(db, "tareas_diarias", t.id), {
+            estado_pago: 'Abonado',
+            valor_abono: String(nuevoAbono)
+          });
+          remainingAbono = 0;
+        }
+      }
+
+      alert("✅ Abono masivo procesado con éxito.");
+      setShowAbonoMasivoModal(false);
+      setAbonoMasivoAmount("");
+    } catch (error) {
+      console.error("Error al procesar abono masivo:", error);
+      alert("Error procesando abono masivo.");
+    } finally {
+      setIsProcessingAbono(false);
     }
   };
 
@@ -1788,9 +1846,14 @@ export default function PanelPage() {
               <h2 className="text-2xl font-bold text-white mb-2">Gestión de Tareas Diarias</h2>
               <p className="text-gray-400 text-sm">Asigna y supervisa las tareas operativas de los técnicos.</p>
             </div>
-            <button onClick={() => setShowTareaModal(true)} className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)] flex items-center gap-2">
-              + Asignar Nueva Tarea
-            </button>
+            <div className="flex gap-4">
+              <button onClick={() => setShowAbonoMasivoModal(true)} className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-[0_0_15px_rgba(147,51,234,0.4)] flex items-center gap-2">
+                💰 Abono Masivo
+              </button>
+              <button onClick={() => setShowTareaModal(true)} className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)] flex items-center gap-2">
+                + Asignar Nueva Tarea
+              </button>
+            </div>
           </div>
 
           {loadingTareas ? (
@@ -1854,8 +1917,11 @@ export default function PanelPage() {
                             {tarea.estado_pago === 'Pago totalmente' && tarea.fecha_pago_total && (
                               <div className="text-[10px] text-green-400 mt-2 font-medium">Pagado el:<br/>{new Date(tarea.fecha_pago_total).toLocaleString()}</div>
                             )}
+                            {(tarea.estado_pago === 'Abonado' || tarea.estado_pago === 'Se debe') && tarea.valor_total && (
+                              <div className="text-xs text-gray-400 mt-2 font-medium">Total: {tarea.valor_total}</div>
+                            )}
                             {tarea.estado_pago === 'Abonado' && tarea.valor_abono && (
-                              <div className="text-xs text-blue-400 mt-2 font-medium">Valor: {tarea.valor_abono}</div>
+                              <div className="text-xs text-blue-400 mt-1 font-medium">Abonado: {tarea.valor_abono}</div>
                             )}
                           </td>
                           <td className="p-4">
@@ -1957,6 +2023,26 @@ export default function PanelPage() {
               <div className="pt-4 flex gap-3">
                 <button type="button" onClick={() => setShowTareaModal(false)} className="w-1/2 py-2 border border-gray-600 text-gray-400 hover:bg-white/5 rounded-lg font-bold">Cancelar</button>
                 <button type="submit" disabled={isSavingTarea} className={`w-1/2 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-colors ${isSavingTarea ? 'opacity-50' : ''}`}>{isSavingTarea ? 'Guardando...' : 'Asignar'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Abono Masivo */}
+      {showAbonoMasivoModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="bg-[#0a0a0a] border border-purple-500/30 p-6 rounded-2xl w-full max-w-sm shadow-[0_0_50px_rgba(147,51,234,0.15)]">
+            <h2 className="text-2xl font-bold text-purple-400 mb-4">Abono Masivo</h2>
+            <p className="text-sm text-gray-400 mb-4">Ingresa el monto del abono. El sistema descontará automáticamente las deudas de las tareas más antiguas primero.</p>
+            <form onSubmit={handleAbonoMasivo} className="space-y-4">
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">Monto del Abono:</label>
+                <input type="text" required value={abonoMasivoAmount} onChange={e=>setAbonoMasivoAmount(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-purple-500 outline-none" placeholder="Ej. 500000" />
+              </div>
+              <div className="pt-4 flex gap-3">
+                <button type="button" onClick={() => setShowAbonoMasivoModal(false)} className="w-1/2 py-2 border border-gray-600 text-gray-400 hover:bg-white/5 rounded-lg font-bold">Cancelar</button>
+                <button type="submit" disabled={isProcessingAbono} className={`w-1/2 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg transition-colors ${isProcessingAbono ? 'opacity-50' : ''}`}>{isProcessingAbono ? 'Procesando...' : 'Aplicar Abono'}</button>
               </div>
             </form>
           </div>
