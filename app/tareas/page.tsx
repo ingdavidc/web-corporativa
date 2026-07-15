@@ -517,9 +517,9 @@ export default function TareasTecnicoPage() {
                   </button>
                   <button 
                     type="submit" 
-                    disabled={isSubmitting || !fotoEvidencia}
+                    disabled={isSubmitting || fotosEvidencia.length === 0}
                     className={`w-2/3 py-3 md:py-4 rounded-xl font-bold text-white transition-all shadow-lg flex items-center justify-center gap-1 sm:gap-2
-                      ${(isSubmitting || !fotoEvidencia) ? 'opacity-50 cursor-not-allowed bg-gray-600' : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-cyan-500/25'}`}
+                      ${(isSubmitting || fotosEvidencia.length === 0) ? 'opacity-50 cursor-not-allowed bg-gray-600' : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-cyan-500/25'}`}
                   >
                     <CheckCircle2 size={20} />
                     {isSubmitting ? "Guardando..." : "Completar"}
