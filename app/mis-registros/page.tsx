@@ -106,9 +106,6 @@ export default function MisRegistrosPage() {
 
     const formData = new FormData(e.currentTarget);
     const dataToUpdate = {
-      punto_id: formData.get("punto_id"),
-      ubicacion: formData.get("ubicacion"),
-      switch_port: formData.get("switch_port"),
       foto_1_base64: editPhotos[1],
       foto_2_base64: editPhotos[2],
       foto_3_base64: editPhotos[3],
@@ -251,24 +248,22 @@ export default function MisRegistrosPage() {
               <h2 className="text-2xl font-bold text-green-400">Editar Registro: {selectedDoc.punto_id}</h2>
               <button onClick={() => setEditModalOpen(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
             </div>
-            
             <form onSubmit={submitEdit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-semibold text-gray-300 block mb-1">Punto ID:</label>
-                  <input type="text" name="punto_id" defaultValue={selectedDoc.punto_id} required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-green-500 outline-none" />
-                </div>
-                <div>
-                  <label className="text-sm font-semibold text-gray-300 block mb-1">Puerto Switch:</label>
-                  <input type="text" name="switch_port" defaultValue={selectedDoc.switch_port} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-green-500 outline-none" />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="text-sm font-semibold text-gray-300 block mb-1">Ubicación:</label>
-                  <input type="text" name="ubicacion" defaultValue={selectedDoc.ubicacion} required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-green-500 outline-none" />
+              <div className="bg-white/5 p-4 rounded-xl border border-white/10 mb-4">
+                <p className="text-sm text-gray-400 mb-2">Por el momento solo se permite la modificación del registro fotográfico.</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="block text-xs text-gray-500 uppercase font-bold">Punto ID</span>
+                    <span className="text-cyan-400 font-semibold">{selectedDoc.punto_id || "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="block text-xs text-gray-500 uppercase font-bold">Puerto Switch</span>
+                    <span className="text-cyan-400 font-semibold">{selectedDoc.switch_port || "N/A"}</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-white/10">
+              <div className="pt-2">
                 <label className="text-sm font-semibold text-gray-300 block mb-4">Fotos (Clic para cambiar):</label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {[1, 2, 3].map((num) => (
