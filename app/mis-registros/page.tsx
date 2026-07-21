@@ -250,53 +250,22 @@ export default function MisRegistrosPage() {
                     </span>
                   </div>
 
-                  {/* Status Badges */}
+                  {/* Status Badges - Removed to simplify direct edit workflow */}
                   <div className="mb-4">
-                    {!reg.solicitud_modificacion && (
-                      <span className="inline-flex items-center text-xs bg-gray-500/20 text-gray-400 px-2 py-1 rounded">
-                        Enviado
-                      </span>
-                    )}
-                    {reg.solicitud_modificacion === "Pendiente" && (
-                      <span className="inline-flex items-center text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded font-bold border border-yellow-500/30">
-                        <Clock size={12} className="mr-1" /> Modificación Pendiente de Aprobación
-                      </span>
-                    )}
-                    {reg.solicitud_modificacion === "Aprobada" && (
-                      <span className="inline-flex items-center text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded font-bold border border-green-500/30">
-                        <CheckCircle size={12} className="mr-1" /> Edición Aprobada
-                      </span>
-                    )}
-                    {reg.solicitud_modificacion === "Rechazada" && (
-                      <span className="inline-flex items-center text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded font-bold border border-red-500/30 flex flex-wrap mt-1">
-                        <XCircle size={12} className="mr-1 mt-0.5" /> Solicitud Rechazada
-                      </span>
-                    )}
+                    <span className="inline-flex items-center text-xs bg-cyan-500/10 text-cyan-400 px-2 py-1 rounded border border-cyan-500/20">
+                      Registro Guardado
+                    </span>
                   </div>
                 </div>
 
                 {/* Actions */}
                 <div className="pt-4 border-t border-white/10 mt-2">
-                  {reg.solicitud_modificacion === "Aprobada" ? (
-                    <button 
-                      onClick={() => openEditModal(reg)}
-                      className="w-full py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold flex items-center justify-center transition-colors shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-                    >
-                      <Edit size={16} className="mr-2" /> Editar Registro
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={() => openRequestModal(reg)}
-                      disabled={reg.solicitud_modificacion === "Pendiente"}
-                      className={`w-full py-2 rounded-lg font-bold transition-colors text-sm flex items-center justify-center ${
-                        reg.solicitud_modificacion === "Pendiente" 
-                        ? "bg-white/5 text-gray-500 cursor-not-allowed" 
-                        : "bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500 hover:text-black border border-cyan-500/30"
-                      }`}
-                    >
-                      {reg.solicitud_modificacion === "Pendiente" ? "Solicitud en Revisión..." : "Solicitar Modificación"}
-                    </button>
-                  )}
+                  <button 
+                    onClick={() => openEditModal(reg)}
+                    className="w-full py-2 bg-cyan-600/20 hover:bg-cyan-500 text-cyan-300 hover:text-black rounded-lg font-bold flex items-center justify-center transition-colors border border-cyan-500/30 hover:border-transparent"
+                  >
+                    <Edit size={16} className="mr-2" /> Modificar Fotos
+                  </button>
                 </div>
 
               </div>
