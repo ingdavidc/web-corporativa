@@ -1605,9 +1605,18 @@ export default function PanelPage() {
                       <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center">
                         <div 
                           className="relative inline-block touch-none"
-                          onClick={(e) => {
-                            // Si estamos arrastrando, react-zoom-pan-pinch previene la propagación o el click normal,
-                            // pero por si acaso, lo calculamos.
+                          onPointerDown={(e) => {
+                            e.currentTarget.dataset.startX = String(e.clientX);
+                            e.currentTarget.dataset.startY = String(e.clientY);
+                          }}
+                          onPointerUp={(e) => {
+                            const startX = parseFloat(e.currentTarget.dataset.startX || "0");
+                            const startY = parseFloat(e.currentTarget.dataset.startY || "0");
+                            
+                            if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) {
+                              return;
+                            }
+                            
                             const rect = e.currentTarget.getBoundingClientRect();
                             const x = ((e.clientX - rect.left) / rect.width) * 100;
                             const y = ((e.clientY - rect.top) / rect.height) * 100;

@@ -365,7 +365,7 @@ export default function FormularioPage() {
                 <label className="text-sm font-semibold mb-1 block">Ubicación Física:</label>
                 <div className="flex gap-2">
                   <input type="text" name="ubicacion" placeholder="Ej. Piso 2, Oficina Contabilidad..." required className="flex-1 w-full bg-black/40 border border-white/10 rounded-lg p-3 focus:border-cyan-500 outline-none transition-colors" />
-                  <button type="button" onClick={() => setShowMapModal(true)} className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-3 py-3 rounded-lg transition-colors flex items-center justify-center shrink-0" title="Ubicar en plano">
+                  <button type="button" onClick={() => { setMapTarget("punto"); setShowMapModal(true); }} className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-3 py-3 rounded-lg transition-colors flex items-center justify-center shrink-0" title="Ubicar en plano">
                     📍 {mapCoords ? "Ubicado" : "Plano"}
                   </button>
                 </div>
@@ -679,7 +679,20 @@ export default function FormularioPage() {
                       <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center">
                         <div 
                           className="relative inline-block touch-none"
-                          onClick={(e) => {
+                          onPointerDown={(e) => {
+                            // Guardamos la posición inicial para distinguir entre tap y drag
+                            e.currentTarget.dataset.startX = String(e.clientX);
+                            e.currentTarget.dataset.startY = String(e.clientY);
+                          }}
+                          onPointerUp={(e) => {
+                            const startX = parseFloat(e.currentTarget.dataset.startX || "0");
+                            const startY = parseFloat(e.currentTarget.dataset.startY || "0");
+                            
+                            // Si se movió más de 5 píxeles, consideramos que fue un arrastre (pan), no un clic.
+                            if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) {
+                              return;
+                            }
+                            
                             const rect = e.currentTarget.getBoundingClientRect();
                             const x = ((e.clientX - rect.left) / rect.width) * 100;
                             const y = ((e.clientY - rect.top) / rect.height) * 100;
