@@ -364,9 +364,9 @@ export default function FormularioPage() {
               <div>
                 <label className="text-sm font-semibold mb-1 block">Ubicación Física:</label>
                 <div className="flex gap-2">
-                  <input type="text" name="ubicacion" placeholder="Ej. Piso 2, Oficina Contabilidad..." required className="flex-1 w-full bg-black/40 border border-white/10 rounded-lg p-3 focus:border-cyan-500 outline-none transition-colors" />
-                  <button type="button" onClick={() => { setMapTarget("punto"); setShowMapModal(true); }} className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-3 py-3 rounded-lg transition-colors flex items-center justify-center shrink-0" title="Ubicar en plano">
-                    📍 {mapCoords ? "Ubicado" : "Plano"}
+                  <input type="text" name="ubicacion" placeholder="Ej. Piso 2, Oficina Contabilidad..." required={!mapCoords} className="flex-1 w-full bg-black/40 border border-white/10 rounded-lg p-3 focus:border-cyan-500 outline-none transition-colors" />
+                  <button type="button" onClick={() => { setMapTarget("punto"); setShowMapModal(true); }} className={`font-bold px-3 py-3 rounded-lg transition-colors flex items-center justify-center shrink-0 text-white ${mapCoords ? 'bg-green-600 hover:bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.4)]' : 'bg-cyan-600 hover:bg-cyan-500'}`} title="Ubicar en plano">
+                    {mapCoords ? "✅ Plano Guardado" : "📍 Ubicar en Plano"}
                   </button>
                 </div>
               </div>
