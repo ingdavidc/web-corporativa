@@ -37,11 +37,8 @@ export default function MisRegistrosPage() {
   const loadRegistros = async (email: string) => {
     setLoading(true);
     try {
-      // Query inspecciones created by this user
-      const q = query(
-        collection(db, "inspecciones"),
-        where("tecnico_email", "==", email)
-      );
+      // Query todas las inspecciones para que cualquier técnico pueda verlas/modificarlas
+      const q = query(collection(db, "inspecciones"));
       const snapshot = await getDocs(q);
       const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       
