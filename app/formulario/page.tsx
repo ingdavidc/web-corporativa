@@ -512,7 +512,9 @@ export default function FormularioPage() {
                         required
                       >
                         <option value="">-- Seleccionar Equipo de Red --</option>
-                        {dispositivos.map(d => (
+                        {dispositivos
+                          .filter(d => d.tipo === "Switch")
+                          .map(d => (
                           <option key={d.id} value={d.id}>{d.tipo} - {d.nombre} ({d.ip})</option>
                         ))}
                       </select>
