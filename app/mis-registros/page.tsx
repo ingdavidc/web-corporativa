@@ -22,6 +22,7 @@ export default function MisRegistrosPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editPhotos, setEditPhotos] = useState<{ [key: number]: string | null }>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -32,6 +33,23 @@ export default function MisRegistrosPage() {
         router.push("/");
       }
     });
+
+    // --- INICIAR RASTREO GPS PARA MARCA DE AGUA ---
+    if ("geolocation" in navigator) {
+      navigator.geolocation.watchPosition(
+        (position) => {
+          setLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.warn("No se pudo obtener la ubicación GPS:", error.message);
+        },
+        { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+      );
+    }
+
     return () => unsubscribe();
   }, [router]);
 
@@ -95,34 +113,66 @@ export default function MisRegistrosPage() {
     setEditModalOpen(true);
   };
 
-  const compressImage = (base64Str: string): Promise<string> => {
+  // --- MOTOR DE COMPRESIÓN Y MARCA DE AGUA ---
+  const processAndWatermarkImage = (base64Str: string, maxWidth = 1000): Promise<string> => {
     return new Promise((resolve) => {
-      const img = new Image();
+      const img = new globalThis.Image();
       img.src = base64Str;
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const MAX_WIDTH = 1200;
-        const MAX_HEIGHT = 1200;
-        let width = img.width;
-        let height = img.height;
+        const ratio = maxWidth / img.width;
+        
+        canvas.width = ratio < 1 ? maxWidth : img.width;
+        canvas.height = ratio < 1 ? img.height * ratio : img.height;
 
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
         const ctx = canvas.getContext("2d");
-        if (ctx) ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/jpeg", 0.7));
+        if (!ctx) return resolve(base64Str); 
+
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('es-CO');
+        const timeStr = now.toLocaleTimeString('es-CO');
+        const coordsStr = location 
+          ? `Lat: ${location.lat.toFixed(6)}, Lng: ${location.lng.toFixed(6)}` 
+          : "GPS: Buscando satélites...";
+        
+        const fontSize = Math.floor(canvas.width * 0.025);
+        const padding = fontSize;
+        const lineSpacing = fontSize * 1.5;
+        const boxHeight = (lineSpacing * 3.5) + padding;
+
+        ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+        ctx.fillRect(0, canvas.height - boxHeight, canvas.width, boxHeight);
+
+        ctx.textAlign = "left";
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText("PROYECTO: HOSPITAL SAN VICENTE DE ARAUCA - DC TELEMÁTICA", padding, canvas.height - boxHeight + padding + fontSize);
+        
+        ctx.fillStyle = "#06b6d4";
+        ctx.fillText(`FECHA: ${dateStr} - HORA: ${timeStr}`, padding, canvas.height - boxHeight + padding + fontSize + lineSpacing);
+        
+        ctx.fillStyle = "#e2e8f0";
+        ctx.fillText(`UBICACIÓN: ${coordsStr}`, padding, canvas.height - boxHeight + padding + fontSize + (lineSpacing * 2));
+
+        const logoImg = new globalThis.Image();
+        logoImg.src = "/logo.png";
+        
+        logoImg.onload = () => {
+          const logoHeight = boxHeight * 0.7;
+          const logoWidth = logoImg.width * (logoHeight / logoImg.height);
+          const logoX = canvas.width - logoWidth - padding;
+          const logoY = canvas.height - boxHeight + (boxHeight - logoHeight) / 2;
+
+          ctx.globalAlpha = 0.7; 
+          ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
+          ctx.globalAlpha = 1.0; 
+          resolve(canvas.toDataURL("image/jpeg", 0.75));
+        };
+
+        logoImg.onerror = () => resolve(canvas.toDataURL("image/jpeg", 0.75));
       };
     });
   };
@@ -133,8 +183,8 @@ export default function MisRegistrosPage() {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const originalBase64 = reader.result as string;
-        const compressed = await compressImage(originalBase64);
-        setEditPhotos(prev => ({ ...prev, [num]: compressed }));
+        const watermarked = await processAndWatermarkImage(originalBase64);
+        setEditPhotos(prev => ({ ...prev, [num]: watermarked }));
       };
       reader.readAsDataURL(file);
     }
@@ -322,7 +372,7 @@ export default function MisRegistrosPage() {
                         </div>
                         {!editPhotos[num] && <span className="text-xs text-gray-500">Sin Foto {num}</span>}
                       </label>
-                      <input type="file" id={`edit_foto_${num}`} accept="image/*" className="hidden" onChange={(e) => handlePhotoChange(e, num)} />
+                      <input type="file" id={`edit_foto_${num}`} accept="image/*" capture="environment" className="hidden" onChange={(e) => handlePhotoChange(e, num)} />
                     </div>
                   ))}
                 </div>
