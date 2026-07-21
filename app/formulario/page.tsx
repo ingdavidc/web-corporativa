@@ -679,28 +679,35 @@ export default function FormularioPage() {
                       <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center">
                         <div 
                           className="relative inline-block touch-none"
-                          onPointerDown={(e) => {
-                            // Guardamos la posición inicial para distinguir entre tap y drag
-                            e.currentTarget.dataset.startX = String(e.clientX);
-                            e.currentTarget.dataset.startY = String(e.clientY);
-                          }}
-                          onPointerUp={(e) => {
-                            const startX = parseFloat(e.currentTarget.dataset.startX || "0");
-                            const startY = parseFloat(e.currentTarget.dataset.startY || "0");
-                            
-                            // Si se movió más de 5 píxeles, consideramos que fue un arrastre (pan), no un clic.
-                            if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) {
-                              return;
+                          onTouchStart={(e) => {
+                            if (e.touches.length === 1) {
+                              e.currentTarget.dataset.startX = String(e.touches[0].clientX);
+                              e.currentTarget.dataset.startY = String(e.touches[0].clientY);
                             }
-                            
+                          }}
+                          onTouchEnd={(e) => {
+                            if (e.changedTouches.length === 1) {
+                              const startX = parseFloat(e.currentTarget.dataset.startX || "0");
+                              const startY = parseFloat(e.currentTarget.dataset.startY || "0");
+                              const touch = e.changedTouches[0];
+                              
+                              if (Math.abs(touch.clientX - startX) > 25 || Math.abs(touch.clientY - startY) > 25) {
+                                return;
+                              }
+                              
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const x = ((touch.clientX - rect.left) / rect.width) * 100;
+                              const y = ((touch.clientY - rect.top) / rect.height) * 100;
+                              if (mapTarget === "punto") setMapCoords({ x, y });
+                              else setNewDevice(prev => ({ ...prev, mapCoords: { x, y } }));
+                            }
+                          }}
+                          onClick={(e) => {
                             const rect = e.currentTarget.getBoundingClientRect();
                             const x = ((e.clientX - rect.left) / rect.width) * 100;
                             const y = ((e.clientY - rect.top) / rect.height) * 100;
-                            if (mapTarget === "punto") {
-                              setMapCoords({ x, y });
-                            } else {
-                              setNewDevice(prev => ({ ...prev, mapCoords: { x, y } }));
-                            }
+                            if (mapTarget === "punto") setMapCoords({ x, y });
+                            else setNewDevice(prev => ({ ...prev, mapCoords: { x, y } }));
                           }}
                         >
                           <img src="/plano_hospital.webp" alt="Plano del Hospital" className="w-full max-w-[800px] h-auto block pointer-events-none" />
