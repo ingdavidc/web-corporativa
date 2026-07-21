@@ -679,13 +679,13 @@ export default function FormularioPage() {
                       <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center">
                         <div 
                           className="relative inline-block touch-none"
-                          onTouchStart={(e) => {
+                          onTouchStartCapture={(e) => {
                             if (e.touches.length === 1) {
                               e.currentTarget.dataset.startX = String(e.touches[0].clientX);
                               e.currentTarget.dataset.startY = String(e.touches[0].clientY);
                             }
                           }}
-                          onTouchEnd={(e) => {
+                          onTouchEndCapture={(e) => {
                             if (e.changedTouches.length === 1) {
                               const startX = parseFloat(e.currentTarget.dataset.startX || "0");
                               const startY = parseFloat(e.currentTarget.dataset.startY || "0");
@@ -702,7 +702,7 @@ export default function FormularioPage() {
                               else setNewDevice(prev => ({ ...prev, mapCoords: { x, y } }));
                             }
                           }}
-                          onClick={(e) => {
+                          onClickCapture={(e) => {
                             const rect = e.currentTarget.getBoundingClientRect();
                             const x = ((e.clientX - rect.left) / rect.width) * 100;
                             const y = ((e.clientY - rect.top) / rect.height) * 100;
