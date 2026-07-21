@@ -21,6 +21,7 @@ export default function MisRegistrosPage() {
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editPhotos, setEditPhotos] = useState<{ [key: number]: string | null }>({});
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -94,12 +95,46 @@ export default function MisRegistrosPage() {
     setEditModalOpen(true);
   };
 
+  const compressImage = (base64Str: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = base64Str;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.7));
+      };
+    });
+  };
+
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>, num: number) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditPhotos(prev => ({ ...prev, [num]: reader.result as string }));
+      reader.onloadend = async () => {
+        const originalBase64 = reader.result as string;
+        const compressed = await compressImage(originalBase64);
+        setEditPhotos(prev => ({ ...prev, [num]: compressed }));
       };
       reader.readAsDataURL(file);
     }
@@ -119,12 +154,16 @@ export default function MisRegistrosPage() {
       motivo_modificacion: null
     };
 
+    setIsSaving(true);
     try {
       await updateDoc(doc(db, "inspecciones", selectedDoc.id), dataToUpdate);
       setEditModalOpen(false);
       if (userEmail) loadRegistros(userEmail);
     } catch (error) {
       console.error("Error updating record:", error);
+      alert("Hubo un error al guardar. Intenta de nuevo.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -290,8 +329,12 @@ export default function MisRegistrosPage() {
               </div>
 
               <div className="flex gap-3 mt-8 pt-4">
-                <button type="button" onClick={() => setEditModalOpen(false)} className="w-1/3 py-3 bg-transparent border border-gray-600 text-gray-300 hover:bg-white/5 rounded-lg transition-colors font-bold">Cancelar</button>
-                <button type="submit" className="w-2/3 py-3 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors font-bold shadow-[0_0_15px_rgba(34,197,94,0.4)]">Guardar Cambios</button>
+                <button type="button" onClick={() => setEditModalOpen(false)} disabled={isSaving} className="w-1/3 py-3 bg-transparent border border-gray-600 text-gray-300 hover:bg-white/5 rounded-lg transition-colors font-bold disabled:opacity-50">Cancelar</button>
+                <button type="submit" disabled={isSaving} className="w-2/3 py-3 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors font-bold shadow-[0_0_15px_rgba(34,197,94,0.4)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+                  {isSaving ? (
+                    <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div> Guardando...</>
+                  ) : "Guardar Cambios"}
+                </button>
               </div>
             </form>
           </div>
