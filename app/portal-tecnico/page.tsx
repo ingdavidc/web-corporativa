@@ -61,7 +61,7 @@ export default function PortalTecnicoPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mx-auto">
           {/* Card: Consultoría */}
           <div 
             onClick={() => router.push("/formulario")}
@@ -71,8 +71,21 @@ export default function PortalTecnicoPage() {
             <div className="w-20 h-20 bg-cyan-500/20 rounded-2xl flex items-center justify-center text-cyan-400 mb-6 group-hover:scale-110 transition-transform">
               <ClipboardList size={40} />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Consultoría</h2>
-            <p className="text-gray-400 text-center">Formularios de auditoría técnica e inspección de puntos de red.</p>
+            <h2 className="text-2xl font-bold text-white mb-2 text-center">Consultoría</h2>
+            <p className="text-gray-400 text-center text-sm">Formularios de auditoría técnica e inspección de puntos de red.</p>
+          </div>
+
+          {/* Card: Mis Registros */}
+          <div 
+            onClick={() => router.push("/mis-registros")}
+            className="group relative flex flex-col items-center justify-center p-8 md:p-12 bg-white/5 border border-white/10 rounded-2xl cursor-pointer hover:bg-orange-500/10 hover:border-orange-500/50 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(249,115,22,0.2)]"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"></div>
+            <div className="w-20 h-20 bg-orange-500/20 rounded-2xl flex items-center justify-center text-orange-400 mb-6 group-hover:scale-110 transition-transform">
+              <ClipboardList size={40} />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2 text-center">Mis Registros</h2>
+            <p className="text-gray-400 text-center text-sm">Ver auditorías enviadas y solicitar modificaciones al admin.</p>
           </div>
 
           {/* Card: Trabajos Diarios */}
@@ -84,8 +97,8 @@ export default function PortalTecnicoPage() {
             <div className="w-20 h-20 bg-purple-500/20 rounded-2xl flex items-center justify-center text-purple-400 mb-6 group-hover:scale-110 transition-transform">
               <Wrench size={40} />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Trabajos Diarios</h2>
-            <p className="text-gray-400 text-center">Ejecución de tareas operativas y registro de evidencia fotográfica.</p>
+            <h2 className="text-2xl font-bold text-white mb-2 text-center">Trabajos Diarios</h2>
+            <p className="text-gray-400 text-center text-sm">Ejecución de tareas operativas y registro de evidencia fotográfica.</p>
           </div>
         </div>
       </div>

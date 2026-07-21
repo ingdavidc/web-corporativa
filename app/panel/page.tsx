@@ -21,6 +21,8 @@ interface Inspeccion {
   foto_1_base64?: string;
   foto_2_base64?: string;
   foto_3_base64?: string;
+  solicitud_modificacion?: "Pendiente" | "Aprobada" | "Rechazada";
+  motivo_modificacion?: string;
   [key: string]: any; 
 }
 
@@ -591,11 +593,38 @@ export default function PanelPage() {
   // CONTROL DE AUDITORÍAS Y EDICIÓN
   // ========================================================
   const handleDeleteAuditoria = async (id: string) => {
-    if (window.confirm("⚠️ ¿Estás seguro de eliminar este registro permanentemente del panel?")) {
+    if (confirm("¿Estás seguro de eliminar este registro? Esta acción no se puede deshacer.")) {
       try {
         await deleteDoc(doc(db, "inspecciones", id));
+        setInspecciones(prev => prev.filter(i => i.id !== id));
       } catch (error) {
-        console.error("Error eliminando:", error);
+        console.error("Error eliminando auditoria:", error);
+      }
+    }
+  };
+
+  const handleApproveModification = async (id: string) => {
+    if (confirm("¿Aprobar esta solicitud para que el técnico pueda editar el registro?")) {
+      try {
+        await updateDoc(doc(db, "inspecciones", id), {
+          solicitud_modificacion: "Aprobada"
+        });
+        setInspecciones(prev => prev.map(i => i.id === id ? { ...i, solicitud_modificacion: "Aprobada" } : i));
+      } catch (error) {
+        console.error("Error aprobando modificación:", error);
+      }
+    }
+  };
+
+  const handleRejectModification = async (id: string) => {
+    if (confirm("¿Rechazar esta solicitud de modificación?")) {
+      try {
+        await updateDoc(doc(db, "inspecciones", id), {
+          solicitud_modificacion: "Rechazada"
+        });
+        setInspecciones(prev => prev.map(i => i.id === id ? { ...i, solicitud_modificacion: "Rechazada" } : i));
+      } catch (error) {
+        console.error("Error rechazando modificación:", error);
       }
     }
   };
@@ -966,19 +995,33 @@ export default function PanelPage() {
               </thead>
               <tbody>
                 {inspecciones.map((inspeccion) => (
-                  <tr key={inspeccion.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="py-4 px-4 font-bold">{inspeccion.registro_num || "-"}</td>
+                  <tr key={inspeccion.id} className={`border-b border-white/5 transition-colors ${inspeccion.solicitud_modificacion === 'Pendiente' ? 'bg-yellow-500/20 hover:bg-yellow-500/30' : 'hover:bg-white/5'}`}>
+                    <td className="py-4 px-4 font-bold">
+                      {inspeccion.registro_num || "-"}
+                      {inspeccion.solicitud_modificacion === 'Pendiente' && (
+                        <div className="text-xs text-yellow-400 mt-1 font-normal break-words max-w-[200px]">
+                          <strong>Motivo:</strong> {inspeccion.motivo_modificacion}
+                        </div>
+                      )}
+                    </td>
                     <td className="py-4 px-4 text-sm text-gray-400 whitespace-nowrap">{inspeccion.fecha_hora || "-"}</td>
                     <td className="py-4 px-4 text-sm text-cyan-200">{inspeccion.auditor_profesional || inspeccion.tecnico_nombre || "Ing. David Carreño"}</td>
                     <td className="py-4 px-4 font-medium text-cyan-100">{inspeccion.punto_id || "-"}</td>
                     <td className="py-4 px-4 text-sm">{inspeccion.ubicacion || "-"}</td>
                     <td className="py-4 px-4 text-center">{inspeccion.foto_1_base64 || inspeccion.foto_2_base64 ? "📷 Sí" : "❌ No"}</td>
                     <td className="py-4 px-4">
-                      <div className="flex justify-center gap-2">
+                      <div className="flex justify-center gap-2 flex-wrap max-w-[150px]">
                         <button onClick={() => setViewDoc(inspeccion)} className="p-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded transition-colors" title="Ver Detalles">👁️</button>
-                        <button onClick={() => setEditDoc(inspeccion)} className="p-2 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500 hover:text-black rounded transition-colors" title="Editar">✏️</button>
+                        <button onClick={() => setEditDoc(inspeccion)} className="p-2 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500 hover:text-black rounded transition-colors" title="Editar Admin">✏️</button>
                         <button onClick={() => handleGeneratePDF([inspeccion], `Reporte_${inspeccion.punto_id || 'Inspeccion'}.pdf`)} className="p-2 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500 hover:text-black rounded transition-colors" title="Exportar a PDF">📄</button>
                         <button onClick={() => handleDeleteAuditoria(inspeccion.id)} className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded transition-colors" title="Eliminar">🗑️</button>
+                        
+                        {inspeccion.solicitud_modificacion === 'Pendiente' && (
+                          <div className="w-full flex gap-1 mt-1">
+                            <button onClick={() => handleApproveModification(inspeccion.id)} className="flex-1 p-1 bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-white rounded text-xs font-bold transition-colors" title="Aprobar Edición al Técnico">✅</button>
+                            <button onClick={() => handleRejectModification(inspeccion.id)} className="flex-1 p-1 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded text-xs font-bold transition-colors" title="Rechazar">❌</button>
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>
