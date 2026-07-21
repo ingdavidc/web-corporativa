@@ -44,9 +44,14 @@ export default function MisRegistrosPage() {
       
       // Sort in memory because we can't reliably multi-query without an index
       docs.sort((a: any, b: any) => {
-        const dateA = a.timestamp ? a.timestamp.toMillis() : 0;
-        const dateB = b.timestamp ? b.timestamp.toMillis() : 0;
-        return dateB - dateA;
+        const getMs = (t: any) => {
+          if (!t) return 0;
+          if (typeof t.toMillis === 'function') return t.toMillis();
+          if (t.seconds) return t.seconds * 1000;
+          const parsed = new Date(t).getTime();
+          return isNaN(parsed) ? 0 : parsed;
+        };
+        return getMs(b.timestamp) - getMs(a.timestamp);
       });
       
       setRegistros(docs);
