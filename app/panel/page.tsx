@@ -92,6 +92,7 @@ export default function PanelPage() {
   
   // Estado para el plano de ubicación del dispositivo
   const [showMapModal, setShowMapModal] = useState(false);
+  const [showViewMapModal, setShowViewMapModal] = useState(false);
 
   // State Gabinetes (Rack Builder)
   const [gabinetes, setGabinetes] = useState<any[]>([]);
@@ -1345,7 +1346,25 @@ export default function PanelPage() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4 text-sm">
-                <div className="bg-white/5 p-4 rounded-lg"><h3 className="text-cyan-500 font-bold mb-2">📍 Datos Principales</h3><p><span className="text-gray-400">Registro N°:</span> {viewDoc.registro_num}</p><p><span className="text-gray-400">Fecha:</span> {viewDoc.fecha_hora}</p><p><span className="text-gray-400">Auditor Técnico:</span> {viewDoc.tecnico_nombre || "No registrado"}</p><p><span className="text-gray-400">Punto ID:</span> {viewDoc.punto_id}</p><p><span className="text-gray-400">Ubicación:</span> {viewDoc.ubicacion}</p></div>
+                <div className="bg-white/5 p-4 rounded-lg">
+                  <h3 className="text-cyan-500 font-bold mb-2">📍 Datos Principales</h3>
+                  <p><span className="text-gray-400">Registro N°:</span> {viewDoc.registro_num}</p>
+                  <p><span className="text-gray-400">Fecha:</span> {viewDoc.fecha_hora}</p>
+                  <p><span className="text-gray-400">Auditor Técnico:</span> {viewDoc.tecnico_nombre || "No registrado"}</p>
+                  <p><span className="text-gray-400">Punto ID:</span> {viewDoc.punto_id}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-gray-400">Ubicación:</span> 
+                    <span>{viewDoc.ubicacion}</span>
+                    {viewDoc.plano_x && viewDoc.plano_y && (
+                      <button 
+                        onClick={() => setShowViewMapModal(true)}
+                        className="ml-auto bg-cyan-600/20 hover:bg-cyan-500 text-cyan-300 hover:text-white px-3 py-1 rounded text-xs font-bold border border-cyan-500/30 transition-colors"
+                      >
+                        🗺️ Ver Plano
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <div className="bg-white/5 p-4 rounded-lg"><h3 className="text-cyan-500 font-bold mb-2">🔌 Red y Conectividad</h3><p><span className="text-gray-400">Puerto Switch:</span> {viewDoc.switch_port || "N/A"}</p><p><span className="text-gray-400">Estado Switch:</span> {viewDoc.switch_estado || "N/A"}</p><p><span className="text-gray-400">Enlace:</span> {viewDoc.enlace || "N/A"}</p><p><span className="text-gray-400">Prueba DHCP:</span> {viewDoc.dhcp || "N/A"}</p></div>
                 <div className="bg-white/5 p-4 rounded-lg"><h3 className="text-cyan-500 font-bold mb-2">🏗️ Infraestructura Física</h3><p><span className="text-gray-400">Canalización:</span> {viewDoc.tipo_canalizacion || "N/A"}</p><p><span className="text-gray-400">Estado Canalización:</span> {viewDoc.est_canalizacion || "N/A"}</p><p><span className="text-gray-400">Patch Cord:</span> {viewDoc.patch_estado || "N/A"} - {viewDoc.patch_cat}</p></div>
               </div>
@@ -1357,6 +1376,64 @@ export default function PanelPage() {
               </div>
             </div>
             <div className="mt-8 text-center"><button onClick={() => setViewDoc(null)} className="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg transition-colors">Cerrar Detalles</button></div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+          MODAL: VER PLANO GUARDADO (SOLO LECTURA)
+         ========================================================= */}
+      {showViewMapModal && viewDoc && viewDoc.plano_x && viewDoc.plano_y && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+          <div className="bg-[#0a0a0a] border border-cyan-500/30 p-4 md:p-6 rounded-xl w-full max-w-5xl max-h-[95vh] flex flex-col shadow-[0_0_50px_rgba(6,182,212,0.15)]">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg md:text-xl font-bold text-cyan-400">Ubicación en Plano</h3>
+              <button type="button" onClick={() => setShowViewMapModal(false)} className="text-gray-400 hover:text-white text-2xl leading-none">✕</button>
+            </div>
+            
+            <div className="flex-1 overflow-hidden bg-[#111] rounded-lg border border-white/10 relative flex justify-center items-center shadow-inner">
+              <TransformWrapper
+                initialScale={1}
+                minScale={0.5}
+                maxScale={10}
+                centerOnInit={true}
+                wheel={{ step: 0.1 }}
+                pinch={{ step: 5 }}
+                doubleClick={{ disabled: true }}
+              >
+                {({ zoomIn, zoomOut, state }) => (
+                  <div className="flex flex-col w-full h-full">
+                    <div className="flex-1 overflow-hidden w-full h-full cursor-grab active:cursor-grabbing">
+                      <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center">
+                        <div className="relative inline-block pointer-events-none">
+                          <img src="/plano_hospital.webp" alt="Plano del Hospital" className="w-full max-w-[800px] h-auto block" />
+                          <div 
+                            className="absolute flex items-center justify-center transition-all"
+                            style={{ 
+                              left: `calc(${viewDoc.plano_x}% - 12px)`, 
+                              top: `calc(${viewDoc.plano_y}% - 12px)`,
+                              transform: `scale(${1 / state.scale})`
+                            }}
+                          >
+                            <div className="relative flex items-center justify-center">
+                              <div className="absolute w-12 h-12 bg-cyan-500/40 rounded-full animate-ping"></div>
+                              <div className="w-6 h-6 bg-cyan-500 rounded-full border-2 border-white shadow-[0_0_15px_rgba(6,182,212,1)] flex items-center justify-center text-[10px]">📍</div>
+                            </div>
+                          </div>
+                        </div>
+                      </TransformComponent>
+                    </div>
+                    <div className="flex justify-center items-center mt-4 pt-4 border-t border-white/10 px-2 shrink-0">
+                      <div className="flex items-center gap-2 bg-black/40 rounded-lg p-1 border border-white/10">
+                        <button type="button" onClick={() => zoomOut()} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">-</button>
+                        <span className="text-white text-sm font-bold min-w-[40px] text-center">{Math.round(state.scale * 100)}%</span>
+                        <button type="button" onClick={() => zoomIn()} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">+</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </TransformWrapper>
+            </div>
           </div>
         </div>
       )}
