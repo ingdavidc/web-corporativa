@@ -1363,15 +1363,81 @@ export default function PanelPage() {
 
       {editDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
-          <div className="bg-[#0a0a0a] border border-yellow-500/30 p-6 md:p-8 rounded-2xl w-full max-w-lg shadow-[0_0_50px_rgba(234,179,8,0.15)] my-8">
+          <div className="bg-[#0a0a0a] border border-yellow-500/30 p-6 md:p-8 rounded-2xl w-full max-w-4xl shadow-[0_0_50px_rgba(234,179,8,0.15)] my-8">
             <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
               <h2 className="text-2xl font-bold text-yellow-400">Editar Registro Principal</h2>
               <button onClick={() => setEditDoc(null)} className="text-gray-500 hover:text-white font-bold text-xl">✕</button>
             </div>
             <form onSubmit={handleUpdate} className="space-y-4">
-              <div><label className="text-sm font-semibold text-gray-300 block mb-1">Punto ID:</label><input type="text" name="punto_id" defaultValue={editDoc.punto_id} required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" /></div>
-              <div><label className="text-sm font-semibold text-gray-300 block mb-1">Ubicación:</label><input type="text" name="ubicacion" defaultValue={editDoc.ubicacion} required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" /></div>
-              <div><label className="text-sm font-semibold text-gray-300 block mb-1">Puerto Switch:</label><input type="text" name="switch_port" defaultValue={editDoc.switch_port} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" /></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label className="text-sm font-semibold text-gray-300 block mb-1">Punto ID:</label><input type="text" name="punto_id" defaultValue={editDoc.punto_id} required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" /></div>
+                <div><label className="text-sm font-semibold text-gray-300 block mb-1">Ubicación:</label><input type="text" name="ubicacion" defaultValue={editDoc.ubicacion} required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" /></div>
+                <div><label className="text-sm font-semibold text-gray-300 block mb-1">Puerto Switch:</label><input type="text" name="switch_port" defaultValue={editDoc.switch_port} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" /></div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Estado Switch:</label>
+                  <select name="switch_estado" defaultValue={editDoc.switch_estado || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none">
+                    <option value="Activo">Activo</option>
+                    <option value="Inactivo">Inactivo</option>
+                    <option value="Dañado">Dañado</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Velocidad Enlace:</label>
+                  <select name="enlace" defaultValue={editDoc.enlace || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none">
+                    <option value="10M">10M</option>
+                    <option value="100M">100M</option>
+                    <option value="GIGA">GIGA</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Prueba DHCP:</label>
+                  <select name="dhcp" defaultValue={editDoc.dhcp || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none">
+                    <option value="Aplica">Aplica</option>
+                    <option value="No Aplica">No Aplica</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Tipo Canalización:</label>
+                  <select name="tipo_canalizacion" defaultValue={editDoc.tipo_canalizacion || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none">
+                    <option value="EMT">EMT</option>
+                    <option value="PVC">PVC</option>
+                    <option value="Coraza">Coraza</option>
+                    <option value="Cuneta">Cuneta</option>
+                    <option value="Bandeja">Bandeja</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Estado Canalización:</label>
+                  <select name="est_canalizacion" defaultValue={editDoc.est_canalizacion || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none">
+                    <option value="Buen Estado">Buen Estado</option>
+                    <option value="Mal Estado">Mal Estado</option>
+                    <option value="Suelta">Suelta</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Estado Patch Cord:</label>
+                  <select name="patch_estado" defaultValue={editDoc.patch_estado || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none">
+                    <option value="Buen Estado">Buen Estado</option>
+                    <option value="Mal Estado">Mal Estado</option>
+                    <option value="No Tiene">No Tiene</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Categoría Patch Cord:</label>
+                  <select name="patch_cat" defaultValue={editDoc.patch_cat || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none">
+                    <option value="Cat 5e">Cat 5e</option>
+                    <option value="Cat 6">Cat 6</option>
+                    <option value="Cat 6A">Cat 6A</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+              </div>
               <div className="pt-6 border-t border-white/10 flex gap-4">
                 <button type="button" onClick={() => setEditDoc(null)} className="w-1/2 py-3 bg-transparent border border-gray-600 text-gray-400 hover:bg-white/5 rounded-lg transition-colors font-bold">Cancelar</button>
                 <button type="submit" className="w-1/2 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg transition-colors">Guardar Cambios</button>
