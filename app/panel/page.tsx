@@ -566,25 +566,38 @@ export default function PanelPage() {
       isPassive: ["Patch Panel", "Organizador"].includes(device.tipo)
     };
 
+    // Optimistic UI Update: Instant visual feedback
+    const previousGabinete = { ...activeGabinete };
+    const updatedDispositivos = [...(activeGabinete.dispositivos || []), newDeviceAssignment];
+    setActiveGabinete({ ...activeGabinete, dispositivos: updatedDispositivos });
+
     try {
       await updateDoc(doc(db, "gabinetes", activeGabinete.id), {
-        dispositivos: [...(activeGabinete.dispositivos || []), newDeviceAssignment]
+        dispositivos: updatedDispositivos
       });
     } catch (error) {
       console.error("Error asignando equipo:", error);
       alert("Error al asignar el equipo al gabinete.");
+      setActiveGabinete(previousGabinete); // Revert on failure
     }
   };
 
   const handleRemoveDeviceFromU = async (assignmentId: string) => {
     if (!activeGabinete) return;
     if (window.confirm("¿Retirar dispositivo de este gabinete?")) {
+      const previousGabinete = { ...activeGabinete };
+      const updatedDispositivos = activeGabinete.dispositivos.filter((d: any) => d.id !== assignmentId);
+      
+      // Optimistic UI Update
+      setActiveGabinete({ ...activeGabinete, dispositivos: updatedDispositivos });
+
       try {
         await updateDoc(doc(db, "gabinetes", activeGabinete.id), {
-          dispositivos: activeGabinete.dispositivos.filter((d: any) => d.id !== assignmentId)
+          dispositivos: updatedDispositivos
         });
       } catch (error) {
         console.error("Error retirando equipo:", error);
+        setActiveGabinete(previousGabinete); // Revert
       }
     }
   };
@@ -1735,166 +1748,14 @@ export default function PanelPage() {
               </div>
             </>
           ) : (
-            // Rack Builder View
-            <div className="flex flex-col h-[80vh]">
-              <div className="flex justify-between items-center mb-4 pb-4 border-b border-white/10">
-                <div>
-                  <h2 className="text-2xl font-bold text-indigo-400">{activeGabinete.nombre}</h2>
-                  <p className="text-gray-400">{activeGabinete.ubicacion} • {activeGabinete.unidades}U</p>
-                </div>
-                <button 
-                  onClick={() => setActiveGabinete(null)}
-                  className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-bold transition-colors"
-                >
-                  Volver a Gabinetes
-                </button>
-              </div>
-
-              <div className="flex flex-1 gap-6 min-h-0">
-                {/* Rack Visual (Izquierda) */}
-                <div className="w-1/2 md:w-2/3 bg-black/60 rounded-xl border border-gray-700 overflow-y-auto flex justify-center p-4">
-                  <div className="w-full max-w-[400px] border-[8px] border-gray-800 rounded-lg bg-[#0a0a0a] flex flex-col-reverse shadow-[0_0_20px_rgba(0,0,0,0.8)]">
-                    {/* Generar slots U (de 1 a N) */}
-                    {Array.from({ length: activeGabinete.unidades }).map((_, i) => {
-                      const uNumber = i + 1;
-                      
-                      // Buscar si este slot es el inicio de algún equipo
-                      const deviceAtU = activeGabinete.dispositivos?.find((d: any) => d.uPos === uNumber);
-                      
-                      // Buscar si este slot está cubierto por un equipo más grande que empezó más abajo
-                      const isCovered = activeGabinete.dispositivos?.some((d: any) => uNumber > d.uPos && uNumber < d.uPos + (d.heightU || 1));
-
-                      if (isCovered) return null; // No renderizar slot si está cubierto
-
-                      return (
-                        <div 
-                          key={uNumber} 
-                          className={`relative flex w-full border-t border-gray-800 transition-colors ${!deviceAtU ? 'hover:bg-indigo-900/20' : ''}`} 
-                          style={{ height: deviceAtU ? `${40 * (deviceAtU.heightU || 1)}px` : '40px' }}
-                          onDragOver={(e) => {
-                            if (!deviceAtU) {
-                              e.preventDefault(); // Permitir el drop
-                              e.currentTarget.style.backgroundColor = 'rgba(79, 70, 229, 0.3)';
-                            }
-                          }}
-                          onDragLeave={(e) => {
-                            if (!deviceAtU) e.currentTarget.style.backgroundColor = '';
-                          }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            if (!deviceAtU) e.currentTarget.style.backgroundColor = '';
-                            const draggedDeviceId = e.dataTransfer.getData("deviceId");
-                            if (draggedDeviceId) {
-                              handleAssignDeviceToU(draggedDeviceId, uNumber);
-                            }
-                          }}
-                        >
-                          {/* Etiqueta U */}
-                          <div className="w-8 flex items-center justify-center bg-gray-900 border-r border-gray-800 text-[10px] font-bold text-gray-500">
-                            {uNumber}U
-                          </div>
-                          
-                          {/* Contenido del Slot */}
-                          <div className={`flex-1 relative flex items-center justify-center group ${deviceAtU ? (deviceAtU.isPassive ? 'bg-purple-900/40 border-l-4 border-purple-500' : 'bg-cyan-900/40 border-l-4 border-cyan-500') : ''}`}>
-                            
-                            {/* Orificios del Rack */}
-                            <div className="absolute left-1 top-0 bottom-0 w-2 flex flex-col justify-between py-1 opacity-20">
-                              <div className="w-2 h-2 rounded-full bg-white"></div>
-                              <div className="w-2 h-2 rounded-full bg-white"></div>
-                            </div>
-                            <div className="absolute right-1 top-0 bottom-0 w-2 flex flex-col justify-between py-1 opacity-20">
-                              <div className="w-2 h-2 rounded-full bg-white"></div>
-                              <div className="w-2 h-2 rounded-full bg-white"></div>
-                            </div>
-
-                            {/* Equipo */}
-                            {deviceAtU ? (
-                              <div className="w-full px-8 flex justify-between items-center h-full">
-                                <div className="truncate h-full flex flex-col justify-center">
-                                  {deviceAtU.isPassive ? (
-                                    <span className="text-purple-300 font-bold text-sm">
-                                      {dispositivos.find(d => d.id === deviceAtU.id)?.nombre || "Elemento Pasivo"}
-                                    </span>
-                                  ) : (
-                                    <span className="text-cyan-300 font-bold text-sm">
-                                      {dispositivos.find(d => d.id === deviceAtU.id)?.nombre || "Equipo"}
-                                    </span>
-                                  )}
-                                  <span className="text-gray-500 text-[10px] block">
-                                    {dispositivos.find(d => d.id === deviceAtU.id)?.marca} {dispositivos.find(d => d.id === deviceAtU.id)?.modelo}
-                                  </span>
-                                </div>
-                                <button 
-                                  onClick={(e) => { e.stopPropagation(); handleRemoveDeviceFromU(deviceAtU.id); }}
-                                  className="text-red-500 hover:text-red-400 bg-black/50 rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  title="Retirar equipo del Gabinete"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="text-gray-600 font-bold text-xs pointer-events-none">
-                                Arrastra un equipo aquí
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Inventario (Derecha) */}
-                <div className="w-1/2 md:w-1/3 bg-black/40 rounded-xl border border-white/10 p-4 flex flex-col">
-                  <h3 className="font-bold text-white mb-2">Equipos Libres</h3>
-                  <p className="text-xs text-gray-400 mb-4">Arrastra y suelta (drag & drop) un elemento hacia el rack.</p>
-                  
-                  <div className="overflow-y-auto flex-1 pr-2 space-y-4">
-                    {/* Filtramos solo los equipos que no están ya asignados en el gabinete actual */}
-                    {[
-                      { title: "Equipos Activos", types: ["Switch", "Router", "Servidor", "AP", "Firewall"], style: { bg: "bg-cyan-900/20", border: "border-cyan-500/30", textTitle: "text-cyan-300", hover: "hover:bg-cyan-900/40", textBtn: "text-cyan-500/50" } },
-                      { title: "Elementos Pasivos", types: ["Patch Panel", "Organizador"], style: { bg: "bg-purple-900/20", border: "border-purple-500/30", textTitle: "text-purple-300", hover: "hover:bg-purple-900/40", textBtn: "text-purple-500/50" } },
-                      { title: "Eléctricos", types: ["UPS", "PDU"], style: { bg: "bg-orange-900/20", border: "border-orange-500/30", textTitle: "text-orange-300", hover: "hover:bg-orange-900/40", textBtn: "text-orange-500/50" } },
-                    ].map((category) => (
-                      <div key={category.title}>
-                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{category.title}</h4>
-                        <div className="space-y-2">
-                          {dispositivos
-                            .filter(d => category.types.includes(d.tipo) && !activeGabinete.dispositivos?.some((ad: any) => ad.id === d.id))
-                            .map(dev => (
-                              <div 
-                                key={dev.id} 
-                                draggable
-                                onDragStart={(e) => {
-                                  e.dataTransfer.setData("deviceId", dev.id);
-                                  e.currentTarget.style.opacity = "0.5";
-                                }}
-                                onDragEnd={(e) => {
-                                  e.currentTarget.style.opacity = "1";
-                                }}
-                                className={`${category.style.bg} border ${category.style.border} rounded p-3 flex justify-between items-center cursor-grab active:cursor-grabbing ${category.style.hover} transition-colors shadow-sm`}
-                              >
-                                <div>
-                                  <div className={`${category.style.textTitle} font-bold text-sm flex items-center gap-2`}>
-                                    ≡ {dev.nombre}
-                                  </div>
-                                  <div className="text-gray-400 text-xs mt-1">{dev.tipo} • {dev.unidadesU || 1}U</div>
-                                </div>
-                                <div className={`text-xs ${category.style.textBtn} font-bold`}>
-                                  ARRASTRAR
-                                </div>
-                              </div>
-                          ))}
-                          {dispositivos.filter(d => category.types.includes(d.tipo) && !activeGabinete.dispositivos?.some((ad: any) => ad.id === d.id)).length === 0 && (
-                            <p className="text-xs text-gray-600 italic">No hay elementos libres en esta categoría.</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+            // Rack Builder View (Optimized with dnd-kit & Optimistic UI)
+            <RackBuilder
+              activeGabinete={activeGabinete}
+              dispositivos={dispositivos}
+              onAssign={handleAssignDeviceToU}
+              onRemove={handleRemoveDeviceFromU}
+              onClose={() => setActiveGabinete(null)}
+            />
           )}
         </div>
       )}

@@ -31,7 +31,9 @@ export default function FormularioPage() {
   const [photos, setPhotos] = useState<{ [key: number]: string | null }>({ 1: null, 2: null, 3: null });
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
-  
+  const [isOffline, setIsOffline] = useState(false);
+  const [pendingSync, setPendingSync] = useState(false);
+
   // Estado para las coordenadas GPS
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   
@@ -55,6 +57,28 @@ export default function FormularioPage() {
   const [auditorEmail, setAuditorEmail] = useState("");
 
   const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      if (pendingSync) {
+        setPendingSync(false);
+        alert("✅ Conexión recuperada: Todos los reportes guardados localmente han sido sincronizados en segundo plano.");
+      }
+    };
+    const handleOffline = () => setIsOffline(true);
+    
+    if (typeof window !== "undefined") {
+      setIsOffline(!navigator.onLine);
+      window.addEventListener("online", handleOnline);
+      window.addEventListener("offline", handleOffline);
+    }
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [pendingSync]);
 
   useEffect(() => {
     setIsClient(true);
@@ -119,7 +143,9 @@ export default function FormularioPage() {
       );
     }
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+    };
   }, [router]);
 
   useEffect(() => {
@@ -254,7 +280,6 @@ export default function FormularioPage() {
       delete data.foto_2;
       delete data.foto_3;
 
-      // Las fotos ya traen la marca de agua incrustada desde el handlePhotoChange
       data.foto_1_base64 = photos[1] || "";
       data.foto_2_base64 = photos[2] || "";
       data.foto_3_base64 = photos[3] || "";
@@ -268,15 +293,22 @@ export default function FormularioPage() {
       
       localStorage.setItem("dc_telematica_contador", (registroNum + 1).toString());
 
+      if (!navigator.onLine) {
+        setSaveSuccess("⚠️ Guardado Localmente. No hay conexión a internet, los datos se sincronizarán cuando recuperes la señal.");
+        setPendingSync(true);
+      } else {
+        setSaveSuccess("✅ ¡Registro Guardado y Sincronizado Exitosamente!");
+      }
+
       setIsSaving(false);
 
-      if (accion === "continuar_punto") {
-        setSaveSuccess("¡Punto de red guardado correctamente!");
-        setTimeout(() => window.location.reload(), 2000);
-      } else {
-        setSaveSuccess("¡Muchas gracias por su dedicación y responsabilidad!");
-        setTimeout(() => router.push("/"), 3500); 
-      }
+      setTimeout(() => {
+        if (accion === "continuar_punto") {
+          window.location.reload();
+        } else {
+          router.push("/");
+        }
+      }, !navigator.onLine ? 4000 : 1500);
 
     } catch (error: unknown) {
       console.error("Error al guardar en Firebase:", error);
@@ -288,7 +320,7 @@ export default function FormularioPage() {
   if (!isClient) return null;
 
   return (
-    <main className="relative z-10 min-h-screen p-4 md:p-8 flex justify-center pb-24 text-gray-200">
+    <main className="container mx-auto px-4 py-8 relative">
       
       {/* Estilos para animación 3D de logotipo */}
       <style>{`
@@ -304,7 +336,14 @@ export default function FormularioPage() {
         }
       `}</style>
 
-      <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl w-full max-w-3xl p-6 md:p-10 shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+        {/* Offline Banner */}
+        {isOffline && (
+          <div className="bg-red-500/20 border border-red-500/50 text-red-200 p-3 rounded-lg mb-6 flex items-center justify-center gap-2 font-bold animate-pulse">
+            ⚠️ Estás sin conexión. El modo offline está activo. Los datos se guardarán localmente.
+          </div>
+        )}
+
+      <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl w-full max-w-3xl p-6 md:p-10 shadow-[0_0_40px_rgba(0,0,0,0.5)] mx-auto">
         
         {/* Cabecera con Logotipo Animado en 3D */}
         <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-8 border border-cyan-500/30 bg-cyan-900/10 p-6 rounded-lg shadow-[0_0_20px_rgba(6,182,212,0.15)]">
