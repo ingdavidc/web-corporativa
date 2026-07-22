@@ -290,7 +290,7 @@ export default function FormularioPage() {
       }
 
       // Evitar duplicidad de registro_num consultando el último justo antes de guardar (si hay internet)
-      let finalRegistroNum = registroNum;
+      let finalRegistroNum: string | number = registroNum;
       if (navigator.onLine) {
         try {
           const q = query(collection(db, "inspecciones"), orderBy("timestamp", "desc"), limit(5));
@@ -311,7 +311,7 @@ export default function FormularioPage() {
         finalRegistroNum = `${registroNum}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       }
 
-      data.registro_num = finalRegistroNum;
+      data.registro_num = String(finalRegistroNum);
 
       await addDoc(collection(db, "inspecciones"), data);
       
