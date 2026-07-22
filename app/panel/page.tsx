@@ -1369,75 +1369,139 @@ export default function PanelPage() {
               <button onClick={() => setEditDoc(null)} className="text-gray-500 hover:text-white font-bold text-xl">✕</button>
             </div>
             <form onSubmit={handleUpdate} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label className="text-sm font-semibold text-gray-300 block mb-1">Punto ID:</label><input type="text" name="punto_id" defaultValue={editDoc.punto_id} required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" /></div>
-                <div><label className="text-sm font-semibold text-gray-300 block mb-1">Ubicación:</label><input type="text" name="ubicacion" defaultValue={editDoc.ubicacion} required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" /></div>
-                <div><label className="text-sm font-semibold text-gray-300 block mb-1">Puerto Switch:</label><input type="text" name="switch_port" defaultValue={editDoc.switch_port} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" /></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                {/* 1. Identificación */}
+                <div className="md:col-span-2 border-b border-white/10 pb-2"><h3 className="text-cyan-400 font-bold">1. Identificación</h3></div>
+                <div><label className="text-sm font-semibold text-gray-300 block mb-1">Punto ID:</label><input type="text" name="punto_id" defaultValue={editDoc.punto_id} required className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white focus:border-yellow-500 outline-none" /></div>
+                <div><label className="text-sm font-semibold text-gray-300 block mb-1">Ubicación:</label><input type="text" name="ubicacion" defaultValue={editDoc.ubicacion} required className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white focus:border-yellow-500 outline-none" /></div>
+                
+                {/* 2. Estado Físico */}
+                <div className="md:col-span-2 border-b border-white/10 pb-2 mt-4"><h3 className="text-cyan-400 font-bold">2. Estado Físico y Estructural</h3></div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Faceplate y Jack:</label>
+                  <select name="fisico" defaultValue={editDoc.fisico || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white focus:border-yellow-500 outline-none">
+                    <option value="buen_estado">Buen estado general</option>
+                    <option value="roto">Faceplate roto/suelto</option>
+                    <option value="pines_dañados">Pines oxidados/doblados</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Cableado y Etiquetado:</label>
+                  <select name="cable" defaultValue={editDoc.cable || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white focus:border-yellow-500 outline-none">
+                    <option value="etiquetado">Correctamente etiquetado</option>
+                    <option value="sin_etiqueta">Sin identificar</option>
+                    <option value="expuesto">Cable expuesto</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Continuidad:</label>
+                  <select name="continuidad" defaultValue={editDoc.continuidad || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white focus:border-yellow-500 outline-none">
+                    <option value="ok">Continuidad OK (8 hilos)</option>
+                    <option value="abierto">Pares abiertos / rotos</option>
+                    <option value="cruzado">Pares cruzados</option>
+                    <option value="corto">Cortocircuito</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                
+                {/* Canalización */}
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Tipo Canalización:</label>
+                  <select name="tipo_canalizacion" defaultValue={editDoc.tipo_canalizacion || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white focus:border-yellow-500 outline-none">
+                    <option value="canaleta">Canaleta Plástica</option>
+                    <option value="emt">Tubería EMT</option>
+                    <option value="pvc">Tubería PVC</option>
+                    <option value="bandeja">Bandeja Portacable</option>
+                    <option value="otros">Otros</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Estado Canalización:</label>
+                  <select name="est_canalizacion" defaultValue={editDoc.est_canalizacion || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white focus:border-yellow-500 outline-none">
+                    <option value="buen_estado">Buen Estado</option>
+                    <option value="suelta">Suelta / Mal fijada</option>
+                    <option value="saturada">Sobresaturada</option>
+                    <option value="rota">Rota / Sin tapas</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                
+                {/* Patch Cord */}
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Estado Patch Cord:</label>
+                  <select name="patch_estado" defaultValue={editDoc.patch_estado || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white focus:border-yellow-500 outline-none">
+                    <option value="buen_estado">Buen estado</option>
+                    <option value="roto">Conectores rotos</option>
+                    <option value="deteriorado">Cable deteriorado</option>
+                    <option value="ausente">Ausente</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Categoría Patch Cord:</label>
+                  <select name="patch_cat" defaultValue={editDoc.patch_cat || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white focus:border-yellow-500 outline-none">
+                    <option value="cat5e">Cat 5e</option>
+                    <option value="cat6">Cat 6/6A</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Tipo Patch Cord:</label>
+                  <select name="patch_tipo" defaultValue={editDoc.patch_tipo || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white focus:border-yellow-500 outline-none">
+                    <option value="fabrica">De Fábrica</option>
+                    <option value="armado">Armado (Hechizo)</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div><label className="text-sm font-semibold text-gray-300 block mb-1">Marca Patch Cord:</label><input type="text" name="patch_marca" defaultValue={editDoc.patch_marca} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white focus:border-yellow-500 outline-none" /></div>
+                <div><label className="text-sm font-semibold text-gray-300 block mb-1">Longitud Patch Cord:</label><input type="text" name="patch_longitud" defaultValue={editDoc.patch_longitud} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white focus:border-yellow-500 outline-none" /></div>
+
+                {/* 3. Trazabilidad */}
+                <div className="md:col-span-2 border-b border-white/10 pb-2 mt-4"><h3 className="text-cyan-400 font-bold">3. Trazabilidad a Switch</h3></div>
+                <div><label className="text-sm font-semibold text-gray-300 block mb-1">Puerto Switch:</label><input type="text" name="switch_port" defaultValue={editDoc.switch_port} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white focus:border-yellow-500 outline-none" /></div>
                 <div>
                   <label className="text-sm font-semibold text-gray-300 block mb-1">Estado Switch:</label>
-                  <select name="switch_estado" defaultValue={editDoc.switch_estado || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none">
-                    <option value="Activo">Activo</option>
-                    <option value="Inactivo">Inactivo</option>
-                    <option value="Dañado">Dañado</option>
+                  <select name="switch_estado" defaultValue={editDoc.switch_estado || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white focus:border-yellow-500 outline-none">
+                    <option value="up">Puerto Up</option>
+                    <option value="down">Shutdown</option>
+                    <option value="poe">PoE Activo</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+
+                {/* 4. Conectividad */}
+                <div className="md:col-span-2 border-b border-white/10 pb-2 mt-4"><h3 className="text-cyan-400 font-bold">4. Conectividad</h3></div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Estado Enlace:</label>
+                  <select name="enlace" defaultValue={editDoc.enlace || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white focus:border-yellow-500 outline-none">
+                    <option value="estable">Estable</option>
+                    <option value="intermitente">Intermitente</option>
+                    <option value="sin_conexion">Sin conexión</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 block mb-1">Prueba DHCP:</label>
+                  <select name="dhcp" defaultValue={editDoc.dhcp || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white focus:border-yellow-500 outline-none">
+                    <option value="exitoso">Asignación IP correcta</option>
+                    <option value="falla">Falla DHCP / Conflicto</option>
                     <option value="N/A">N/A</option>
                   </select>
                 </div>
                 <div>
                   <label className="text-sm font-semibold text-gray-300 block mb-1">Velocidad Enlace:</label>
-                  <select name="enlace" defaultValue={editDoc.enlace || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none">
+                  <select name="velocidad_enlace" defaultValue={editDoc.velocidad_enlace || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white focus:border-yellow-500 outline-none">
                     <option value="10M">10M</option>
                     <option value="100M">100M</option>
                     <option value="GIGA">GIGA</option>
                     <option value="N/A">N/A</option>
                   </select>
                 </div>
-                <div>
-                  <label className="text-sm font-semibold text-gray-300 block mb-1">Prueba DHCP:</label>
-                  <select name="dhcp" defaultValue={editDoc.dhcp || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none">
-                    <option value="Aplica">Aplica</option>
-                    <option value="No Aplica">No Aplica</option>
-                    <option value="N/A">N/A</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-semibold text-gray-300 block mb-1">Tipo Canalización:</label>
-                  <select name="tipo_canalizacion" defaultValue={editDoc.tipo_canalizacion || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none">
-                    <option value="EMT">EMT</option>
-                    <option value="PVC">PVC</option>
-                    <option value="Coraza">Coraza</option>
-                    <option value="Cuneta">Cuneta</option>
-                    <option value="Bandeja">Bandeja</option>
-                    <option value="N/A">N/A</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-semibold text-gray-300 block mb-1">Estado Canalización:</label>
-                  <select name="est_canalizacion" defaultValue={editDoc.est_canalizacion || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none">
-                    <option value="Buen Estado">Buen Estado</option>
-                    <option value="Mal Estado">Mal Estado</option>
-                    <option value="Suelta">Suelta</option>
-                    <option value="N/A">N/A</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-semibold text-gray-300 block mb-1">Estado Patch Cord:</label>
-                  <select name="patch_estado" defaultValue={editDoc.patch_estado || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none">
-                    <option value="Buen Estado">Buen Estado</option>
-                    <option value="Mal Estado">Mal Estado</option>
-                    <option value="No Tiene">No Tiene</option>
-                    <option value="N/A">N/A</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-semibold text-gray-300 block mb-1">Categoría Patch Cord:</label>
-                  <select name="patch_cat" defaultValue={editDoc.patch_cat || "N/A"} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none">
-                    <option value="Cat 5e">Cat 5e</option>
-                    <option value="Cat 6">Cat 6</option>
-                    <option value="Cat 6A">Cat 6A</option>
-                    <option value="N/A">N/A</option>
-                  </select>
-                </div>
               </div>
+
               <div className="pt-6 border-t border-white/10 flex gap-4">
                 <button type="button" onClick={() => setEditDoc(null)} className="w-1/2 py-3 bg-transparent border border-gray-600 text-gray-400 hover:bg-white/5 rounded-lg transition-colors font-bold">Cancelar</button>
                 <button type="submit" className="w-1/2 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg transition-colors">Guardar Cambios</button>
