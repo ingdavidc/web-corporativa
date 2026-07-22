@@ -289,6 +289,30 @@ export default function FormularioPage() {
         data.plano_y = String(mapCoords.y);
       }
 
+      // Evitar duplicidad de registro_num consultando el último justo antes de guardar (si hay internet)
+      let finalRegistroNum = registroNum;
+      if (navigator.onLine) {
+        try {
+          const q = query(collection(db, "inspecciones"), orderBy("timestamp", "desc"), limit(5));
+          const querySnapshot = await getDocs(q);
+          let maxNum = 0;
+          querySnapshot.forEach(doc => {
+            const num = parseInt(String(doc.data().registro_num || "0").split('-')[0], 10);
+            if (!isNaN(num) && num > maxNum) {
+              maxNum = num;
+            }
+          });
+          finalRegistroNum = maxNum > 0 ? maxNum + 1 : 1;
+        } catch (e) {
+          console.warn("No se pudo refrescar el contador antes de guardar.", e);
+        }
+      } else {
+        // Para registros offline concurrentes, agregamos un distintivo corto
+        finalRegistroNum = `${registroNum}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      }
+
+      data.registro_num = finalRegistroNum;
+
       await addDoc(collection(db, "inspecciones"), data);
       
       localStorage.setItem("dc_telematica_contador", (registroNum + 1).toString());
