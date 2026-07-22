@@ -93,6 +93,7 @@ export default function PanelPage() {
   // Estado para el plano de ubicación del dispositivo
   const [showMapModal, setShowMapModal] = useState(false);
   const [showViewMapModal, setShowViewMapModal] = useState(false);
+  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
 
   // State Gabinetes (Rack Builder)
   const [gabinetes, setGabinetes] = useState<any[]>([]);
@@ -1371,11 +1372,56 @@ export default function PanelPage() {
 
               <div className="space-y-4">
                 <h3 className="text-cyan-500 font-bold bg-white/5 p-3 rounded-lg text-center">📸 Registro Fotográfico</h3>
-                <div className="border border-white/10 rounded-lg p-2 bg-black/50"><p className="text-xs text-gray-400 mb-2">1. Panorámica / Ubicación</p>{viewDoc.foto_1_base64 ? <img src={viewDoc.foto_1_base64} alt="Foto 1" className="w-full h-auto max-h-48 object-contain rounded" /> : <div className="h-32 flex items-center justify-center text-gray-600 bg-white/5 rounded">Sin foto</div>}</div>
-                <div className="border border-white/10 rounded-lg p-2 bg-black/50"><p className="text-xs text-gray-400 mb-2">2. Detalle Faceplate</p>{viewDoc.foto_2_base64 ? <img src={viewDoc.foto_2_base64} alt="Foto 2" className="w-full h-auto max-h-48 object-contain rounded" /> : <div className="h-32 flex items-center justify-center text-gray-600 bg-white/5 rounded">Sin foto</div>}</div>
+                <div className="border border-white/10 rounded-lg p-2 bg-black/50">
+                  <p className="text-xs text-gray-400 mb-2">1. Panorámica / Ubicación</p>
+                  {viewDoc.foto_1_base64 ? <img src={viewDoc.foto_1_base64} alt="Foto 1" onClick={() => setFullScreenImage(viewDoc.foto_1_base64!)} className="w-full h-auto max-h-48 object-contain rounded cursor-pointer hover:scale-[1.02] transition-transform" /> : <div className="h-32 flex items-center justify-center text-gray-600 bg-white/5 rounded">Sin foto</div>}
+                </div>
+                <div className="border border-white/10 rounded-lg p-2 bg-black/50">
+                  <p className="text-xs text-gray-400 mb-2">2. Detalle Faceplate</p>
+                  {viewDoc.foto_2_base64 ? <img src={viewDoc.foto_2_base64} alt="Foto 2" onClick={() => setFullScreenImage(viewDoc.foto_2_base64!)} className="w-full h-auto max-h-48 object-contain rounded cursor-pointer hover:scale-[1.02] transition-transform" /> : <div className="h-32 flex items-center justify-center text-gray-600 bg-white/5 rounded">Sin foto</div>}
+                </div>
+                <div className="border border-white/10 rounded-lg p-2 bg-black/50">
+                  <p className="text-xs text-gray-400 mb-2">3. Evidencia Adicional</p>
+                  {viewDoc.foto_3_base64 ? <img src={viewDoc.foto_3_base64} alt="Foto 3" onClick={() => setFullScreenImage(viewDoc.foto_3_base64!)} className="w-full h-auto max-h-48 object-contain rounded cursor-pointer hover:scale-[1.02] transition-transform" /> : <div className="h-32 flex items-center justify-center text-gray-600 bg-white/5 rounded">Sin foto</div>}
+                </div>
               </div>
             </div>
             <div className="mt-8 text-center"><button onClick={() => setViewDoc(null)} className="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg transition-colors">Cerrar Detalles</button></div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+          MODAL: VISOR DE IMAGEN EN TAMAÑO REAL
+         ========================================================= */}
+      {fullScreenImage && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4">
+          <div className="relative w-full h-full flex flex-col items-center justify-center">
+            <div className="absolute top-4 right-4 flex gap-4 z-10">
+              <button onClick={() => {
+                const a = document.createElement("a");
+                a.href = fullScreenImage;
+                a.download = `foto_auditoria_${new Date().getTime()}.png`;
+                a.click();
+              }} className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors font-bold text-sm">
+                ⬇️ Descargar
+              </button>
+              <button onClick={() => setFullScreenImage(null)} className="px-4 py-2 bg-red-600/50 hover:bg-red-500 text-white rounded-lg transition-colors font-bold text-sm border border-red-500/50">
+                ✕ Cerrar Visor
+              </button>
+            </div>
+            <TransformWrapper
+              initialScale={1}
+              minScale={0.5}
+              maxScale={10}
+              centerOnInit={true}
+              wheel={{ step: 0.1 }}
+              pinch={{ step: 5 }}
+            >
+              <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center">
+                <img src={fullScreenImage} alt="Visor Tamaño Real" className="max-w-full max-h-full object-contain rounded-lg shadow-[0_0_50px_rgba(6,182,212,0.3)]" />
+              </TransformComponent>
+            </TransformWrapper>
           </div>
         </div>
       )}
