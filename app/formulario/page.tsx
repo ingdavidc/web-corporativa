@@ -552,7 +552,7 @@ export default function FormularioPage() {
             <h2 className="text-xl font-bold text-cyan-400 border-b border-white/10 pb-2 mb-4 relative after:content-[''] after:absolute after:left-0 after:-bottom-[1px] after:w-16 after:h-[2px] after:bg-red-500">
               4. Conectividad y Capa Lógica
             </h2>
-            <div className="bg-white/5 p-4 rounded-xl border border-white/10 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10 grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="font-semibold block mb-3 text-cyan-100">Estado del Enlace:</label>
                 <div className="space-y-2">
@@ -566,6 +566,14 @@ export default function FormularioPage() {
                 <div className="space-y-2">
                   <label className="flex items-center space-x-2"><input type="checkbox" name="dhcp" value="exitoso" className="w-5 h-5 accent-cyan-500" /><span>Asignación IP correcta</span></label>
                   <label className="flex items-center space-x-2"><input type="checkbox" name="dhcp" value="falla" className="w-5 h-5 accent-cyan-500" /><span>Falla DHCP / Conflicto</span></label>
+                </div>
+              </div>
+              <div>
+                <label className="font-semibold block mb-3 text-cyan-100">Velocidad del Enlace:</label>
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2"><input type="radio" name="velocidad_enlace" value="10M" className="w-5 h-5 accent-cyan-500" /><span>10M</span></label>
+                  <label className="flex items-center space-x-2"><input type="radio" name="velocidad_enlace" value="100M" className="w-5 h-5 accent-cyan-500" /><span>100M</span></label>
+                  <label className="flex items-center space-x-2"><input type="radio" name="velocidad_enlace" value="GIGA" className="w-5 h-5 accent-cyan-500" /><span>GIGA</span></label>
                 </div>
               </div>
             </div>
