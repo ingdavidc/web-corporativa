@@ -8,7 +8,7 @@ import { onAuthStateChanged, signOut, createUserWithEmailAndPassword, getAuth, s
 import { collection, onSnapshot, doc, deleteDoc, updateDoc, query, orderBy, setDoc, addDoc, limit } from "firebase/firestore";
 import { auth, db, firebaseConfig } from "@/lib/firebase";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
-
+import RackBuilder from "@/components/RackBuilder";
 interface Inspeccion {
   id: string;
   registro_num?: string;
