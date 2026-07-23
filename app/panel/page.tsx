@@ -597,13 +597,47 @@ export default function PanelPage() {
 
   const handleEditDeviceInRack = async (deviceId: string, newName: string) => {
     if (!activeGabinete) return;
+    
+    // Check if newName specifies a U height (e.g. "2U", "4U")
+    const matchU = newName.match(/(\d+)U/i);
+    let newHeightU: number | null = null;
+    if (matchU) {
+       newHeightU = parseInt(matchU[1], 10);
+    }
+    
     const previousGabinete = { ...activeGabinete };
+    let hasCollision = false;
+    
     const updatedDispositivos = activeGabinete.dispositivos?.map((d: any) => {
       if (d.id === deviceId) {
-        return { ...d, customName: newName };
+        const heightToApply = newHeightU !== null ? newHeightU : d.heightU;
+        
+        // Validate collision if height is expanding
+        if (heightToApply > d.heightU) {
+          const isOccupied = activeGabinete.dispositivos?.some((other: any) => {
+            if (other.id === deviceId) return false;
+            // Check if any part of the new expanded height overlaps with 'other'
+            const newStart = d.uPos;
+            const newEnd = d.uPos + heightToApply - 1;
+            const otherStart = other.uPos;
+            const otherEnd = other.uPos + (other.heightU || 1) - 1;
+            
+            return (newStart <= otherEnd && newEnd >= otherStart);
+          });
+          if (isOccupied) {
+            hasCollision = true;
+            return d; // Revert change for this item
+          }
+        }
+        return { ...d, customName: newName, heightU: heightToApply };
       }
       return d;
     }) || [];
+
+    if (hasCollision) {
+      alert("No hay suficiente espacio libre hacia abajo para expandir este dispositivo a las Unidades solicitadas.");
+      return;
+    }
 
     setActiveGabinete({ ...activeGabinete, dispositivos: updatedDispositivos });
     try {

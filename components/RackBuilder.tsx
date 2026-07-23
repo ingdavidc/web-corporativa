@@ -42,34 +42,50 @@ interface RackBuilderProps {
 // 1. DISEÑOS REALISTAS DE HARDWARE
 // ========================================================
 
+const Port = () => (
+  <div className="w-[6px] h-[8px] sm:w-1.5 sm:h-2.5 bg-black border border-gray-600 rounded-[1px] relative">
+    <div className="absolute bottom-0 left-0 w-full h-[1px] bg-yellow-600"></div>
+  </div>
+);
+
 const RealisticSwitch = ({ is48 = false, name, model }: { is48?: boolean, name: string, model: string }) => {
   return (
     <div className="w-full h-full bg-gradient-to-b from-gray-700 to-gray-900 border border-gray-500 rounded-sm flex flex-col justify-between p-1 shadow-inner relative overflow-hidden">
       <div className="absolute top-1 left-2 flex gap-1">
-        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_#22c55e]"></div>
-        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_5px_#3b82f6]"></div>
+        <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_#22c55e]"></div>
+        <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-blue-500 shadow-[0_0_5px_#3b82f6]"></div>
       </div>
-      <div className="text-[8px] text-gray-300 font-mono text-right truncate pl-12">{name} - {model}</div>
-      <div className="flex justify-center gap-0.5 mt-auto mb-1">
-        {Array.from({ length: is48 ? 48 : 24 }).map((_, i) => (
-          <div key={i} className="w-1.5 h-2.5 bg-black border border-gray-600 rounded-[1px] relative">
-            <div className="absolute bottom-0 left-0 w-full h-[1px] bg-yellow-600"></div>
+      <div className="text-[7px] sm:text-[8px] text-gray-300 font-mono text-right truncate pl-12 pr-1">{name} - {model}</div>
+      <div className="flex flex-col gap-0.5 mt-auto mb-0.5 items-center justify-center w-full">
+        {is48 ? (
+          <>
+            <div className="flex justify-center gap-[1px] sm:gap-0.5">
+              {Array.from({ length: 24 }).map((_, i) => <Port key={`top-${i}`} />)}
+            </div>
+            <div className="flex justify-center gap-[1px] sm:gap-0.5">
+              {Array.from({ length: 24 }).map((_, i) => <Port key={`bot-${i}`} />)}
+            </div>
+          </>
+        ) : (
+          <div className="flex justify-center gap-[1px] sm:gap-0.5">
+            {Array.from({ length: 24 }).map((_, i) => <Port key={`mid-${i}`} />)}
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
 };
 
-const RealisticPatchPanel = ({ name }: { name: string }) => {
+const RealisticPatchPanel = ({ name, is48 = false }: { name: string, is48?: boolean }) => {
+  const blocks = is48 ? 8 : 4;
   return (
     <div className="w-full h-full bg-black border border-gray-800 flex items-center justify-center p-1 relative overflow-hidden">
-      <div className="absolute left-2 text-[8px] text-gray-400 font-mono truncate max-w-[50px]">{name}</div>
-      <div className="flex gap-2 ml-10">
-        {Array.from({ length: 4 }).map((_, block) => (
-          <div key={block} className="flex gap-0.5 p-0.5 bg-gray-900 border border-gray-700 rounded-sm">
+      <div className="absolute left-1 sm:left-2 text-[7px] sm:text-[8px] text-gray-400 font-mono truncate max-w-[40px] sm:max-w-[50px]">{name}</div>
+      <div className="flex flex-wrap justify-center gap-1 sm:gap-2 ml-8 sm:ml-12 w-full pr-1">
+        {Array.from({ length: blocks }).map((_, block) => (
+          <div key={block} className="flex gap-[1px] sm:gap-0.5 p-[1px] sm:p-0.5 bg-gray-900 border border-gray-700 rounded-sm">
             {Array.from({ length: 6 }).map((_, p) => (
-              <div key={p} className="w-2 h-2 rounded-full bg-black border border-gray-600 shadow-inner"></div>
+              <div key={p} className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-black border border-gray-600 shadow-inner"></div>
             ))}
           </div>
         ))}
@@ -179,7 +195,7 @@ const DroppableUSlot = ({
   const renderRealisticDevice = () => {
     if (!deviceData) return null;
     if (deviceData.tipo === "Switch" || deviceData.tipo === "Router") return <RealisticSwitch name={displayName} model={deviceData.modelo} is48={is48Port} />;
-    if (deviceData.tipo === "Patch Panel" || deviceData.tipo === "Organizador") return <RealisticPatchPanel name={displayName} />;
+    if (deviceData.tipo === "Patch Panel" || deviceData.tipo === "Organizador") return <RealisticPatchPanel name={displayName} is48={is48Port} />;
     if (deviceData.tipo === "Servidor") return <RealisticServer name={displayName} />;
     if (deviceData.tipo === "UPS" || deviceData.tipo === "PDU") return <RealisticUPS name={displayName} />;
     
