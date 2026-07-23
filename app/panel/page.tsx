@@ -590,9 +590,29 @@ export default function PanelPage() {
         dispositivos: updatedDispositivos
       });
     } catch (error) {
-      console.error("Error asignando equipo:", error);
-      alert("Error al asignar el equipo al gabinete.");
+      console.error(error);
       setActiveGabinete(previousGabinete); // Revert on failure
+    }
+  };
+
+  const handleEditDeviceInRack = async (deviceId: string, newName: string) => {
+    if (!activeGabinete) return;
+    const previousGabinete = { ...activeGabinete };
+    const updatedDispositivos = activeGabinete.dispositivos?.map(d => {
+      if (d.id === deviceId) {
+        return { ...d, customName: newName };
+      }
+      return d;
+    }) || [];
+
+    setActiveGabinete({ ...activeGabinete, dispositivos: updatedDispositivos });
+    try {
+      await updateDoc(doc(db, "gabinetes", activeGabinete.id), {
+        dispositivos: updatedDispositivos
+      });
+    } catch (error) {
+      console.error(error);
+      setActiveGabinete(previousGabinete);
     }
   };
 
@@ -2019,6 +2039,7 @@ export default function PanelPage() {
               dispositivos={allDispositivos}
               onAssign={handleAssignDeviceToU}
               onRemove={handleRemoveDeviceFromU}
+              onEditDevice={handleEditDeviceInRack}
               onClose={() => setActiveGabinete(null)}
             />
           )}

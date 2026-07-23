@@ -18,6 +18,7 @@ interface RackDeviceAssignment {
   uPos: number;
   heightU: number;
   isPassive: boolean;
+  customName?: string;
 }
 
 interface Gabinete {
@@ -33,6 +34,7 @@ interface RackBuilderProps {
   dispositivos: DispositivoRed[];
   onAssign: (deviceId: string, startU: number) => void;
   onRemove: (deviceId: string) => void;
+  onEditDevice?: (deviceId: string, newName: string) => void;
   onClose: () => void;
 }
 
@@ -152,13 +154,15 @@ const DroppableUSlot = ({
   deviceAtU, 
   isCovered, 
   dispositivos,
-  onRemove
+  onRemove,
+  onEditDevice
 }: { 
   uNumber: number; 
   deviceAtU?: RackDeviceAssignment; 
   isCovered: boolean;
   dispositivos: DispositivoRed[];
   onRemove: (id: string) => void;
+  onEditDevice?: (id: string, newName: string) => void;
 }) => {
   const { isOver, setNodeRef } = useDroppable({
     id: `slot-${uNumber}`,
@@ -169,19 +173,20 @@ const DroppableUSlot = ({
   if (isCovered) return null;
 
   const deviceData = deviceAtU ? dispositivos.find(d => d.id === deviceAtU.id) : null;
-  const is48Port = deviceData?.nombre.includes("48") || deviceData?.modelo.includes("48");
+  const displayName = deviceAtU?.customName || deviceData?.nombre || "Equipo";
+  const is48Port = displayName.includes("48") || deviceData?.modelo.includes("48");
 
   const renderRealisticDevice = () => {
     if (!deviceData) return null;
-    if (deviceData.tipo === "Switch" || deviceData.tipo === "Router") return <RealisticSwitch name={deviceData.nombre} model={deviceData.modelo} is48={is48Port} />;
-    if (deviceData.tipo === "Patch Panel" || deviceData.tipo === "Organizador") return <RealisticPatchPanel name={deviceData.nombre} />;
-    if (deviceData.tipo === "Servidor") return <RealisticServer name={deviceData.nombre} />;
-    if (deviceData.tipo === "UPS" || deviceData.tipo === "PDU") return <RealisticUPS name={deviceData.nombre} />;
+    if (deviceData.tipo === "Switch" || deviceData.tipo === "Router") return <RealisticSwitch name={displayName} model={deviceData.modelo} is48={is48Port} />;
+    if (deviceData.tipo === "Patch Panel" || deviceData.tipo === "Organizador") return <RealisticPatchPanel name={displayName} />;
+    if (deviceData.tipo === "Servidor") return <RealisticServer name={displayName} />;
+    if (deviceData.tipo === "UPS" || deviceData.tipo === "PDU") return <RealisticUPS name={displayName} />;
     
     // Default fallback
     return (
       <div className="w-full px-8 flex justify-between items-center h-full bg-cyan-900/40 border-l-4 border-cyan-500">
-        <span className="text-cyan-300 font-bold text-sm">{deviceData.nombre}</span>
+        <span className="text-cyan-300 font-bold text-sm truncate max-w-full" title={displayName}>{displayName}</span>
       </div>
     );
   };
@@ -210,13 +215,28 @@ const DroppableUSlot = ({
         {deviceAtU ? (
           <div className="w-full h-full relative">
             {renderRealisticDevice()}
-            <button 
-              onClick={(e) => { e.stopPropagation(); onRemove(deviceAtU.id); }}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-red-500 hover:text-white hover:bg-red-500 bg-black/90 rounded p-1.5 opacity-0 group-hover:opacity-100 transition-all z-20 shadow-lg"
-              title="Retirar equipo"
-            >
-              ✕
-            </button>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-all z-20">
+              <button 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  const newName = window.prompt("Editar nombre y/o puertos:", displayName);
+                  if (newName && newName.trim() !== "" && onEditDevice) {
+                    onEditDevice(deviceAtU.id, newName.trim());
+                  }
+                }}
+                className="text-cyan-400 hover:text-white hover:bg-cyan-500 bg-black/90 rounded p-1.5 shadow-lg flex items-center justify-center w-8 h-8 font-bold"
+                title="Editar equipo"
+              >
+                ✎
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); onRemove(deviceAtU.id); }}
+                className="text-red-500 hover:text-white hover:bg-red-500 bg-black/90 rounded p-1.5 shadow-lg flex items-center justify-center w-8 h-8 font-bold"
+                title="Retirar equipo"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center pointer-events-none">
@@ -236,7 +256,7 @@ const DroppableUSlot = ({
 // 3. MAIN RACK BUILDER COMPONENT
 // ========================================================
 
-export default function RackBuilder({ activeGabinete, dispositivos, onAssign, onRemove, onClose }: RackBuilderProps) {
+export default function RackBuilder({ activeGabinete, dispositivos, onAssign, onRemove, onEditDevice, onClose }: RackBuilderProps) {
   
   const handleDragEnd = (event: DragEndEvent) => {
     const { over, active } = event;
@@ -285,6 +305,7 @@ export default function RackBuilder({ activeGabinete, dispositivos, onAssign, on
                     isCovered={isCovered}
                     dispositivos={dispositivos}
                     onRemove={onRemove}
+                    onEditDevice={onEditDevice}
                   />
                 );
               })}
