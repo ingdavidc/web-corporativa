@@ -598,7 +598,7 @@ export default function PanelPage() {
   const handleEditDeviceInRack = async (deviceId: string, newName: string) => {
     if (!activeGabinete) return;
     const previousGabinete = { ...activeGabinete };
-    const updatedDispositivos = activeGabinete.dispositivos?.map(d => {
+    const updatedDispositivos = activeGabinete.dispositivos?.map((d: any) => {
       if (d.id === deviceId) {
         return { ...d, customName: newName };
       }
