@@ -302,7 +302,7 @@ export default function RackBuilder({ activeGabinete, dispositivos, onAssign, on
             <div className="overflow-y-auto flex-1 pr-2 space-y-4">
               {[
                 { title: "Equipos Activos", types: ["Switch", "Router", "Servidor", "AP", "Firewall"], style: { bg: "bg-cyan-900/20", border: "border-cyan-500/30", textTitle: "text-cyan-300", hover: "hover:bg-cyan-900/40", textBtn: "text-cyan-500/50" } },
-                { title: "Elementos Pasivos", types: ["Patch Panel", "Organizador"], style: { bg: "bg-purple-900/20", border: "border-purple-500/30", textTitle: "text-purple-300", hover: "hover:bg-purple-900/40", textBtn: "text-purple-500/50" } },
+                { title: "Elementos Pasivos", types: ["Patch Panel", "Organizador", "Bandeja"], style: { bg: "bg-purple-900/20", border: "border-purple-500/30", textTitle: "text-purple-300", hover: "hover:bg-purple-900/40", textBtn: "text-purple-500/50" } },
                 { title: "Eléctricos", types: ["UPS", "PDU"], style: { bg: "bg-orange-900/20", border: "border-orange-500/30", textTitle: "text-orange-300", hover: "hover:bg-orange-900/40", textBtn: "text-orange-500/50" } },
               ].map((category) => (
                 <div key={category.title}>

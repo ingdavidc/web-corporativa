@@ -2004,7 +2004,18 @@ export default function PanelPage() {
             // Rack Builder View (Optimized with dnd-kit & Optimistic UI)
             <RackBuilder
               activeGabinete={activeGabinete}
-              dispositivos={dispositivos}
+              dispositivos={[
+                ...dispositivos,
+                ...Array.from({ length: 5 }).flatMap((_, i) => [
+                  { id: `gen-patch-24-${i}`, tipo: "Patch Panel", nombre: `Patch Panel 24P Genérico`, marca: "Genérico", modelo: "24-Port", unidadesU: 1 },
+                  { id: `gen-patch-48-${i}`, tipo: "Patch Panel", nombre: `Patch Panel 48P Genérico`, marca: "Genérico", modelo: "48-Port", unidadesU: 2 },
+                  { id: `gen-pdu-${i}`, tipo: "PDU", nombre: `PDU / Multitoma Genérico`, marca: "Genérico", modelo: "8 Tomas", unidadesU: 1 },
+                  { id: `gen-org-1-${i}`, tipo: "Organizador", nombre: `Organizador Frontal 1U`, marca: "Genérico", modelo: "1U", unidadesU: 1 },
+                  { id: `gen-org-2-${i}`, tipo: "Organizador", nombre: `Organizador Frontal 2U`, marca: "Genérico", modelo: "2U", unidadesU: 2 },
+                  { id: `gen-ups-${i}`, tipo: "UPS", nombre: `UPS Rackeable Genérica`, marca: "Genérico", modelo: "2KVA", unidadesU: 2 },
+                  { id: `gen-bandeja-${i}`, tipo: "Bandeja", nombre: `Bandeja Fija Genérica`, marca: "Genérico", modelo: "1U", unidadesU: 1 }
+                ])
+              ]}
               onAssign={handleAssignDeviceToU}
               onRemove={handleRemoveDeviceFromU}
               onClose={() => setActiveGabinete(null)}
