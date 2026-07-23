@@ -160,16 +160,20 @@ export default function FormularioPage() {
   }, []);
 
   // --- MOTOR DE COMPRESIÓN Y MARCA DE AGUA TIPO "TIMEMARK" ---
-  const processAndWatermarkImage = (base64Str: string, maxWidth = 1000): Promise<string> => {
+  const processAndWatermarkImage = (base64Str: string, maxWidth = 800): Promise<string> => {
     return new Promise((resolve) => {
       const img = new globalThis.Image();
       img.src = base64Str;
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const ratio = maxWidth / img.width;
         
-        canvas.width = ratio < 1 ? maxWidth : img.width;
-        canvas.height = ratio < 1 ? img.height * ratio : img.height;
+        let ratio = 1;
+        if (img.width > maxWidth || img.height > maxWidth) {
+          ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
+        }
+        
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
 
         const ctx = canvas.getContext("2d");
         if (!ctx) return resolve(base64Str); 
@@ -216,11 +220,11 @@ export default function FormularioPage() {
           ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
           ctx.globalAlpha = 1.0; 
 
-          resolve(canvas.toDataURL("image/jpeg", 0.75));
+          resolve(canvas.toDataURL("image/jpeg", 0.6));
         };
 
         logoImg.onerror = () => {
-          resolve(canvas.toDataURL("image/jpeg", 0.75));
+          resolve(canvas.toDataURL("image/jpeg", 0.6));
         };
       };
     });
