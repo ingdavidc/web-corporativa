@@ -54,15 +54,17 @@ export default function PanelPage() {
   const zoomPercentageRef = useRef<HTMLSpanElement>(null);
 
   const handleMapTransform = (ref: any) => {
+    // Normalizamos la escala para que 0.3 (initialScale) represente el 100% visual
+    const normalizedScale = ref.state.scale / 0.3;
+    
     if (zoomPercentageRef.current) {
-      zoomPercentageRef.current.innerText = `${Math.round(ref.state.scale * 100)}%`;
+      zoomPercentageRef.current.innerText = `${Math.round(normalizedScale * 100)}%`;
     }
     if (mapContainerRef.current) {
-      // Disminuir tamaño conforme se hace zoom in (exponente > 1, p.e. 1.15)
-      const markerScale = 1 / Math.pow(ref.state.scale, 1.15);
+      const markerScale = 1 / Math.pow(normalizedScale, 1.15);
       mapContainerRef.current.style.setProperty('--marker-scale', markerScale.toString());
-      mapContainerRef.current.style.setProperty('--label-opacity', ref.state.scale > 1.8 ? '1' : '0');
-      mapContainerRef.current.style.setProperty('--label-pointer', ref.state.scale > 1.8 ? 'auto' : 'none');
+      mapContainerRef.current.style.setProperty('--label-opacity', normalizedScale > 1.8 ? '1' : '0');
+      mapContainerRef.current.style.setProperty('--label-pointer', normalizedScale > 1.8 ? 'auto' : 'none');
     }
   };
 
@@ -2439,9 +2441,9 @@ export default function PanelPage() {
             
             <div className="flex-1 overflow-hidden bg-[#111] rounded-xl border border-white/10 relative flex justify-center items-center shadow-inner">
               <TransformWrapper
-                initialScale={1}
-                minScale={0.5}
-                maxScale={10}
+                initialScale={0.3}
+                minScale={0.1}
+                maxScale={2}
                 centerOnInit={true}
                 wheel={{ step: 0.1 }}
                 pinch={{ step: 5 }}
@@ -2461,7 +2463,7 @@ export default function PanelPage() {
                           className="relative inline-block touch-none"
                           style={{ '--marker-scale': '1', '--label-opacity': '0', '--label-pointer': 'none' } as any}
                         >
-                          <img src="/plano_hospital.webp" alt="Plano del Hospital" className="w-full max-w-[1200px] h-auto block pointer-events-none" />
+                          <img src="/plano_hospital.webp" alt="Plano del Hospital" className="w-[4000px] max-w-none h-auto block pointer-events-none" />
                           
                           {inspecciones.filter(i => i.plano_x && i.plano_y).map((inspeccion) => {
                             const isDraft = inspeccion.estado_levantamiento === 'Pendiente';
