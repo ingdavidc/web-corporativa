@@ -250,22 +250,37 @@ export default function MisRegistrosPage() {
                     </span>
                   </div>
 
-                  {/* Status Badges - Removed to simplify direct edit workflow */}
+                  {/* Status Badges */}
                   <div className="mb-4">
-                    <span className="inline-flex items-center text-xs bg-cyan-500/10 text-cyan-400 px-2 py-1 rounded border border-cyan-500/20">
-                      Registro Guardado
-                    </span>
+                    {reg.estado_levantamiento === "Pendiente" ? (
+                      <span className="inline-flex items-center text-xs bg-yellow-500/10 text-yellow-400 px-2 py-1 rounded border border-yellow-500/20">
+                        Pendiente (Borrador)
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center text-xs bg-cyan-500/10 text-cyan-400 px-2 py-1 rounded border border-cyan-500/20">
+                        Registro Guardado
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 {/* Actions */}
                 <div className="pt-4 border-t border-white/10 mt-2">
-                  <button 
-                    onClick={() => openEditModal(reg)}
-                    className="w-full py-2 bg-cyan-600/20 hover:bg-cyan-500 text-cyan-300 hover:text-black rounded-lg font-bold flex items-center justify-center transition-colors border border-cyan-500/30 hover:border-transparent"
-                  >
-                    <Edit size={16} className="mr-2" /> Modificar Fotos
-                  </button>
+                  {reg.estado_levantamiento === "Pendiente" ? (
+                    <button 
+                      onClick={() => router.push(`/formulario?draftId=${reg.id}`)}
+                      className="w-full py-2 bg-yellow-600/20 hover:bg-yellow-500 text-yellow-300 hover:text-black rounded-lg font-bold flex items-center justify-center transition-colors border border-yellow-500/30 hover:border-transparent"
+                    >
+                      <Edit size={16} className="mr-2" /> Continuar Levantamiento
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => openEditModal(reg)}
+                      className="w-full py-2 bg-cyan-600/20 hover:bg-cyan-500 text-cyan-300 hover:text-black rounded-lg font-bold flex items-center justify-center transition-colors border border-cyan-500/30 hover:border-transparent"
+                    >
+                      <Edit size={16} className="mr-2" /> Modificar Fotos
+                    </button>
+                  )}
                 </div>
 
               </div>

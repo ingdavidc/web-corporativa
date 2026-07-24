@@ -1079,6 +1079,11 @@ export default function PanelPage() {
                   <tr key={inspeccion.id} className={`border-b border-white/5 transition-colors ${inspeccion.solicitud_modificacion === 'Pendiente' ? 'bg-yellow-500/20 hover:bg-yellow-500/30' : 'hover:bg-white/5'}`}>
                     <td className="py-4 px-4 font-bold">
                       {inspeccion.registro_num || "-"}
+                      {inspeccion.estado_levantamiento === 'Pendiente' && (
+                        <div className="text-xs bg-yellow-500/20 text-yellow-400 mt-1 font-bold rounded px-2 py-1 inline-block">
+                          Borrador Técnico
+                        </div>
+                      )}
                       {inspeccion.solicitud_modificacion === 'Pendiente' && (
                         <div className="text-xs text-yellow-400 mt-1 font-normal break-words max-w-[200px]">
                           <strong>Motivo:</strong> {inspeccion.motivo_modificacion}
@@ -1874,6 +1879,21 @@ export default function PanelPage() {
                   <label className="text-sm font-semibold text-gray-300 block mb-1">Dirección MAC:</label>
                   <input type="text" value={deviceForm.mac || ""} onChange={e=>setDeviceForm({...deviceForm, mac: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-orange-500 outline-none" placeholder="AA:BB:CC..." />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">Nivel de Conectividad:</label>
+                <select value={deviceForm.nivel_conectividad || ""} onChange={e=>setDeviceForm({...deviceForm, nivel_conectividad: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-orange-500 outline-none">
+                  <option value="">Seleccione Nivel...</option>
+                  <option value="Core">Core</option>
+                  <option value="Distribucion">Distribucion</option>
+                  <option value="Nivel 1">Nivel 1</option>
+                  <option value="Nivel 2">Nivel 2</option>
+                  <option value="Nivel 3">Nivel 3</option>
+                  <option value="Nivel 4">Nivel 4</option>
+                  <option value="Nivel 5">Nivel 5</option>
+                  <option value="Nivel 6">Nivel 6</option>
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, addDoc, getDocs, query, orderBy, limit, onSnapshot } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, orderBy, limit, onSnapshot, doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
 export interface DispositivoRed {
@@ -22,8 +22,10 @@ export interface DispositivoRed {
 
 export default function FormularioPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const draftId = searchParams.get("draftId");
   const [isClient, setIsClient] = useState(false);
-  const [registroNum, setRegistroNum] = useState(1);
+  const [registroNum, setRegistroNum] = useState<string | number>(1);
   const [fechaHora, setFechaHora] = useState("");
   const [numSwitches, setNumSwitches] = useState<number | string>(1);
   const [showOtros, setShowOtros] = useState(false);
@@ -147,6 +149,50 @@ export default function FormularioPage() {
       unsubscribe();
     };
   }, [router]);
+
+  // Cargar datos si hay un draftId
+  useEffect(() => {
+    if (draftId && isClient) {
+      const fetchDraft = async () => {
+        try {
+          const docSnap = await getDoc(doc(db, "inspecciones", draftId));
+          if (docSnap.exists() && formRef.current) {
+            const data = docSnap.data();
+            setRegistroNum(data.registro_num || 1);
+            if (data.plano_x && data.plano_y) {
+              setMapCoords({ x: parseFloat(data.plano_x), y: parseFloat(data.plano_y) });
+              setUbicacionText("📍 Ubicación Guardada en Plano (Borrador)");
+            }
+            if (data.num_switches_cascada) setNumSwitches(data.num_switches_cascada);
+            
+            // Llenar campos del DOM
+            Object.entries(data).forEach(([key, value]) => {
+              if (formRef.current) {
+                const input = formRef.current.elements.namedItem(key) as HTMLInputElement | HTMLSelectElement;
+                if (input) {
+                  if (input.type === "checkbox" || input.type === "radio") {
+                    if (input.value === value) (input as HTMLInputElement).checked = true;
+                  } else {
+                    input.value = value as string;
+                  }
+                }
+              }
+            });
+
+            // Llenar fotos
+            setPhotos({
+              1: data.foto_1_base64 || null,
+              2: data.foto_2_base64 || null,
+              3: data.foto_3_base64 || null,
+            });
+          }
+        } catch (error) {
+          console.error("Error cargando el borrador:", error);
+        }
+      };
+      fetchDraft();
+    }
+  }, [draftId, isClient]);
 
   useEffect(() => {
     const q = query(collection(db, "dispositivos_red"), orderBy("nombre", "asc"));
@@ -293,46 +339,53 @@ export default function FormularioPage() {
         data.plano_y = String(mapCoords.y);
       }
 
-      // Evitar duplicidad de registro_num consultando el último justo antes de guardar (si hay internet)
-      let finalRegistroNum: string | number = registroNum;
-      if (navigator.onLine) {
-        try {
-          const q = query(collection(db, "inspecciones"), orderBy("timestamp", "desc"), limit(5));
-          const querySnapshot = await getDocs(q);
-          let maxNum = 0;
-          querySnapshot.forEach(doc => {
-            const num = parseInt(String(doc.data().registro_num || "0").split('-')[0], 10);
-            if (!isNaN(num) && num > maxNum) {
-              maxNum = num;
-            }
-          });
-          finalRegistroNum = maxNum > 0 ? maxNum + 1 : 1;
-        } catch (e) {
-          console.warn("No se pudo refrescar el contador antes de guardar.", e);
-        }
+      // Añadimos el estado del levantamiento
+      data.estado_levantamiento = accion === 'pendiente' ? 'Pendiente' : 'Finalizado';
+
+      if (draftId) {
+        // Actualizar borrador existente
+        data.registro_num = String(registroNum);
+        await updateDoc(doc(db, "inspecciones", draftId), data);
       } else {
-        // Para registros offline concurrentes, agregamos un distintivo corto
-        finalRegistroNum = `${registroNum}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        // Evitar duplicidad de registro_num consultando el último justo antes de guardar (si hay internet)
+        let finalRegistroNum: string | number = registroNum;
+        if (navigator.onLine) {
+          try {
+            const q = query(collection(db, "inspecciones"), orderBy("timestamp", "desc"), limit(5));
+            const querySnapshot = await getDocs(q);
+            let maxNum = 0;
+            querySnapshot.forEach(doc => {
+              const num = parseInt(String(doc.data().registro_num || "0").split('-')[0], 10);
+              if (!isNaN(num) && num > maxNum) {
+                maxNum = num;
+              }
+            });
+            finalRegistroNum = maxNum > 0 ? maxNum + 1 : 1;
+          } catch (e) {
+            console.warn("No se pudo refrescar el contador antes de guardar.", e);
+          }
+        } else {
+          // Para registros offline concurrentes, agregamos un distintivo corto
+          finalRegistroNum = `${registroNum}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        }
+  
+        data.registro_num = String(finalRegistroNum);
+        await addDoc(collection(db, "inspecciones"), data);
+        localStorage.setItem("dc_telematica_contador", (finalRegistroNum as number + 1).toString());
       }
-
-      data.registro_num = String(finalRegistroNum);
-
-      await addDoc(collection(db, "inspecciones"), data);
       
-      localStorage.setItem("dc_telematica_contador", (registroNum + 1).toString());
-
       if (!navigator.onLine) {
         setSaveSuccess("⚠️ Guardado Localmente. No hay conexión a internet, los datos se sincronizarán cuando recuperes la señal.");
         setPendingSync(true);
       } else {
-        setSaveSuccess("✅ ¡Registro Guardado y Sincronizado Exitosamente!");
+        setSaveSuccess(`✅ ¡Registro ${accion === 'pendiente' ? 'Guardado como Pendiente' : 'Guardado'} y Sincronizado Exitosamente!`);
       }
 
       setIsSaving(false);
 
       setTimeout(() => {
         if (accion === "continuar_punto") {
-          window.location.reload();
+          window.location.href = '/formulario'; // hard reload to clear draftId
         } else {
           router.push("/");
         }
@@ -717,6 +770,9 @@ export default function FormularioPage() {
                   <button onClick={() => procesarGuardado('continuar_punto')} className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-lg transition-all hover:scale-[1.02]">
                     Siguiente Punto de Red
                   </button>
+                  <button onClick={() => procesarGuardado('pendiente')} className="w-full bg-yellow-600/80 hover:bg-yellow-500 text-white font-bold py-3 rounded-lg transition-all hover:scale-[1.02]">
+                    Guardar como Pendiente (Borrador)
+                  </button>
                   <button onClick={() => procesarGuardado('terminar_jornada')} className="w-full bg-transparent border-2 border-red-500/50 text-red-400 hover:bg-red-500/10 hover:border-red-500 font-bold py-3 rounded-lg transition-all hover:scale-[1.02]">
                     Terminar Jornada del Día
                   </button>
@@ -891,6 +947,21 @@ export default function FormularioPage() {
                   <label className="text-sm font-semibold text-gray-300 block mb-1">Dirección MAC:</label>
                   <input type="text" value={newDevice.mac || ""} onChange={e=>setNewDevice({...newDevice, mac: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 outline-none" placeholder="AA:BB:CC..." />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold text-gray-300 block mb-1">Nivel de Conectividad:</label>
+                <select value={newDevice.nivel_conectividad || ""} onChange={e=>setNewDevice({...newDevice, nivel_conectividad: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 outline-none">
+                  <option value="">Seleccione Nivel...</option>
+                  <option value="Core">Core</option>
+                  <option value="Distribucion">Distribucion</option>
+                  <option value="Nivel 1">Nivel 1</option>
+                  <option value="Nivel 2">Nivel 2</option>
+                  <option value="Nivel 3">Nivel 3</option>
+                  <option value="Nivel 4">Nivel 4</option>
+                  <option value="Nivel 5">Nivel 5</option>
+                  <option value="Nivel 6">Nivel 6</option>
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
