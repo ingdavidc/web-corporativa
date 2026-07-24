@@ -85,6 +85,7 @@ export default function PanelPage() {
     marca: "",
     modelo: "",
     mac: "",
+    nivel_conectividad: "",
     unidadesU: 1,
     mapCoords: null as { x: number, y: number } | null
   });
