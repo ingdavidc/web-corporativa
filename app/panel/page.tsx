@@ -2447,20 +2447,21 @@ export default function PanelPage() {
                             return (
                               <div 
                                 key={inspeccion.id}
-                                className="absolute flex flex-col items-center justify-center pointer-events-auto cursor-pointer transition-transform hover:scale-110 hover:z-10"
+                                className="absolute flex flex-col items-center justify-center pointer-events-auto cursor-pointer transition-transform hover:z-[100] group"
                                 style={{ 
-                                  left: `calc(${inspeccion.plano_x}% - 8px)`, 
-                                  top: `calc(${inspeccion.plano_y}% - 8px)`,
-                                  transform: `scale(${1 / state.scale})`,
-                                  transformOrigin: 'top center'
+                                  left: `calc(${inspeccion.plano_x}%)`, 
+                                  top: `calc(${inspeccion.plano_y}%)`,
+                                  transform: `translate(-50%, -50%) scale(${1 / Math.max(state.scale, 0.5)})`,
                                 }}
                                 onClick={() => {
                                   setShowGlobalMapModal(false);
-                                  setViewDoc(inspeccion);
+                                  handleOpenView(inspeccion);
                                 }}
                               >
-                                <div className={`w-4 h-4 ${bgColor} rounded-full border-2 border-white shadow-[0_0_8px_${baseColor}]`}></div>
-                                <div className="mt-1 bg-black/80 px-2 py-0.5 rounded text-[10px] font-bold text-white border border-white/20 whitespace-nowrap">
+                                <div className={`w-3 h-3 sm:w-4 sm:h-4 ${bgColor} rounded-full border-[1.5px] border-white shadow-[0_0_8px_${baseColor}] transition-all group-hover:scale-150`}></div>
+                                
+                                {/* Etiqueta: Oculta por defecto en zoom bajo, visible al pasar el mouse o al hacer zoom alto */}
+                                <div className={`absolute top-full mt-1 bg-black/90 px-1.5 py-0.5 rounded text-[9px] font-bold text-white border border-white/20 whitespace-nowrap pointer-events-none transition-opacity shadow-lg ${state.scale > 1.8 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                                   {inspeccion.punto_id || `Reg ${inspeccion.registro_num}`}
                                 </div>
                               </div>
