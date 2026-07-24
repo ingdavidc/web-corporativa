@@ -1484,7 +1484,7 @@ export default function PanelPage() {
           MODALES DE AUDITORÍA (VER Y EDITAR)
          ========================================================= */}
       {viewDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
           <div className="bg-[#0a0a0a] border border-cyan-500/30 p-6 md:p-8 rounded-2xl w-full max-w-4xl shadow-[0_0_50px_rgba(6,182,212,0.15)] my-8">
             <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
               <h2 className="text-2xl font-bold text-cyan-400">Detalles de Inspección</h2>
@@ -2478,7 +2478,6 @@ export default function PanelPage() {
                                   transform: `translate(-50%, -50%) scale(var(--marker-scale))`,
                                 }}
                                 onClick={() => {
-                                  setShowGlobalMapModal(false);
                                   handleOpenView(inspeccion);
                                 }}
                               >
