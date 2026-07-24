@@ -21,6 +21,8 @@ interface Inspeccion {
   foto_1_base64?: string;
   foto_2_base64?: string;
   foto_3_base64?: string;
+  tiene_fotos?: boolean;
+  timestamp?: string;
   solicitud_modificacion?: "Pendiente" | "Aprobada" | "Rechazada";
   motivo_modificacion?: string;
   [key: string]: any; 
@@ -47,6 +49,53 @@ export default function PanelPage() {
   const [viewDoc, setViewDoc] = useState<Inspeccion | null>(null);
   const [editDoc, setEditDoc] = useState<Inspeccion | null>(null);
   const [showGlobalMapModal, setShowGlobalMapModal] = useState(false);
+  const [loadingAction, setLoadingAction] = useState(false);
+
+  const fetchFotosForInspeccion = async (inspeccion: Inspeccion): Promise<Inspeccion> => {
+    if (inspeccion.tiene_fotos && !inspeccion.foto_1_base64 && !inspeccion.foto_2_base64 && !inspeccion.foto_3_base64) {
+      setLoadingAction(true);
+      try {
+        const docRef = doc(db, "inspecciones", inspeccion.id, "fotos", "data");
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const fotosData = docSnap.data();
+          return {
+            ...inspeccion,
+            foto_1_base64: fotosData.foto_1_base64 || "",
+            foto_2_base64: fotosData.foto_2_base64 || "",
+            foto_3_base64: fotosData.foto_3_base64 || ""
+          };
+        }
+      } catch (error) {
+        console.error("Error fetching fotos:", error);
+      } finally {
+        setLoadingAction(false);
+      }
+    }
+    return inspeccion;
+  };
+
+  const handleOpenView = async (inspeccion: Inspeccion) => {
+    const fullDoc = await fetchFotosForInspeccion(inspeccion);
+    setViewDoc(fullDoc);
+  };
+
+  const handleOpenEdit = async (inspeccion: Inspeccion) => {
+    const fullDoc = await fetchFotosForInspeccion(inspeccion);
+    setEditDoc(fullDoc);
+  };
+
+  const handleGenerateSinglePDF = async (inspeccion: Inspeccion) => {
+    const fullDoc = await fetchFotosForInspeccion(inspeccion);
+    handleGeneratePDF([fullDoc], `Reporte_${fullDoc.punto_id || 'Inspeccion'}.pdf`);
+  };
+
+  const handleGenerateAllPDF = async () => {
+    // Para el reporte general, podríamos cargar todas las fotos, pero eso sería pesadísimo.
+    // Solo cargaremos las fotos de las inspecciones que estén incluidas o generaremos sin fotos si son muchas.
+    // Para simplificar, generamos el PDF general con lo que ya está en memoria para evitar cuelgues.
+    handleGeneratePDF(inspecciones, "Reporte_General_Auditoria.pdf");
+  };
 
   // State Usuarios
   const [usuarios, setUsuarios] = useState<any[]>([]);
@@ -1018,7 +1067,7 @@ export default function PanelPage() {
 
         <div className="flex flex-col sm:flex-row gap-3 mt-6 md:mt-0 w-full md:w-auto">
           {activeTab === "auditorias" && (
-            <button onClick={() => handleGeneratePDF(inspecciones, "Reporte_General_Auditoria.pdf")} disabled={inspecciones.length === 0} className="flex-1 md:flex-none px-6 py-3 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500 hover:text-black rounded-lg transition-all font-bold shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+            <button onClick={handleGenerateAllPDF} disabled={inspecciones.length === 0} className="flex-1 md:flex-none px-6 py-3 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500 hover:text-black rounded-lg transition-all font-bold shadow-[0_0_15px_rgba(6,182,212,0.15)]">
               📄 Exportar Todo a PDF
             </button>
           )}
@@ -1105,12 +1154,12 @@ export default function PanelPage() {
                     <td className="py-4 px-4 text-sm text-cyan-200">{inspeccion.auditor_profesional || inspeccion.tecnico_nombre || "Ing. David Carreño"}</td>
                     <td className="py-4 px-4 font-medium text-cyan-100">{inspeccion.punto_id || "-"}</td>
                     <td className="py-4 px-4 text-sm">{inspeccion.ubicacion || "-"}</td>
-                    <td className="py-4 px-4 text-center">{inspeccion.foto_1_base64 || inspeccion.foto_2_base64 ? "📷 Sí" : "❌ No"}</td>
+                    <td className="py-4 px-4 text-center">{inspeccion.tiene_fotos || inspeccion.foto_1_base64 || inspeccion.foto_2_base64 ? "📷 Sí" : "❌ No"}</td>
                     <td className="py-4 px-4">
                       <div className="flex justify-center gap-2 flex-wrap max-w-[150px]">
-                        <button onClick={() => setViewDoc(inspeccion)} className="p-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded transition-colors" title="Ver Detalles">👁️</button>
-                        <button onClick={() => setEditDoc(inspeccion)} className="p-2 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500 hover:text-black rounded transition-colors" title="Editar Admin">✏️</button>
-                        <button onClick={() => handleGeneratePDF([inspeccion], `Reporte_${inspeccion.punto_id || 'Inspeccion'}.pdf`)} className="p-2 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500 hover:text-black rounded transition-colors" title="Exportar a PDF">📄</button>
+                        <button onClick={() => handleOpenView(inspeccion)} className="p-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded transition-colors" title="Ver Detalles">👁️</button>
+                        <button onClick={() => handleOpenEdit(inspeccion)} className="p-2 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500 hover:text-black rounded transition-colors" title="Editar Admin">✏️</button>
+                        <button onClick={() => handleGenerateSinglePDF(inspeccion)} className="p-2 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500 hover:text-black rounded transition-colors" title="Exportar a PDF">📄</button>
                         <button onClick={() => handleDeleteAuditoria(inspeccion.id)} className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded transition-colors" title="Eliminar">🗑️</button>
                         
                         {inspeccion.solicitud_modificacion === 'Pendiente' && (
@@ -2432,6 +2481,16 @@ export default function PanelPage() {
                 )}
               </TransformWrapper>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* GLOBAL SPINNER para operaciones lentas (Lazy Loading) */}
+      {loadingAction && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="bg-black/80 p-8 rounded-2xl flex flex-col items-center border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+            <div className="w-16 h-16 border-4 border-cyan-900 border-t-cyan-400 rounded-full animate-spin mb-4"></div>
+            <p className="text-cyan-400 font-bold text-lg animate-pulse">Descargando Imágenes...</p>
           </div>
         </div>
       )}

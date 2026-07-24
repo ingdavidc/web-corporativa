@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, addDoc, getDocs, query, orderBy, limit, onSnapshot, doc, getDoc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, orderBy, limit, onSnapshot, doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
 export interface DispositivoRed {
@@ -331,9 +331,14 @@ function FormularioPageContent() {
       delete data.foto_2;
       delete data.foto_3;
 
-      data.foto_1_base64 = photos[1] || "";
-      data.foto_2_base64 = photos[2] || "";
-      data.foto_3_base64 = photos[3] || "";
+      const fotosData = {
+        foto_1_base64: photos[1] || "",
+        foto_2_base64: photos[2] || "",
+        foto_3_base64: photos[3] || ""
+      };
+      
+      const hasPhotos = !!(fotosData.foto_1_base64 || fotosData.foto_2_base64 || fotosData.foto_3_base64);
+      data.tiene_fotos = hasPhotos;
 
       if (mapCoords) {
         data.plano_x = String(mapCoords.x);
@@ -347,6 +352,9 @@ function FormularioPageContent() {
         // Actualizar borrador existente
         data.registro_num = String(registroNum);
         await updateDoc(doc(db, "inspecciones", draftId), data);
+        if (hasPhotos) {
+          await setDoc(doc(db, "inspecciones", draftId, "fotos", "data"), fotosData, { merge: true });
+        }
       } else {
         // Evitar duplicidad de registro_num consultando el último justo antes de guardar (si hay internet)
         let finalRegistroNum: string | number = registroNum;
@@ -371,7 +379,10 @@ function FormularioPageContent() {
         }
   
         data.registro_num = String(finalRegistroNum);
-        await addDoc(collection(db, "inspecciones"), data);
+        const newDocRef = await addDoc(collection(db, "inspecciones"), data);
+        if (hasPhotos) {
+          await setDoc(doc(db, "inspecciones", newDocRef.id, "fotos", "data"), fotosData);
+        }
         localStorage.setItem("dc_telematica_contador", (finalRegistroNum as number + 1).toString());
       }
       

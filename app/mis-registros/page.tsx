@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ArrowLeft, Clock, CheckCircle, XCircle, Edit, UploadCloud } from "lucide-react";
 import { auth, db } from "@/lib/firebase";
-import { collection, query, where, getDocs, updateDoc, doc, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc, doc, orderBy, getDoc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
 export default function MisRegistrosPage() {
@@ -103,12 +103,36 @@ export default function MisRegistrosPage() {
     }
   };
 
-  const openEditModal = (registro: any) => {
+  const [loadingPhotos, setLoadingPhotos] = useState(false);
+
+  const openEditModal = async (registro: any) => {
+    let foto1 = registro.foto_1_base64 || null;
+    let foto2 = registro.foto_2_base64 || null;
+    let foto3 = registro.foto_3_base64 || null;
+
+    if (registro.tiene_fotos && !foto1 && !foto2 && !foto3) {
+      setLoadingPhotos(true);
+      try {
+        const docRef = doc(db, "inspecciones", registro.id, "fotos", "data");
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const fotosData = docSnap.data();
+          foto1 = fotosData.foto_1_base64 || null;
+          foto2 = fotosData.foto_2_base64 || null;
+          foto3 = fotosData.foto_3_base64 || null;
+        }
+      } catch (error) {
+        console.error("Error fetching fotos:", error);
+      } finally {
+        setLoadingPhotos(false);
+      }
+    }
+
     setSelectedDoc(registro);
     setEditPhotos({
-      1: registro.foto_1_base64 || null,
-      2: registro.foto_2_base64 || null,
-      3: registro.foto_3_base64 || null,
+      1: foto1,
+      2: foto2,
+      3: foto3,
     });
     setEditModalOpen(true);
   };
@@ -195,18 +219,27 @@ export default function MisRegistrosPage() {
     if (!selectedDoc) return;
 
     const formData = new FormData(e.currentTarget);
-    const dataToUpdate = {
-      foto_1_base64: editPhotos[1],
-      foto_2_base64: editPhotos[2],
-      foto_3_base64: editPhotos[3],
-      // Reset the modification request since it has been fulfilled
+    const fotosData = {
+      foto_1_base64: editPhotos[1] || "",
+      foto_2_base64: editPhotos[2] || "",
+      foto_3_base64: editPhotos[3] || ""
+    };
+    
+    const hasPhotos = !!(fotosData.foto_1_base64 || fotosData.foto_2_base64 || fotosData.foto_3_base64);
+
+    const dataToUpdate: any = {
       solicitud_modificacion: null,
-      motivo_modificacion: null
+      motivo_modificacion: null,
+      tiene_fotos: hasPhotos,
+      foto_1_base64: null,
+      foto_2_base64: null,
+      foto_3_base64: null
     };
 
     setIsSaving(true);
     try {
       await updateDoc(doc(db, "inspecciones", selectedDoc.id), dataToUpdate);
+      await setDoc(doc(db, "inspecciones", selectedDoc.id, "fotos", "data"), fotosData);
       setEditModalOpen(false);
       if (userEmail) loadRegistros(userEmail);
     } catch (error) {
@@ -375,6 +408,16 @@ export default function MisRegistrosPage() {
         </div>
       )}
 
+      {/* SPINNER para Lazy Loading de Fotos */}
+      {loadingPhotos && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-black/80 p-8 rounded-2xl flex flex-col items-center border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] text-center">
+            <div className="w-16 h-16 border-4 border-cyan-900 border-t-cyan-400 rounded-full animate-spin mb-4"></div>
+            <p className="text-cyan-400 font-bold text-lg animate-pulse">Descargando Fotografías...</p>
+            <p className="text-gray-400 text-sm mt-2">Optimizando datos móviles</p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
