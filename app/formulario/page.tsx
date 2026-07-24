@@ -16,6 +16,7 @@ export interface DispositivoRed {
   marca: string;
   modelo: string;
   mac: string;
+  nivel_conectividad?: string;
   mapCoords: { x: number, y: number } | null;
   createdAt: string;
 }
