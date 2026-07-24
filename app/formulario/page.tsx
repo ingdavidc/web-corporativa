@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
@@ -21,7 +21,7 @@ export interface DispositivoRed {
   createdAt: string;
 }
 
-export default function FormularioPage() {
+function FormularioPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const draftId = searchParams.get("draftId");
@@ -997,5 +997,13 @@ export default function FormularioPage() {
       )}
 
     </main>
+  );
+}
+
+export default function FormularioPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center py-20 text-cyan-400 font-bold">Cargando formulario...</div>}>
+      <FormularioPageContent />
+    </Suspense>
   );
 }
