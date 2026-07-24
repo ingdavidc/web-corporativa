@@ -1766,7 +1766,7 @@ export default function PanelPage() {
             <button 
               onClick={() => {
                 setEditDeviceDoc(null);
-                setDeviceForm({ tipo: "Switch", nombre: "", ip: "", marca: "", modelo: "", mac: "", unidadesU: 1, mapCoords: null });
+                setDeviceForm({ tipo: "Switch", nombre: "", ip: "", marca: "", modelo: "", mac: "", nivel_conectividad: "", unidadesU: 1, mapCoords: null });
                 setShowDeviceModal(true);
               }} 
               className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-[0_0_15px_rgba(234,88,12,0.3)]"
