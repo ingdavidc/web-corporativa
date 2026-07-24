@@ -2463,7 +2463,7 @@ export default function PanelPage() {
                           className="relative inline-block touch-none"
                           style={{ '--marker-scale': '1', '--label-opacity': '0', '--label-pointer': 'none' } as any}
                         >
-                          <img src="/plano_hospital.webp" alt="Plano del Hospital" className="w-[4000px] max-w-none h-auto block pointer-events-none" />
+                          <img src="/plano_hospital.webp?v=2" alt="Plano del Hospital" className="w-[4000px] max-w-none h-auto block pointer-events-none" />
                           
                           {inspecciones.filter(i => i.plano_x && i.plano_y).map((inspeccion) => {
                             const isDraft = inspeccion.estado_levantamiento === 'Pendiente';
