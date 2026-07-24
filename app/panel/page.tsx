@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { initializeApp, getApps } from "firebase/app";
@@ -50,6 +50,21 @@ export default function PanelPage() {
   const [editDoc, setEditDoc] = useState<Inspeccion | null>(null);
   const [showGlobalMapModal, setShowGlobalMapModal] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const zoomPercentageRef = useRef<HTMLSpanElement>(null);
+
+  const handleMapTransform = (ref: any) => {
+    if (zoomPercentageRef.current) {
+      zoomPercentageRef.current.innerText = `${Math.round(ref.state.scale * 100)}%`;
+    }
+    if (mapContainerRef.current) {
+      // Disminuir tamaño conforme se hace zoom in (exponente > 1, p.e. 1.15)
+      const markerScale = 1 / Math.pow(ref.state.scale, 1.15);
+      mapContainerRef.current.style.setProperty('--marker-scale', markerScale.toString());
+      mapContainerRef.current.style.setProperty('--label-opacity', ref.state.scale > 1.8 ? '1' : '0');
+      mapContainerRef.current.style.setProperty('--label-pointer', ref.state.scale > 1.8 ? 'auto' : 'none');
+    }
+  };
 
   const fetchFotosForInspeccion = async (inspeccion: Inspeccion): Promise<Inspeccion> => {
     if (inspeccion.tiene_fotos && !inspeccion.foto_1_base64 && !inspeccion.foto_2_base64 && !inspeccion.foto_3_base64) {
@@ -2431,12 +2446,21 @@ export default function PanelPage() {
                 wheel={{ step: 0.1 }}
                 pinch={{ step: 5 }}
                 doubleClick={{ disabled: true }}
+                onTransformed={handleMapTransform}
               >
-                {({ zoomIn, zoomOut, state }) => (
+                {({ zoomIn, zoomOut }) => (
                   <div className="flex flex-col w-full h-full">
+                    <style>{`
+                      .marker-label { opacity: var(--label-opacity); pointer-events: var(--label-pointer); }
+                      .marker-group:hover .marker-label { opacity: 1 !important; pointer-events: auto !important; z-index: 50 !important; }
+                    `}</style>
                     <div className="flex-1 overflow-hidden w-full h-full cursor-grab active:cursor-grabbing relative">
                       <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center">
-                        <div className="relative inline-block touch-none">
+                        <div 
+                          ref={mapContainerRef}
+                          className="relative inline-block touch-none"
+                          style={{ '--marker-scale': '1', '--label-opacity': '0', '--label-pointer': 'none' } as any}
+                        >
                           <img src="/plano_hospital.webp" alt="Plano del Hospital" className="w-full max-w-[1200px] h-auto block pointer-events-none" />
                           
                           {inspecciones.filter(i => i.plano_x && i.plano_y).map((inspeccion) => {
@@ -2447,21 +2471,20 @@ export default function PanelPage() {
                             return (
                               <div 
                                 key={inspeccion.id}
-                                className="absolute flex flex-col items-center justify-center pointer-events-auto cursor-pointer transition-transform hover:z-[100] group"
+                                className="absolute flex flex-col items-center justify-center pointer-events-auto cursor-pointer transition-transform hover:z-[100] marker-group"
                                 style={{ 
                                   left: `calc(${inspeccion.plano_x}%)`, 
                                   top: `calc(${inspeccion.plano_y}%)`,
-                                  transform: `translate(-50%, -50%) scale(${1 / Math.max(state.scale, 0.5)})`,
+                                  transform: `translate(-50%, -50%) scale(var(--marker-scale))`,
                                 }}
                                 onClick={() => {
                                   setShowGlobalMapModal(false);
                                   handleOpenView(inspeccion);
                                 }}
                               >
-                                <div className={`w-3 h-3 sm:w-4 sm:h-4 ${bgColor} rounded-full border-[1.5px] border-white shadow-[0_0_8px_${baseColor}] transition-all group-hover:scale-150`}></div>
+                                <div className={`w-3 h-3 sm:w-4 sm:h-4 ${bgColor} rounded-full border-[1.5px] border-white shadow-[0_0_8px_${baseColor}] transition-all hover:scale-150`}></div>
                                 
-                                {/* Etiqueta: Oculta por defecto en zoom bajo, visible al pasar el mouse o al hacer zoom alto */}
-                                <div className={`absolute top-full mt-1 bg-black/90 px-1.5 py-0.5 rounded text-[9px] font-bold text-white border border-white/20 whitespace-nowrap pointer-events-none transition-opacity shadow-lg ${state.scale > 1.8 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                <div className="marker-label absolute top-full mt-1 bg-black/90 px-1.5 py-0.5 rounded text-[9px] font-bold text-white border border-white/20 whitespace-nowrap transition-opacity shadow-lg">
                                   {inspeccion.punto_id || `Reg ${inspeccion.registro_num}`}
                                 </div>
                               </div>
@@ -2474,7 +2497,7 @@ export default function PanelPage() {
                     <div className="absolute bottom-4 left-4 z-10 flex gap-2">
                       <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/20 shadow-xl">
                         <button onClick={() => zoomOut()} className="w-10 h-10 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">-</button>
-                        <span className="text-white text-sm font-bold min-w-[50px] text-center">{Math.round(state.scale * 100)}%</span>
+                        <span ref={zoomPercentageRef} className="text-white text-sm font-bold min-w-[50px] text-center">100%</span>
                         <button onClick={() => zoomIn()} className="w-10 h-10 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">+</button>
                       </div>
                     </div>
