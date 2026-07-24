@@ -322,7 +322,7 @@ function FormularioPageContent() {
 
     try {
       const formData = new FormData(formRef.current);
-      const data = Object.fromEntries(formData.entries());
+      const data: Record<string, any> = Object.fromEntries(formData.entries());
       data.accion_post_guardado = accion;
       data.timestamp = new Date().toISOString();
       data.auditor_email = auditorEmail;
