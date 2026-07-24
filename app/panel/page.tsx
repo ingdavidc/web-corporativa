@@ -46,6 +46,7 @@ export default function PanelPage() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [viewDoc, setViewDoc] = useState<Inspeccion | null>(null);
   const [editDoc, setEditDoc] = useState<Inspeccion | null>(null);
+  const [showGlobalMapModal, setShowGlobalMapModal] = useState(false);
 
   // State Usuarios
   const [usuarios, setUsuarios] = useState<any[]>([]);
@@ -1058,6 +1059,15 @@ export default function PanelPage() {
           ============================================== */}
       {activeTab === "auditorias" && (
         <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl w-full p-4 md:p-8 shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-x-auto animate-in fade-in duration-300">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-white">Listado de Auditorías</h2>
+            <button 
+              onClick={() => setShowGlobalMapModal(true)} 
+              className="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-[0_0_15px_rgba(6,182,212,0.3)] flex items-center gap-2"
+            >
+              <span>📍</span> Ver Plano General
+            </button>
+          </div>
           {loading ? (
             <div className="flex justify-center items-center py-20"><div className="w-12 h-12 border-4 border-cyan-900 border-t-cyan-400 rounded-full animate-spin"></div></div>
           ) : inspecciones.length === 0 ? (
@@ -2346,6 +2356,82 @@ export default function PanelPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ==============================================
+          MODAL: MAPA GENERAL DE INSPECCIONES
+          ============================================== */}
+      {showGlobalMapModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+          <div className="bg-[#0a0a0a] border border-cyan-500/30 p-4 md:p-6 rounded-xl w-full max-w-6xl h-[95vh] flex flex-col shadow-[0_0_50px_rgba(6,182,212,0.15)] relative">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl md:text-2xl font-bold text-cyan-400 flex items-center gap-2">
+                <span>📍</span> Mapa General de Inspecciones
+              </h3>
+              <button onClick={() => setShowGlobalMapModal(false)} className="text-gray-400 hover:text-white text-2xl leading-none">✕</button>
+            </div>
+            
+            <div className="flex-1 overflow-hidden bg-[#111] rounded-xl border border-white/10 relative flex justify-center items-center shadow-inner">
+              <TransformWrapper
+                initialScale={1}
+                minScale={0.5}
+                maxScale={10}
+                centerOnInit={true}
+                wheel={{ step: 0.1 }}
+                pinch={{ step: 5 }}
+                doubleClick={{ disabled: true }}
+              >
+                {({ zoomIn, zoomOut, state }) => (
+                  <div className="flex flex-col w-full h-full">
+                    <div className="flex-1 overflow-hidden w-full h-full cursor-grab active:cursor-grabbing relative">
+                      <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center">
+                        <div className="relative inline-block touch-none">
+                          <img src="/plano_hospital.webp" alt="Plano del Hospital" className="w-full max-w-[1200px] h-auto block pointer-events-none" />
+                          
+                          {inspecciones.filter(i => i.plano_x && i.plano_y).map((inspeccion) => {
+                            const isDraft = inspeccion.estado_levantamiento === 'Pendiente';
+                            const baseColor = isDraft ? 'rgba(234, 179, 8, 1)' : 'rgba(6, 182, 212, 1)'; // yellow-500 : cyan-500
+                            const bgColor = isDraft ? 'bg-yellow-500' : 'bg-cyan-500';
+                            
+                            return (
+                              <div 
+                                key={inspeccion.id}
+                                className="absolute flex flex-col items-center justify-center pointer-events-auto cursor-pointer transition-transform hover:scale-110 hover:z-10"
+                                style={{ 
+                                  left: `calc(${inspeccion.plano_x}% - 8px)`, 
+                                  top: `calc(${inspeccion.plano_y}% - 8px)`,
+                                  transform: `scale(${1 / state.scale})`,
+                                  transformOrigin: 'top center'
+                                }}
+                                onClick={() => {
+                                  setShowGlobalMapModal(false);
+                                  setViewDoc(inspeccion);
+                                }}
+                              >
+                                <div className={`w-4 h-4 ${bgColor} rounded-full border-2 border-white shadow-[0_0_8px_${baseColor}]`}></div>
+                                <div className="mt-1 bg-black/80 px-2 py-0.5 rounded text-[10px] font-bold text-white border border-white/20 whitespace-nowrap">
+                                  {inspeccion.punto_id || `Reg ${inspeccion.registro_num}`}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </TransformComponent>
+                    </div>
+
+                    <div className="absolute bottom-4 left-4 z-10 flex gap-2">
+                      <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/20 shadow-xl">
+                        <button onClick={() => zoomOut()} className="w-10 h-10 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">-</button>
+                        <span className="text-white text-sm font-bold min-w-[50px] text-center">{Math.round(state.scale * 100)}%</span>
+                        <button onClick={() => zoomIn()} className="w-10 h-10 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">+</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </TransformWrapper>
+            </div>
           </div>
         </div>
       )}
