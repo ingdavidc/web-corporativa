@@ -477,7 +477,7 @@ export default function PanelPage() {
         alert("✅ Dispositivo agregado al inventario.");
       }
       setShowDeviceModal(false);
-      setDeviceForm({ tipo: "Switch", nombre: "", ip: "", marca: "", modelo: "", mac: "", unidadesU: 1, mapCoords: null });
+      setDeviceForm({ tipo: "Switch", nombre: "", ip: "", marca: "", modelo: "", mac: "", nivel_conectividad: "", unidadesU: 1, mapCoords: null });
       setEditDeviceDoc(null);
     } catch (error) {
       console.error("Error guardando dispositivo:", error);
