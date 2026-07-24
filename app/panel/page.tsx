@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { initializeApp, getApps } from "firebase/app";
 import { onAuthStateChanged, signOut, createUserWithEmailAndPassword, getAuth, sendPasswordResetEmail } from "firebase/auth";
-import { collection, onSnapshot, doc, deleteDoc, updateDoc, query, orderBy, setDoc, addDoc, limit } from "firebase/firestore";
+import { collection, onSnapshot, doc, deleteDoc, updateDoc, query, orderBy, setDoc, addDoc, limit, getDoc } from "firebase/firestore";
 import { auth, db, firebaseConfig } from "@/lib/firebase";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import RackBuilder from "@/components/RackBuilder";
