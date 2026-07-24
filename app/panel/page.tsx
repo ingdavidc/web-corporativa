@@ -2439,6 +2439,7 @@ export default function PanelPage() {
             
             <div className="flex-1 overflow-hidden bg-[#111] rounded-xl border border-white/10 relative flex justify-center items-center shadow-inner">
               <TransformWrapper
+                maxScale={20}
                 centerOnInit={true}
                 wheel={{ step: 0.1 }}
                 pinch={{ step: 5 }}
