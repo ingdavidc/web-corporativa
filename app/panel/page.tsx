@@ -2446,7 +2446,7 @@ export default function PanelPage() {
                 wheel={{ step: 0.1 }}
                 pinch={{ step: 5 }}
                 doubleClick={{ disabled: true }}
-                onTransformed={handleMapTransform}
+                onTransform={handleMapTransform}
               >
                 {({ zoomIn, zoomOut }) => (
                   <div className="flex flex-col w-full h-full">
