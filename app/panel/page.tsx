@@ -1150,7 +1150,7 @@ export default function PanelPage() {
             🛠️ Gestión de Tareas
           </button>
         )}
-        {(currentUserRole === 'admin') && (
+        {(currentUserRole === 'admin' || currentUserRole === 'ingeniero') && (
           <button onClick={() => setActiveTab("recibos")} className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'recibos' ? 'bg-[#ED1C24] text-white shadow-[0_0_15px_rgba(237,28,36,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
             🧾 Recibos
           </button>
