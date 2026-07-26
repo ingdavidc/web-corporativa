@@ -1620,7 +1620,7 @@ export default function PanelPage() {
             <div className="flex justify-between items-center mb-2">
               <div className="flex items-center gap-4">
                 <h3 className="text-lg md:text-xl font-bold text-cyan-400">Ubicación en Plano</h3>
-                {currentUserRole === 'admin' && !isEditingLocation && (
+                {(currentUserRole === 'admin' || currentUserRole === 'ingeniero') && !isEditingLocation && (
                   <button 
                     onClick={() => setIsEditingLocation(true)}
                     className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500 hover:text-black font-bold py-1 px-3 rounded-lg text-sm transition-all shadow-[0_0_10px_rgba(234,179,8,0.2)]"
