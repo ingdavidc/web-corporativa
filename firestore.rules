@@ -60,5 +60,13 @@ service cloud.firestore {
       allow delete: if isRegisteredEmployee();
     }
 
+    match /recibos/{document=**} {
+      allow read, write, delete: if isRegisteredEmployee();
+    }
+
+    match /recibos_contador/{document=**} {
+      allow read, write: if isRegisteredEmployee();
+    }
+
   }
 }
