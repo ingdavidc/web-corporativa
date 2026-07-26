@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, doc, setDoc, getDoc, updateDoc, increment, serverTimestamp, runTransaction } from "firebase/firestore";
+import { collection, doc, setDoc, getDoc, updateDoc, increment, serverTimestamp, runTransaction, getDocs, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Plus, Trash2, FileText, Download, Save } from "lucide-react";
 import jsPDF from "jspdf";
@@ -26,8 +26,25 @@ export default function ReceiptManager() {
   const [products, setProducts] = useState<Product[]>([
     { id: crypto.randomUUID(), description: "", quantity: 1, unitPrice: 0 }
   ]);
-
+  
+  const [savedProducts, setSavedProducts] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    const fetchSavedProducts = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'productos_recibos'));
+        const pList: any[] = [];
+        querySnapshot.forEach((doc) => {
+          pList.push({ id: doc.id, ...doc.data() });
+        });
+        setSavedProducts(pList);
+      } catch (e) {
+        console.error("Error fetching saved products:", e);
+      }
+    };
+    fetchSavedProducts();
+  }, []);
 
   const handleClientChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setClientInfo({ ...clientInfo, [e.target.name]: e.target.value });
@@ -36,7 +53,14 @@ export default function ReceiptManager() {
   const handleProductChange = (id: string, field: keyof Product, value: string | number) => {
     setProducts(products.map(p => {
       if (p.id === id) {
-        return { ...p, [field]: value };
+        const updated = { ...p, [field]: value };
+        if (field === 'description') {
+          const match = savedProducts.find(sp => sp.description.toLowerCase() === (value as string).toLowerCase());
+          if (match) {
+            updated.unitPrice = match.defaultPrice;
+          }
+        }
+        return updated;
       }
       return p;
     }));
@@ -79,7 +103,6 @@ export default function ReceiptManager() {
       return `RE-${nextId.toString().padStart(4, '0')}`;
     } catch (error) {
       console.error("Transaction failed: ", error);
-      // Fallback for offline/fails
       return `RE-TEMP-${Math.floor(Math.random() * 10000)}`;
     }
   };
@@ -88,13 +111,11 @@ export default function ReceiptManager() {
     const doc = new jsPDF();
     const total = calculateTotal();
     
-    // Colores Corporativos
-    const azulCorporativo = [34, 42, 104]; // #222A68
-    const rojoConectividad = [237, 28, 36]; // #ED1C24
-    const grisPizarra = [80, 90, 100]; // #505A64
-    const grisPlatino = [240, 242, 245]; // #F0F2F5
+    const azulCorporativo = [34, 42, 104];
+    const rojoConectividad = [237, 28, 36];
+    const grisPizarra = [80, 90, 100];
+    const grisPlatino = [240, 242, 245];
 
-    // Logo
     try {
       const logoResponse = await fetch("/logo.png");
       if (logoResponse.ok) {
@@ -105,12 +126,11 @@ export default function ReceiptManager() {
           reader.readAsDataURL(blob);
         });
         
-        // Obtener proporciones originales para no distorsionar el logo
         const img = new Image();
         img.src = logoBase64;
         await new Promise((resolve) => { img.onload = resolve; });
         const ratio = img.width / img.height;
-        const newWidth = 20 * ratio; // Fijamos el alto en 20 y ajustamos el ancho
+        const newWidth = 20 * ratio;
 
         doc.addImage(logoBase64, 'PNG', 15, 15, newWidth, 20);
       }
@@ -118,7 +138,6 @@ export default function ReceiptManager() {
       console.error("No se pudo cargar el logo para el PDF", e);
     }
 
-    // Encabezado de Empresa
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     doc.setTextColor(azulCorporativo[0], azulCorporativo[1], azulCorporativo[2]);
@@ -131,12 +150,10 @@ export default function ReceiptManager() {
     doc.text("Cr. 16 No. 26 - 45 B. 6 de Octubre", 200, 31, { align: "right" });
     doc.text("Cel. 317 425 1419", 200, 36, { align: "right" });
 
-    // Línea separadora roja
     doc.setDrawColor(rojoConectividad[0], rojoConectividad[1], rojoConectividad[2]);
     doc.setLineWidth(1);
     doc.line(15, 42, 200, 42);
 
-    // Título y Consecutivo
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
     doc.setTextColor(azulCorporativo[0], azulCorporativo[1], azulCorporativo[2]);
@@ -152,7 +169,6 @@ export default function ReceiptManager() {
     const dateStr = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
     doc.text(`Fecha: ${dateStr}`, 200, 55, { align: "right" });
 
-    // Datos del Cliente (Recuadro gris platino)
     doc.setFillColor(grisPlatino[0], grisPlatino[1], grisPlatino[2]);
     doc.roundedRect(15, 68, 185, 32, 3, 3, "F");
     
@@ -169,7 +185,6 @@ export default function ReceiptManager() {
     doc.text(`Dirección: ${clientInfo.address}`, 105, 82);
     doc.text(`Ciudad: ${clientInfo.city}`, 105, 88);
 
-    // Tabla de Productos
     const tableData = products.filter(p => p.description.trim() !== "").map(p => [
       p.description,
       p.quantity.toString(),
@@ -177,10 +192,9 @@ export default function ReceiptManager() {
       formatCurrency(p.quantity * p.unitPrice)
     ]);
 
-    // Marca de Agua de Cancelado
     doc.setFont("helvetica", "bold");
     doc.setFontSize(50);
-    doc.setTextColor(245, 245, 245); // Gris muy claro para que no estorbe la lectura
+    doc.setTextColor(245, 245, 245);
     doc.text("CANCELADO Y ENTREGADO", 105, 160, { align: "center", angle: 45 });
 
     autoTable(doc, {
@@ -210,7 +224,6 @@ export default function ReceiptManager() {
       }
     });
 
-    // Totales
     const finalY = (doc as any).lastAutoTable.finalY + 10;
     
     doc.setFillColor(azulCorporativo[0], azulCorporativo[1], azulCorporativo[2]);
@@ -221,7 +234,6 @@ export default function ReceiptManager() {
     doc.text("TOTAL:", 135, finalY + 7);
     doc.text(formatCurrency(total), 195, finalY + 7, { align: "right" });
 
-    // Mensaje de Agradecimiento y Pie de página
     doc.setFont("helvetica", "italic");
     doc.setFontSize(10);
     doc.setTextColor(grisPizarra[0], grisPizarra[1], grisPizarra[2]);
@@ -232,20 +244,17 @@ export default function ReceiptManager() {
     doc.text("Este documento es un comprobante de pago generado electrónicamente.", 105, finalY + 35, { align: "center" });
     doc.text("Válido sin firma ni sello.", 105, finalY + 39, { align: "center" });
 
-    // Código de Seguridad Alfanumérico
     const securityCode = Math.random().toString(36).substring(2, 12).toUpperCase();
     doc.setFont("helvetica", "bold");
     doc.setTextColor(azulCorporativo[0], azulCorporativo[1], azulCorporativo[2]);
     doc.text(`CÓDIGO DE SEGURIDAD: ${securityCode}`, 105, finalY + 45, { align: "center" });
 
-    // Línea inferior corporativa
     doc.setDrawColor(azulCorporativo[0], azulCorporativo[1], azulCorporativo[2]);
     doc.setLineWidth(2);
     doc.line(15, 280, 140, 280);
     doc.setDrawColor(rojoConectividad[0], rojoConectividad[1], rojoConectividad[2]);
     doc.line(140, 280, 200, 280);
 
-    // Save PDF
     doc.save(`${receiptNum}.pdf`);
   };
 
@@ -258,30 +267,32 @@ export default function ReceiptManager() {
     setIsGenerating(true);
     try {
       const receiptNum = await generateReceiptNumber();
-      
       const total = calculateTotal();
       
-      // Guardar en base de datos
-      const receiptData = {
-        numero: receiptNum,
-        cliente: clientInfo,
-        productos: products.filter(p => p.description.trim() !== ""),
+      await addDoc(collection(db, 'recibos'), {
+        receiptNumber: receiptNum,
+        clientInfo,
+        products: products.filter(p => p.description.trim() !== ""),
         total: total,
-        fecha: serverTimestamp(),
-        estado: "generado"
-      };
+        createdAt: serverTimestamp()
+      });
 
-      await setDoc(doc(db, "recibos", receiptNum), receiptData);
+      for (const p of products) {
+        if (p.description.trim() !== '') {
+          const normalizedId = p.description.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+          try {
+            await setDoc(doc(db, 'productos_recibos', normalizedId), {
+              description: p.description.trim(),
+              defaultPrice: p.unitPrice
+            }, { merge: true });
+          } catch (e) {
+            console.error("Error saving product to catalog:", e);
+          }
+        }
+      }
 
-      // Generar y descargar PDF
       await generatePDF(receiptNum);
-
-      alert(`✅ Recibo ${receiptNum} generado exitosamente.`);
-      
-      // Reset form si se desea
-      // setClientInfo({ name: "", document: "", phone: "", address: "", city: "" });
-      // setProducts([{ id: crypto.randomUUID(), description: "", quantity: 1, unitPrice: 0 }]);
-      
+      alert(`✅ Recibo ${receiptNum} generado y guardado exitosamente.`);
     } catch (error) {
       console.error("Error al generar el recibo:", error);
       alert("Hubo un error al guardar/generar el recibo.");
@@ -304,10 +315,7 @@ export default function ReceiptManager() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Left Col: Formularios */}
         <div className="lg:col-span-2 space-y-6">
-          
-          {/* Datos del Cliente */}
           <div className="bg-white/5 border border-white/10 rounded-xl p-5">
             <h3 className="text-lg font-bold text-[#06b6d4] mb-4 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#ED1C24]" />
@@ -357,7 +365,6 @@ export default function ReceiptManager() {
             </div>
           </div>
 
-          {/* Productos */}
           <div className="bg-white/5 border border-white/10 rounded-xl p-5">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-[#06b6d4] flex items-center gap-2">
@@ -373,7 +380,6 @@ export default function ReceiptManager() {
             </div>
 
             <div className="space-y-3">
-              {/* Encabezados Desktop */}
               <div className="hidden md:grid grid-cols-12 gap-3 px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
                 <div className="col-span-5">Descripción del Ítem</div>
                 <div className="col-span-2 text-center">Cant.</div>
@@ -384,8 +390,6 @@ export default function ReceiptManager() {
 
               {products.map((product, index) => (
                 <div key={product.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-black/30 p-3 md:p-2 rounded-lg border border-white/5 relative group">
-                  
-                  {/* Etiqueta móvil */}
                   <div className="md:hidden flex justify-between items-center mb-2 pb-2 border-b border-white/5">
                     <span className="text-xs font-bold text-[#06b6d4]">ÍTEM {index + 1}</span>
                     <button onClick={() => removeProduct(product.id)} className="text-red-400 p-1 bg-red-400/10 rounded"><Trash2 size={14}/></button>
@@ -398,6 +402,7 @@ export default function ReceiptManager() {
                       onChange={(e) => handleProductChange(product.id, 'description', e.target.value)}
                       className="w-full bg-white/5 border border-transparent hover:border-white/20 focus:border-[#06b6d4] focus:bg-black/60 rounded px-3 py-2 text-sm text-white outline-none transition-all"
                       placeholder="Nombre del producto o servicio"
+                      list="saved-products-list"
                     />
                   </div>
                   
@@ -438,11 +443,9 @@ export default function ReceiptManager() {
                 </div>
               ))}
             </div>
-
           </div>
         </div>
 
-        {/* Right Col: Resumen y Acción */}
         <div className="lg:col-span-1">
           <div className="bg-[#222A68]/10 border border-[#222A68]/30 rounded-xl p-6 sticky top-6">
             <h3 className="text-xl font-bold text-white mb-6 border-b border-white/10 pb-4">Resumen</h3>
@@ -482,6 +485,12 @@ export default function ReceiptManager() {
         </div>
 
       </div>
+      
+      <datalist id="saved-products-list">
+        {savedProducts.map(sp => (
+          <option key={sp.id} value={sp.description} />
+        ))}
+      </datalist>
     </div>
   );
 }

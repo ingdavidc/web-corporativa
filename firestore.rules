@@ -68,5 +68,9 @@ service cloud.firestore {
       allow read, write: if isRegisteredEmployee();
     }
 
+    match /productos_recibos/{document=**} {
+      allow read, write: if isRegisteredEmployee();
+    }
+
   }
 }
