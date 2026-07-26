@@ -137,6 +137,12 @@ export default function MisRegistrosPage() {
     setEditModalOpen(true);
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(registros.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedRegistros = registros.slice(startIndex, startIndex + itemsPerPage);
+
   // --- MOTOR DE COMPRESIÓN Y MARCA DE AGUA ---
   const processAndWatermarkImage = (base64Str: string, maxWidth = 1000): Promise<string> => {
     return new Promise((resolve) => {
@@ -269,8 +275,9 @@ export default function MisRegistrosPage() {
             <p className="text-gray-400">No has enviado ninguna inspección aún.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {registros.map(reg => (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {paginatedRegistros.map(reg => (
               <div key={reg.id} className="bg-white/5 border border-white/10 rounded-xl p-6 hover:border-cyan-500/30 transition-colors relative flex flex-col justify-between">
                 <div>
                   <div className="flex justify-between items-start mb-4">
@@ -318,7 +325,31 @@ export default function MisRegistrosPage() {
 
               </div>
             ))}
-          </div>
+            </div>
+            
+            {/* Controles de Paginación */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-8">
+                <button 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  Anterior
+                </button>
+                <span className="text-gray-400 font-semibold">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <button 
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  Siguiente
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

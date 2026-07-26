@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { initializeApp, getApps } from "firebase/app";
 import { onAuthStateChanged, signOut, createUserWithEmailAndPassword, getAuth, sendPasswordResetEmail } from "firebase/auth";
-import { collection, onSnapshot, doc, deleteDoc, updateDoc, query, orderBy, setDoc, addDoc, limit, getDoc } from "firebase/firestore";
+import { collection, onSnapshot, doc, deleteDoc, updateDoc, query, orderBy, setDoc, addDoc, limit, getDoc, getDocs, deleteField } from "firebase/firestore";
 import { auth, db, firebaseConfig } from "@/lib/firebase";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import RackBuilder from "@/components/RackBuilder";
+import ReceiptManager from "@/components/ReceiptManager";
 interface Inspeccion {
   id: string;
   registro_num?: string;
@@ -39,7 +40,7 @@ export default function PanelPage() {
   const [isClient, setIsClient] = useState(false);
   
   // Tabs Navigation
-  const [activeTab, setActiveTab] = useState<"auditorias" | "usuarios" | "cms" | "dispositivos" | "gabinetes" | "tareas">("auditorias");
+  const [activeTab, setActiveTab] = useState<"auditorias" | "usuarios" | "cms" | "dispositivos" | "gabinetes" | "tareas" | "recibos">("auditorias");
   const [currentUserRole, setCurrentUserRole] = useState<string>("tecnico");
 
   // State Auditorias
@@ -47,6 +48,8 @@ export default function PanelPage() {
   const [loading, setLoading] = useState(true);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [viewDoc, setViewDoc] = useState<Inspeccion | null>(null);
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const [tempLocation, setTempLocation] = useState<{x: string, y: string} | null>(null);
   const [editDoc, setEditDoc] = useState<Inspeccion | null>(null);
   const [showGlobalMapModal, setShowGlobalMapModal] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
@@ -90,7 +93,38 @@ export default function PanelPage() {
     return inspeccion;
   };
 
+  const handleMapClick = (e: React.MouseEvent<HTMLImageElement>) => {
+    if (!isEditingLocation) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setTempLocation({ x: x.toFixed(2), y: y.toFixed(2) });
+  };
+
+  const saveNewLocation = async () => {
+    if (!viewDoc || !tempLocation) return;
+    setLoadingAction(true);
+    try {
+      await updateDoc(doc(db, "inspecciones", viewDoc.id), {
+        plano_x: tempLocation.x,
+        plano_y: tempLocation.y
+      });
+      setViewDoc({ ...viewDoc, plano_x: tempLocation.x, plano_y: tempLocation.y });
+      setInspecciones(inspecciones.map(i => i.id === viewDoc.id ? { ...i, plano_x: tempLocation.x, plano_y: tempLocation.y } : i));
+      setIsEditingLocation(false);
+      setTempLocation(null);
+      alert("📍 Ubicación actualizada con éxito.");
+    } catch (error) {
+      console.error("Error updating location:", error);
+      alert("Error al guardar la nueva ubicación.");
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
   const handleOpenView = async (inspeccion: Inspeccion) => {
+    setIsEditingLocation(false);
+    setTempLocation(null);
     const fullDoc = await fetchFotosForInspeccion(inspeccion);
     setViewDoc(fullDoc);
   };
@@ -1106,14 +1140,19 @@ export default function PanelPage() {
         <button onClick={() => setActiveTab("dispositivos")} className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'dispositivos' ? 'bg-orange-600 text-white shadow-[0_0_15px_rgba(234,88,12,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
           🖥️ Dispositivos de Red
         </button>
-        {currentUserRole === 'ingeniero' && (
+        {(currentUserRole === 'ingeniero' || currentUserRole === 'admin') && (
           <button onClick={() => setActiveTab("gabinetes")} className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'gabinetes' ? 'bg-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
             🗄️ Data Center / Gabinetes
           </button>
         )}
-        {currentUserRole === 'ingeniero' && (
+        {(currentUserRole === 'ingeniero' || currentUserRole === 'admin') && (
           <button onClick={() => setActiveTab("tareas")} className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'tareas' ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
             🛠️ Gestión de Tareas
+          </button>
+        )}
+        {(currentUserRole === 'admin') && (
+          <button onClick={() => setActiveTab("recibos")} className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'recibos' ? 'bg-[#ED1C24] text-white shadow-[0_0_15px_rgba(237,28,36,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+            🧾 Recibos
           </button>
         )}
       </div>
@@ -1573,17 +1612,50 @@ export default function PanelPage() {
       )}
 
       {/* =========================================================
-          MODAL: VER PLANO GUARDADO (SOLO LECTURA)
+          MODAL: VER PLANO GUARDADO (SOLO LECTURA / EDICIÓN ADMIN)
          ========================================================= */}
       {showViewMapModal && viewDoc && viewDoc.plano_x && viewDoc.plano_y && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
           <div className="bg-[#0a0a0a] border border-cyan-500/30 p-4 md:p-6 rounded-xl w-full max-w-5xl max-h-[95vh] flex flex-col shadow-[0_0_50px_rgba(6,182,212,0.15)]">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="text-lg md:text-xl font-bold text-cyan-400">Ubicación en Plano</h3>
-              <button type="button" onClick={() => setShowViewMapModal(false)} className="text-gray-400 hover:text-white text-2xl leading-none">✕</button>
+              <div className="flex items-center gap-4">
+                <h3 className="text-lg md:text-xl font-bold text-cyan-400">Ubicación en Plano</h3>
+                {currentUserRole === 'admin' && !isEditingLocation && (
+                  <button 
+                    onClick={() => setIsEditingLocation(true)}
+                    className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500 hover:text-black font-bold py-1 px-3 rounded-lg text-sm transition-all shadow-[0_0_10px_rgba(234,179,8,0.2)]"
+                  >
+                    ✏️ Modificar Ubicación
+                  </button>
+                )}
+                {isEditingLocation && (
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={saveNewLocation}
+                      disabled={loadingAction || !tempLocation}
+                      className="bg-green-600/20 text-green-400 border border-green-500/30 hover:bg-green-600 hover:text-white font-bold py-1 px-3 rounded-lg text-sm transition-all disabled:opacity-50"
+                    >
+                      {loadingAction ? 'Guardando...' : '💾 Guardar'}
+                    </button>
+                    <button 
+                      onClick={() => { setIsEditingLocation(false); setTempLocation(null); }}
+                      className="bg-red-600/20 text-red-400 border border-red-500/30 hover:bg-red-600 hover:text-white font-bold py-1 px-3 rounded-lg text-sm transition-all"
+                    >
+                      ✕ Cancelar
+                    </button>
+                  </div>
+                )}
+              </div>
+              <button type="button" onClick={() => { setShowViewMapModal(false); setIsEditingLocation(false); setTempLocation(null); }} className="text-gray-400 hover:text-white text-2xl leading-none">✕</button>
             </div>
             
-            <div className="flex-1 overflow-hidden bg-[#111] rounded-lg border border-white/10 relative flex justify-center items-center shadow-inner">
+            {isEditingLocation && (
+              <div className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-sm p-2 rounded-lg mb-2 text-center animate-pulse">
+                Haz clic en cualquier parte del plano para establecer la nueva ubicación, luego presiona Guardar.
+              </div>
+            )}
+            
+            <div className={`flex-1 overflow-hidden bg-[#111] rounded-lg border border-white/10 relative flex justify-center items-center shadow-inner ${isEditingLocation ? 'ring-2 ring-yellow-500/50 cursor-crosshair' : ''}`}>
               <TransformWrapper
                 initialScale={1}
                 minScale={0.5}
@@ -1592,26 +1664,52 @@ export default function PanelPage() {
                 wheel={{ step: 0.1 }}
                 pinch={{ step: 5 }}
                 doubleClick={{ disabled: true }}
+                disabled={isEditingLocation} // Desactivar paneo mientras se edita para evitar clicks accidentales que muevan el mapa
               >
                 {({ zoomIn, zoomOut, state }) => (
                   <div className="flex flex-col w-full h-full">
                     <div className="flex-1 overflow-hidden w-full h-full cursor-grab active:cursor-grabbing">
                       <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center">
-                        <div className="relative inline-block pointer-events-none">
-                          <img src="/plano_hospital.webp" alt="Plano del Hospital" className="w-full max-w-[800px] h-auto block" />
+                        <div className="relative inline-block" style={{ pointerEvents: isEditingLocation ? 'auto' : 'none' }}>
+                          <img 
+                            src="/plano_hospital.webp" 
+                            alt="Plano del Hospital" 
+                            className="w-full max-w-[800px] h-auto block" 
+                            onClick={handleMapClick}
+                          />
+                          
+                          {/* Marcador Original (desvanecido si se está editando y hay uno nuevo) */}
                           <div 
-                            className="absolute flex items-center justify-center transition-all"
+                            className="absolute flex items-center justify-center transition-all pointer-events-none"
                             style={{ 
                               left: `calc(${viewDoc.plano_x}% - 12px)`, 
                               top: `calc(${viewDoc.plano_y}% - 12px)`,
-                              transform: `scale(${1 / state.scale})`
+                              transform: `scale(${1 / state.scale})`,
+                              opacity: (isEditingLocation && tempLocation) ? 0.3 : 1
                             }}
                           >
                             <div className="relative flex items-center justify-center">
-                              <div className="absolute w-12 h-12 bg-cyan-500/40 rounded-full animate-ping"></div>
-                              <div className="w-6 h-6 bg-cyan-500 rounded-full border-2 border-white shadow-[0_0_15px_rgba(6,182,212,1)] flex items-center justify-center text-[10px]">📍</div>
+                              {!isEditingLocation && <div className="absolute w-12 h-12 bg-cyan-500/40 rounded-full animate-ping"></div>}
+                              <div className={`w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[10px] ${isEditingLocation ? 'bg-gray-500 shadow-none' : 'bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,1)]'}`}>📍</div>
                             </div>
                           </div>
+                          
+                          {/* Marcador Nuevo (Temporal) */}
+                          {isEditingLocation && tempLocation && (
+                            <div 
+                              className="absolute flex items-center justify-center transition-all pointer-events-none"
+                              style={{ 
+                                left: `calc(${tempLocation.x}% - 12px)`, 
+                                top: `calc(${tempLocation.y}% - 12px)`,
+                                transform: `scale(${1 / state.scale})`
+                              }}
+                            >
+                              <div className="relative flex items-center justify-center">
+                                <div className="absolute w-12 h-12 bg-yellow-500/40 rounded-full animate-ping"></div>
+                                <div className="w-6 h-6 bg-yellow-500 rounded-full border-2 border-white shadow-[0_0_15px_rgba(234,179,8,1)] flex items-center justify-center text-[10px]">📍</div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </TransformComponent>
                     </div>
@@ -2106,7 +2204,7 @@ export default function PanelPage() {
       {/* ==============================================
           VISTA 5: GABINETES (RACK BUILDER) - Solo Ingenieros
           ============================================== */}
-      {activeTab === "gabinetes" && currentUserRole === 'ingeniero' && (
+      {activeTab === "gabinetes" && (currentUserRole === 'ingeniero' || currentUserRole === 'admin') && (
         <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.3)]">
           {!activeGabinete ? (
             // Lista de Gabinetes
@@ -2178,18 +2276,56 @@ export default function PanelPage() {
       {/* ================================================== */}
       {/* PESTAÑA: TAREAS DIARIAS */}
       {/* ================================================== */}
-      {activeTab === "tareas" && currentUserRole === 'ingeniero' && (
+      {activeTab === "tareas" && (currentUserRole === 'ingeniero' || currentUserRole === 'admin') && (
         <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-          <div className="flex justify-between items-center bg-white/5 border border-white/10 p-6 rounded-2xl backdrop-blur-sm">
+          <div className="flex justify-between items-center bg-white/5 border border-white/10 p-6 rounded-2xl backdrop-blur-sm overflow-x-auto">
             <div>
               <h2 className="text-2xl font-bold text-white mb-2">Gestión de Tareas Diarias</h2>
               <p className="text-gray-400 text-sm">Asigna y supervisa las tareas operativas de los técnicos.</p>
             </div>
             <div className="flex gap-4">
-              <button onClick={() => setShowAbonoMasivoModal(true)} className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-[0_0_15px_rgba(147,51,234,0.4)] flex items-center gap-2">
+              <button 
+                onClick={async () => {
+                  try {
+                    const confirm = window.confirm("¿Seguro que deseas migrar las fotos antiguas a la nueva estructura?");
+                    if (!confirm) return;
+                    alert("Migración iniciada. Revisa la consola.");
+                    const q = query(collection(db, "inspecciones"));
+                    const snapshot = await getDocs(q);
+                    let migrated = 0;
+                    for (const docSnap of snapshot.docs) {
+                      const data = docSnap.data();
+                      if (data.foto_1_base64 || data.foto_2_base64 || data.foto_3_base64) {
+                        console.log(`Migrating ${docSnap.id}...`);
+                        const fotosData = {
+                          foto_1_base64: data.foto_1_base64 || "",
+                          foto_2_base64: data.foto_2_base64 || "",
+                          foto_3_base64: data.foto_3_base64 || ""
+                        };
+                        await setDoc(doc(db, "inspecciones", docSnap.id, "fotos", "data"), fotosData, { merge: true });
+                        await updateDoc(doc(db, "inspecciones", docSnap.id), {
+                          foto_1_base64: deleteField(),
+                          foto_2_base64: deleteField(),
+                          foto_3_base64: deleteField(),
+                          tiene_fotos: true
+                        });
+                        migrated++;
+                      }
+                    }
+                    alert(`Migración completada. ${migrated} registros actualizados.`);
+                  } catch (err) {
+                    console.error(err);
+                    alert("Error en migración");
+                  }
+                }}
+                className="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-[0_0_15px_rgba(202,138,4,0.4)] flex items-center gap-2 whitespace-nowrap"
+              >
+                🛠️ Migrar Fotos
+              </button>
+              <button onClick={() => setShowAbonoMasivoModal(true)} className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-[0_0_15px_rgba(147,51,234,0.4)] flex items-center gap-2 whitespace-nowrap">
                 💰 Abono Masivo
               </button>
-              <button onClick={() => setShowTareaModal(true)} className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)] flex items-center gap-2">
+              <button onClick={() => setShowTareaModal(true)} className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)] flex items-center gap-2 whitespace-nowrap">
                 + Asignar Nueva Tarea
               </button>
             </div>
@@ -2514,6 +2650,13 @@ export default function PanelPage() {
             <p className="text-cyan-400 font-bold text-lg animate-pulse">Descargando Imágenes...</p>
           </div>
         </div>
+      )}
+
+      {/* =========================================================
+          TAB: RECIBOS
+         ========================================================= */}
+      {activeTab === "recibos" && (
+        <ReceiptManager />
       )}
     </main>
   );
