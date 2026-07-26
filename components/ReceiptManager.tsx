@@ -104,8 +104,15 @@ export default function ReceiptManager() {
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(blob);
         });
-        // 180x60 original aspect ratio
-        doc.addImage(logoBase64, 'PNG', 15, 15, 60, 20);
+        
+        // Obtener proporciones originales para no distorsionar el logo
+        const img = new Image();
+        img.src = logoBase64;
+        await new Promise((resolve) => { img.onload = resolve; });
+        const ratio = img.width / img.height;
+        const newWidth = 20 * ratio; // Fijamos el alto en 20 y ajustamos el ancho
+
+        doc.addImage(logoBase64, 'PNG', 15, 15, newWidth, 20);
       }
     } catch (e) {
       console.error("No se pudo cargar el logo para el PDF", e);
@@ -115,7 +122,7 @@ export default function ReceiptManager() {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     doc.setTextColor(azulCorporativo[0], azulCorporativo[1], azulCorporativo[2]);
-    doc.text("DC TELEMÁTICA S.A.S", 200, 20, { align: "right" });
+    doc.text("DC TELEMÁTICA", 200, 20, { align: "right" });
     
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
@@ -170,6 +177,12 @@ export default function ReceiptManager() {
       formatCurrency(p.quantity * p.unitPrice)
     ]);
 
+    // Marca de Agua de Cancelado
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(50);
+    doc.setTextColor(245, 245, 245); // Gris muy claro para que no estorbe la lectura
+    doc.text("CANCELADO Y ENTREGADO", 105, 160, { align: "center", angle: 45 });
+
     autoTable(doc, {
       startY: 110,
       head: [['Descripción', 'Cantidad', 'Valor Unitario', 'Valor Total']],
@@ -218,6 +231,12 @@ export default function ReceiptManager() {
     doc.setFontSize(8);
     doc.text("Este documento es un comprobante de pago generado electrónicamente.", 105, finalY + 35, { align: "center" });
     doc.text("Válido sin firma ni sello.", 105, finalY + 39, { align: "center" });
+
+    // Código de Seguridad Alfanumérico
+    const securityCode = Math.random().toString(36).substring(2, 12).toUpperCase();
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(azulCorporativo[0], azulCorporativo[1], azulCorporativo[2]);
+    doc.text(`CÓDIGO DE SEGURIDAD: ${securityCode}`, 105, finalY + 45, { align: "center" });
 
     // Línea inferior corporativa
     doc.setDrawColor(azulCorporativo[0], azulCorporativo[1], azulCorporativo[2]);
