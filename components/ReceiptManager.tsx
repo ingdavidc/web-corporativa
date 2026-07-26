@@ -109,6 +109,13 @@ export default function ReceiptManager() {
 
   const generatePDF = async (receiptNum: string) => {
     const doc = new jsPDF();
+    
+    // Marca de Agua de Cancelado (Enviada al fondo al renderizarla primero)
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(50);
+    doc.setTextColor(242, 242, 242); 
+    doc.text("CANCELADO Y ENTREGADO", 105, 160, { align: "center", angle: 45 });
+
     const total = calculateTotal();
     
     const azulCorporativo = [34, 42, 104];
@@ -192,11 +199,6 @@ export default function ReceiptManager() {
       formatCurrency(p.quantity * p.unitPrice)
     ]);
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(50);
-    doc.setTextColor(245, 245, 245);
-    doc.text("CANCELADO Y ENTREGADO", 105, 160, { align: "center", angle: 45 });
-
     autoTable(doc, {
       startY: 110,
       head: [['Descripción', 'Cantidad', 'Valor Unitario', 'Valor Total']],
@@ -230,6 +232,7 @@ export default function ReceiptManager() {
     doc.rect(130, finalY, 70, 10, "F");
     
     doc.setFont("helvetica", "bold");
+    doc.setFontSize(12); // Resetear tamaño de fuente aquí para que no herede
     doc.setTextColor(255, 255, 255);
     doc.text("TOTAL:", 135, finalY + 7);
     doc.text(formatCurrency(total), 195, finalY + 7, { align: "right" });
