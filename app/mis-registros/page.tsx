@@ -326,13 +326,12 @@ export default function MisRegistrosPage() {
               </div>
             ))}
             </div>
-            
             {/* Controles de Paginación */}
-            {totalPages > 1 && (
               <div style={{ textAlign: 'center', margin: '50px 0 150px 0', padding: '20px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '10px' }}>
-                <div style={{ color: 'yellow', marginBottom: '20px', fontWeight: 'bold' }}>
-                  DEBUG: Registros Totales: {registros.length} | Páginas Totales: {totalPages} | Página Actual: {currentPage}
+                <div style={{ color: 'yellow', marginBottom: '20px', fontWeight: 'bold', fontSize: '1.2rem' }}>
+                  DEBUG: Registros en la Base de Datos: {registros.length} | Páginas Calculadas: {totalPages} | Página Actual: {currentPage}
                 </div>
+                {totalPages > 1 && (
                 <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
                   <button 
                     onClick={() => {
@@ -358,8 +357,8 @@ export default function MisRegistrosPage() {
                     Avanzar
                   </button>
                 </div>
+                )}
               </div>
-            )}
           </>
         )}
       </div>
