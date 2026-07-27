@@ -329,30 +329,35 @@ export default function MisRegistrosPage() {
             
             {/* Controles de Paginación */}
             {totalPages > 1 && (
-              <div className="text-center mt-12 mb-32 p-4 bg-white/5 rounded-xl border border-white/10">
-                <button 
-                  onClick={() => {
-                    setCurrentPage(p => Math.max(1, p - 1));
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  disabled={currentPage === 1}
-                  className="inline-block px-6 py-3 m-2 bg-white/5 border border-white/20 rounded-lg text-white font-bold hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                >
-                  ← Ver Recientes
-                </button>
-                <div className="inline-block text-cyan-400 font-bold px-4 py-3 m-2 bg-black/50 rounded-lg border border-cyan-500/30">
-                  Hoja {currentPage} de {totalPages}
+              <div style={{ textAlign: 'center', margin: '50px 0 150px 0', padding: '20px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '10px' }}>
+                <div style={{ color: 'yellow', marginBottom: '20px', fontWeight: 'bold' }}>
+                  DEBUG: Registros Totales: {m.length} | Páginas Totales: {totalPages} | Página Actual: {currentPage}
                 </div>
-                <button 
-                  onClick={() => {
-                    setCurrentPage(p => Math.min(totalPages, p + 1));
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  disabled={currentPage === totalPages}
-                  className="inline-block px-6 py-3 m-2 bg-cyan-600 border border-cyan-500 rounded-lg text-white font-bold hover:bg-cyan-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                >
-                  Ver Antiguos →
-                </button>
+                <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+                  <button 
+                    onClick={() => {
+                      setCurrentPage(p => Math.max(1, p - 1));
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    disabled={currentPage === 1}
+                    style={{ padding: '15px 30px', backgroundColor: currentPage === 1 ? '#333' : '#444', color: 'white', border: '1px solid white', borderRadius: '8px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+                  >
+                    Retroceder
+                  </button>
+                  <div style={{ padding: '15px 30px', backgroundColor: 'black', color: '#00ffff', border: '2px solid #00ffff', borderRadius: '8px', fontWeight: 'bold' }}>
+                    Estás en la hoja {currentPage} de {totalPages}
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setCurrentPage(p => Math.min(totalPages, p + 1));
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    disabled={currentPage === totalPages}
+                    style={{ padding: '15px 30px', backgroundColor: currentPage === totalPages ? '#333' : '#0088cc', color: 'white', border: '1px solid white', borderRadius: '8px', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+                  >
+                    Avanzar
+                  </button>
+                </div>
               </div>
             )}
           </>
