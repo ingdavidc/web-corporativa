@@ -329,19 +329,19 @@ export default function MisRegistrosPage() {
             
             {/* Controles de Paginación */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-4 mt-12 mb-32 p-4">
+              <div className="text-center mt-12 mb-32 p-4 bg-white/5 rounded-xl border border-white/10">
                 <button 
                   onClick={() => {
                     setCurrentPage(p => Math.max(1, p - 1));
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   disabled={currentPage === 1}
-                  className="px-6 py-3 bg-white/5 border border-white/20 rounded-lg text-white font-bold hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  className="inline-block px-6 py-3 m-2 bg-white/5 border border-white/20 rounded-lg text-white font-bold hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 >
-                  ← Anterior
+                  ← Ver Recientes
                 </button>
-                <div className="text-cyan-400 font-bold px-4 py-2 bg-black/50 rounded-lg border border-cyan-500/30">
-                  Página {currentPage} de {totalPages}
+                <div className="inline-block text-cyan-400 font-bold px-4 py-3 m-2 bg-black/50 rounded-lg border border-cyan-500/30">
+                  Hoja {currentPage} de {totalPages}
                 </div>
                 <button 
                   onClick={() => {
@@ -349,9 +349,9 @@ export default function MisRegistrosPage() {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   disabled={currentPage === totalPages}
-                  className="px-6 py-3 bg-cyan-600 border border-cyan-500 rounded-lg text-white font-bold hover:bg-cyan-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  className="inline-block px-6 py-3 m-2 bg-cyan-600 border border-cyan-500 rounded-lg text-white font-bold hover:bg-cyan-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 >
-                  Siguiente →
+                  Ver Antiguos →
                 </button>
               </div>
             )}
