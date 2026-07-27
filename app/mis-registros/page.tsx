@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ArrowLeft, Clock, CheckCircle, XCircle, Edit, UploadCloud } from "lucide-react";
 import { auth, db } from "@/lib/firebase";
-import { collection, query, where, getDocs, updateDoc, doc, orderBy, getDoc, setDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc, doc, orderBy, getDoc, setDoc, limit, startAfter, getCountFromServer } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
 export default function MisRegistrosPage() {
@@ -13,6 +13,13 @@ export default function MisRegistrosPage() {
   const [registros, setRegistros] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  // Server-Side Pagination State
+  const [totalPages, setTotalPages] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageCursors, setPageCursors] = useState<Record<number, any>>({});
+  const [pagesCache, setPagesCache] = useState<Record<number, any[]>>({});
+  const itemsPerPage = 10;
 
   // Modals state
   const [requestModalOpen, setRequestModalOpen] = useState(false);
@@ -56,26 +63,64 @@ export default function MisRegistrosPage() {
   const loadRegistros = async (email: string) => {
     setLoading(true);
     try {
-      // Query todas las inspecciones para que cualquier técnico pueda verlas/modificarlas
-      const q = query(collection(db, "inspecciones"));
+      const collRef = collection(db, "inspecciones");
+      const snapshotCount = await getCountFromServer(collRef);
+      const totalDocs = snapshotCount.data().count;
+      setTotalPages(Math.max(1, Math.ceil(totalDocs / itemsPerPage)));
+
+      const q = query(collRef, orderBy("timestamp", "desc"), limit(itemsPerPage));
       const snapshot = await getDocs(q);
       const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       
-      // Sort in memory because we can't reliably multi-query without an index
-      docs.sort((a: any, b: any) => {
-        const getMs = (t: any) => {
-          if (!t) return 0;
-          if (typeof t.toMillis === 'function') return t.toMillis();
-          if (t.seconds) return t.seconds * 1000;
-          const parsed = new Date(t).getTime();
-          return isNaN(parsed) ? 0 : parsed;
-        };
-        return getMs(b.timestamp) - getMs(a.timestamp);
-      });
-      
+      setPagesCache({ 1: docs });
+      if (snapshot.docs.length > 0) {
+        setPageCursors({ 1: snapshot.docs[snapshot.docs.length - 1] });
+      }
       setRegistros(docs);
+      setCurrentPage(1);
     } catch (error) {
       console.error("Error loading records:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPage = async (pageNumber: number) => {
+    if (pagesCache[pageNumber]) {
+      setRegistros(pagesCache[pageNumber]);
+      setCurrentPage(pageNumber);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const lastCursor = pageCursors[pageNumber - 1];
+      if (!lastCursor) {
+        console.warn("No cursor available for previous page");
+        setLoading(false);
+        return;
+      }
+
+      const q = query(
+        collection(db, "inspecciones"), 
+        orderBy("timestamp", "desc"), 
+        startAfter(lastCursor), 
+        limit(itemsPerPage)
+      );
+      
+      const snapshot = await getDocs(q);
+      const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      setPagesCache(prev => ({ ...prev, [pageNumber]: docs }));
+      if (snapshot.docs.length > 0) {
+        setPageCursors(prev => ({ ...prev, [pageNumber]: snapshot.docs[snapshot.docs.length - 1] }));
+      }
+      setRegistros(docs);
+      setCurrentPage(pageNumber);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+      console.error("Error fetching page:", error);
     } finally {
       setLoading(false);
     }
@@ -137,11 +182,6 @@ export default function MisRegistrosPage() {
     setEditModalOpen(true);
   };
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-  const totalPages = Math.ceil(registros.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedRegistros = registros.slice(startIndex, startIndex + itemsPerPage);
 
   // --- MOTOR DE COMPRESIÓN Y MARCA DE AGUA ---
   const processAndWatermarkImage = (base64Str: string, maxWidth = 1000): Promise<string> => {
@@ -277,7 +317,7 @@ export default function MisRegistrosPage() {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {paginatedRegistros.map(reg => (
+              {registros.map(reg => (
               <div key={reg.id} className="bg-white/5 border border-white/10 rounded-xl p-6 hover:border-cyan-500/30 transition-colors relative flex flex-col justify-between">
                 <div>
                   <div className="flex justify-between items-start mb-4">
@@ -330,10 +370,7 @@ export default function MisRegistrosPage() {
             {totalPages > 1 && (
               <div className="w-full flex flex-col sm:flex-row justify-center items-center gap-4 mt-8 mb-24 p-6 bg-[#111] rounded-2xl border border-cyan-500/30 shadow-[0_0_30px_rgba(6,182,212,0.15)] relative z-30">
                 <button 
-                  onClick={() => {
-                    setCurrentPage(p => Math.max(1, p - 1));
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
+                  onClick={() => fetchPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
                   className="w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/20 rounded-xl text-white font-bold hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
@@ -346,10 +383,7 @@ export default function MisRegistrosPage() {
                   <span className="text-xl text-cyan-400 font-bold">{totalPages}</span>
                 </div>
                 <button 
-                  onClick={() => {
-                    setCurrentPage(p => Math.min(totalPages, p + 1));
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
+                  onClick={() => fetchPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
                   className="w-full sm:w-auto px-8 py-4 bg-cyan-600 border border-cyan-500 rounded-xl text-white font-bold hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-[0_0_15px_rgba(6,182,212,0.4)]"
                 >
