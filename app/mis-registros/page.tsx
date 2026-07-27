@@ -327,38 +327,36 @@ export default function MisRegistrosPage() {
             ))}
             </div>
             {/* Controles de Paginación */}
-              <div style={{ textAlign: 'center', margin: '50px 0 150px 0', padding: '20px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '10px' }}>
-                <div style={{ color: 'yellow', marginBottom: '20px', fontWeight: 'bold', fontSize: '1.2rem' }}>
-                  DEBUG: Registros en la Base de Datos: {registros.length} | Páginas Calculadas: {totalPages} | Página Actual: {currentPage}
+            {totalPages > 1 && (
+              <div className="w-full flex flex-col sm:flex-row justify-center items-center gap-4 mt-8 mb-24 p-6 bg-[#111] rounded-2xl border border-cyan-500/30 shadow-[0_0_30px_rgba(6,182,212,0.15)] relative z-30">
+                <button 
+                  onClick={() => {
+                    setCurrentPage(p => Math.max(1, p - 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={currentPage === 1}
+                  className="w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/20 rounded-xl text-white font-bold hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  ◀ Más Recientes
+                </button>
+                <div className="px-6 py-4 bg-black/80 rounded-xl border border-cyan-500/50 text-center min-w-[200px]">
+                  <span className="block text-xs text-cyan-500 uppercase tracking-wider font-bold mb-1">Página Actual</span>
+                  <span className="text-xl text-white font-black">{currentPage}</span>
+                  <span className="text-gray-500 mx-2">de</span>
+                  <span className="text-xl text-cyan-400 font-bold">{totalPages}</span>
                 </div>
-                {totalPages > 1 && (
-                <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-                  <button 
-                    onClick={() => {
-                      setCurrentPage(p => Math.max(1, p - 1));
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    disabled={currentPage === 1}
-                    style={{ padding: '15px 30px', backgroundColor: currentPage === 1 ? '#333' : '#444', color: 'white', border: '1px solid white', borderRadius: '8px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
-                  >
-                    Retroceder
-                  </button>
-                  <div style={{ padding: '15px 30px', backgroundColor: 'black', color: '#00ffff', border: '2px solid #00ffff', borderRadius: '8px', fontWeight: 'bold' }}>
-                    Estás en la hoja {currentPage} de {totalPages}
-                  </div>
-                  <button 
-                    onClick={() => {
-                      setCurrentPage(p => Math.min(totalPages, p + 1));
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    disabled={currentPage === totalPages}
-                    style={{ padding: '15px 30px', backgroundColor: currentPage === totalPages ? '#333' : '#0088cc', color: 'white', border: '1px solid white', borderRadius: '8px', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
-                  >
-                    Avanzar
-                  </button>
-                </div>
-                )}
+                <button 
+                  onClick={() => {
+                    setCurrentPage(p => Math.min(totalPages, p + 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={currentPage === totalPages}
+                  className="w-full sm:w-auto px-8 py-4 bg-cyan-600 border border-cyan-500 rounded-xl text-white font-bold hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-[0_0_15px_rgba(6,182,212,0.4)]"
+                >
+                  Más Antiguos ▶
+                </button>
               </div>
+            )}
           </>
         )}
       </div>
