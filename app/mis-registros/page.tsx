@@ -329,28 +329,44 @@ export default function MisRegistrosPage() {
             
             {/* Controles de Paginación */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-4 mt-8">
+              <div className="flex flex-wrap justify-center items-center gap-2 md:gap-4 mt-12 mb-20 bg-white/5 p-4 rounded-xl border border-white/10">
                 <button 
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  onClick={() => {
+                    setCurrentPage(p => Math.max(1, p - 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="px-4 py-3 bg-[#222A68]/40 border border-[#222A68] rounded-lg text-white font-bold hover:bg-[#222A68] disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-1 md:flex-none text-center"
                 >
-                  Anterior
+                  ← Anterior
                 </button>
-                <span className="text-gray-400 font-semibold">
+                <span className="text-cyan-400 font-bold px-4 py-2 bg-black/50 rounded-lg">
                   Página {currentPage} de {totalPages}
                 </span>
                 <button 
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  onClick={() => {
+                    setCurrentPage(p => Math.min(totalPages, p + 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="px-4 py-3 bg-cyan-600/40 border border-cyan-600 rounded-lg text-white font-bold hover:bg-cyan-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-1 md:flex-none text-center"
                 >
-                  Siguiente
+                  Siguiente →
                 </button>
               </div>
             )}
           </>
         )}
+      </div>
+
+      {/* Botón Flotante para Volver al Portal (Muy visible en móviles) */}
+      <div className="fixed bottom-6 left-0 right-0 flex justify-center z-40 pointer-events-none">
+        <button 
+          onClick={() => router.push("/portal-tecnico")}
+          className="pointer-events-auto shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-center bg-gradient-to-r from-cyan-600 to-[#222A68] hover:from-cyan-500 hover:to-[#2a3482] text-white px-6 py-3 rounded-full font-bold transition-all transform hover:scale-105"
+        >
+          <ArrowLeft className="mr-2" size={20} /> Volver al Portal Principal
+        </button>
       </div>
 
       {/* MODAL PARA SOLICITAR MODIFICACION */}
