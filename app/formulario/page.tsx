@@ -60,6 +60,18 @@ function FormularioPageContent() {
   const [auditorEmail, setAuditorEmail] = useState("");
 
   const formRef = useRef<HTMLFormElement>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const zoomPercentageRef = useRef<HTMLSpanElement>(null);
+
+  const handleMapTransform = (e: any, state: any) => {
+    if (mapContainerRef.current) {
+      const scale = state?.scale || 1;
+      mapContainerRef.current.style.setProperty('--marker-scale', (1 / scale).toString());
+    }
+    if (zoomPercentageRef.current) {
+      zoomPercentageRef.current.innerText = `${Math.round((state?.scale || 1) * 100)}%`;
+    }
+  };
 
   useEffect(() => {
     const handleOnline = () => {
@@ -811,20 +823,21 @@ function FormularioPageContent() {
             
             <div className="flex-1 overflow-hidden bg-[#111] rounded-lg border border-white/10 relative flex justify-center items-center shadow-inner">
               <TransformWrapper
-                initialScale={1}
-                minScale={0.5}
-                maxScale={10}
+                maxScale={20}
                 centerOnInit={true}
                 wheel={{ step: 0.1 }}
                 pinch={{ step: 5 }}
                 doubleClick={{ disabled: true }}
+                onTransform={handleMapTransform}
               >
-                {({ zoomIn, zoomOut, state }) => (
+                {({ zoomIn, zoomOut }) => (
                   <div className="flex flex-col w-full h-full">
-                    <div className="flex-1 overflow-hidden w-full h-full cursor-grab active:cursor-grabbing">
+                    <div className="flex-1 overflow-hidden w-full h-full cursor-grab active:cursor-grabbing relative">
                       <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center">
                         <div 
+                          ref={mapContainerRef}
                           className="relative inline-block touch-none"
+                          style={{ '--marker-scale': '1' } as any}
                           onTouchStartCapture={(e) => {
                             if (e.touches.length === 1) {
                               e.currentTarget.dataset.startX = String(e.touches[0].clientX);
@@ -861,28 +874,28 @@ function FormularioPageContent() {
                           {/* Pin del Formulario */}
                           {mapTarget === "punto" && mapCoords && (
                             <div 
-                              className="absolute flex items-center justify-center pointer-events-none transition-all"
+                              className="absolute flex flex-col items-center justify-center pointer-events-none transition-transform"
                               style={{ 
-                                left: `calc(${mapCoords.x}% - 8px)`, 
-                                top: `calc(${mapCoords.y}% - 8px)`,
-                                transform: `scale(${1 / state.scale})`
+                                left: `calc(${mapCoords.x}%)`, 
+                                top: `calc(${mapCoords.y}%)`,
+                                transform: `translate(-50%, -50%) scale(var(--marker-scale))`
                               }}
                             >
-                              <div className="w-4 h-4 bg-cyan-500 rounded-full border-2 border-white shadow-[0_0_8px_rgba(6,182,212,1)]"></div>
+                              <div className="w-4 h-4 bg-cyan-500 rounded-full border-[1.5px] border-white shadow-[0_0_8px_rgba(6,182,212,1)] transition-all hover:scale-150"></div>
                             </div>
                           )}
 
                           {/* Pin del Dispositivo */}
                           {mapTarget === "dispositivo" && newDevice.mapCoords && (
                             <div 
-                              className="absolute flex items-center justify-center pointer-events-none transition-all"
+                              className="absolute flex flex-col items-center justify-center pointer-events-none transition-transform"
                               style={{ 
-                                left: `calc(${newDevice.mapCoords.x}% - 8px)`, 
-                                top: `calc(${newDevice.mapCoords.y}% - 8px)`,
-                                transform: `scale(${1 / state.scale})`
+                                left: `calc(${newDevice.mapCoords.x}%)`, 
+                                top: `calc(${newDevice.mapCoords.y}%)`,
+                                transform: `translate(-50%, -50%) scale(var(--marker-scale))`
                               }}
                             >
-                              <div className="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-[0_0_8px_rgba(59,130,246,1)]"></div>
+                              <div className="w-4 h-4 bg-blue-500 rounded-full border-[1.5px] border-white shadow-[0_0_8px_rgba(59,130,246,1)] transition-all hover:scale-150"></div>
                             </div>
                           )}
                         </div>
@@ -892,7 +905,7 @@ function FormularioPageContent() {
                     <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/10 px-2 shrink-0">
                       <div className="flex items-center gap-2 bg-black/40 rounded-lg p-1 border border-white/10">
                         <button type="button" onClick={() => zoomOut()} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">-</button>
-                        <span className="text-white text-sm font-bold min-w-[40px] text-center">{Math.round(state.scale * 100)}%</span>
+                        <span ref={zoomPercentageRef} className="text-white text-sm font-bold min-w-[40px] text-center">100%</span>
                         <button type="button" onClick={() => zoomIn()} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded font-bold text-xl transition-colors">+</button>
                       </div>
 
